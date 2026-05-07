@@ -1,5 +1,7 @@
 /// Level node widget for displaying individual levels in the progression map
 
+library level_node_widget;
+
 import 'package:flutter/material.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';

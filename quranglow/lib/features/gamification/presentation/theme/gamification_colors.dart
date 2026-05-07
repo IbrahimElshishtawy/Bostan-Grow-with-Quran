@@ -1,6 +1,8 @@
 /// Gamification color palette - Islamic minimal design
 /// Colors: Green, Gold, White, Dark Navy with soft gradients
 
+library gamification_colors;
+
 import 'package:flutter/material.dart';
 
 class GameificationColors {

@@ -1,5 +1,7 @@
 /// Gamification header widget showing user profile, XP, streak, and hearts
 
+library gamification_header;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';

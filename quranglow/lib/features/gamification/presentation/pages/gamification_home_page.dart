@@ -1,6 +1,8 @@
 /// Main gamification home page with progression map
 /// Displays the Duolingo/Candy Crush-style level progression
 
+library gamification_home_page;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
