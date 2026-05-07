@@ -1,6 +1,8 @@
 /// Quran API service for fetching Quran data
 /// Integrates with api.alquran.cloud and Quran.com APIs
 
+library quran_api_service;
+
 import 'package:dio/dio.dart';
 import 'package:quranglow/core/models/quran_models.dart';
 

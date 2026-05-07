@@ -1,5 +1,7 @@
 /// Gamification domain models for the progression system
 
+library gamification_models;
+
 enum LevelType {
   surah('Surah Level'),
   tajweed('Tajweed Lesson'),

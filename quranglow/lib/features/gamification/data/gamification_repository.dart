@@ -1,6 +1,8 @@
 /// Gamification repository for managing user progress and levels
 /// Integrates with Firebase Firestore and local Hive cache
 
+library gamification_repository;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 
