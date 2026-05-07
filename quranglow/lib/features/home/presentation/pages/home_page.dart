@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:quranglow/features/azkar/presentation/pages/azkar_tasbih_page.dart';
+import 'package:quranglow/features/gamification/presentation/pages/gamification_home_page.dart';
 import 'package:quranglow/features/home/presentation/widgets/app_drawer.dart';
 import 'package:quranglow/features/memorization/presentation/pages/level_map_home_page.dart';
 import 'package:quranglow/features/player/presentation/pages/player_page.dart';
@@ -23,6 +24,11 @@ class _HomePageState extends State<HomePage> {
       label: 'الرئيسية',
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
+    ),
+    _NavTab(
+      label: 'التعلم',
+      icon: Icons.school_outlined,
+      activeIcon: Icons.school_rounded,
     ),
     _NavTab(
       label: 'المصحف',
@@ -72,12 +78,14 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return const _HomeSections();
       case 1:
-        return const SurahListPage();
+        return const GameificationHomePage();
       case 2:
-        return const AzkarTasbihPage();
+        return const SurahListPage();
       case 3:
-        return const PlayerPage();
+        return const AzkarTasbihPage();
       case 4:
+        return const PlayerPage();
+      case 5:
         return const SearchPage();
       default:
         return const _HomeSections();

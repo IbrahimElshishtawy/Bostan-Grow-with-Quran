@@ -1,6 +1,7 @@
 class AppRoutes {
   static const splash = '/';
   static const home = '/home';
+  static const gamificationHome = '/gamification';
   static const mushaf = '/mushaf';
   static const mushafPaged = '/mushafPaged';
   static const surahs = '/surahs';
