@@ -9,7 +9,6 @@ class RecitationApiService {
 
   final Dio dio;
 
-  static const String _everyayahBase = 'https://everyayah.com/data';
   static const String _quranCloudBase = 'https://api.alquran.cloud/v1';
 
   /// Get audio URL for specific Ayah and reciter

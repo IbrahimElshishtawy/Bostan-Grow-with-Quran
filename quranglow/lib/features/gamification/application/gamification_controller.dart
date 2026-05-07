@@ -29,6 +29,7 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         userProfile: profile,
         levels: levels,
         isLoading: false,
+        error: null,
       );
 
       state = AsyncValue.data(gameState);

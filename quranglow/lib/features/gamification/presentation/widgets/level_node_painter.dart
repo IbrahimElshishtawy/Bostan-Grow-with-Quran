@@ -1,5 +1,6 @@
 /// Custom painter for drawing curved paths between level nodes
 
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
 
@@ -87,13 +88,13 @@ class IslamicDecorationPainter extends CustomPainter {
 
     // Draw star pattern
     for (int i = 0; i < 8; i++) {
-      final angle = (i * 45) * 3.14159 / 180;
-      final x1 = centerX + radius * (angle.cos());
-      final y1 = centerY + radius * (angle.sin());
+      final angle = (i * 45) * math.pi / 180;
+      final x1 = centerX + radius * math.cos(angle);
+      final y1 = centerY + radius * math.sin(angle);
 
-      final nextAngle = ((i + 1) * 45) * 3.14159 / 180;
-      final x2 = centerX + radius * (nextAngle.cos());
-      final y2 = centerY + radius * (nextAngle.sin());
+      final nextAngle = ((i + 1) * 45) * math.pi / 180;
+      final x2 = centerX + radius * math.cos(nextAngle);
+      final y2 = centerY + radius * math.sin(nextAngle);
 
       canvas.drawLine(Offset(x1, y1), Offset(x2, y2), paint);
     }

@@ -63,8 +63,11 @@ final levelsProvider = FutureProvider<List<GameLevel>>((ref) async {
 
 // Current level provider
 final currentLevelProvider = FutureProvider<GameLevel?>((ref) async {
-  final gameState = await ref.watch(gamificationControllerProvider.future);
-  return gameState.currentLevel;
+  final gameStateAsync = ref.watch(gamificationControllerProvider);
+  return gameStateAsync.maybeWhen(
+    data: (gameState) => gameState.currentLevel,
+    orElse: () => null,
+  );
 });
 
 // User stats provider
@@ -100,24 +103,36 @@ final levelsStreamProvider = StreamProvider<List<GameLevel>>((ref) {
 
 // Due review levels provider
 final dueReviewLevelsProvider = FutureProvider<List<GameLevel>>((ref) async {
-  final gameState = await ref.watch(gamificationControllerProvider.future);
-  return gameState.dueReviewLevels;
+  final gameStateAsync = ref.watch(gamificationControllerProvider);
+  return gameStateAsync.maybeWhen(
+    data: (gameState) => gameState.dueReviewLevels,
+    orElse: () => [],
+  );
 });
 
 // Overall progress provider
 final overallProgressProvider = FutureProvider<double>((ref) async {
-  final gameState = await ref.watch(gamificationControllerProvider.future);
-  return gameState.overallProgress;
+  final gameStateAsync = ref.watch(gamificationControllerProvider);
+  return gameStateAsync.maybeWhen(
+    data: (gameState) => gameState.overallProgress,
+    orElse: () => 0.0,
+  );
 });
 
 // Completed levels count provider
 final completedLevelsCountProvider = FutureProvider<int>((ref) async {
-  final gameState = await ref.watch(gamificationControllerProvider.future);
-  return gameState.completedLevels;
+  final gameStateAsync = ref.watch(gamificationControllerProvider);
+  return gameStateAsync.maybeWhen(
+    data: (gameState) => gameState.completedLevels,
+    orElse: () => 0,
+  );
 });
 
 // Total levels count provider
 final totalLevelsCountProvider = FutureProvider<int>((ref) async {
-  final gameState = await ref.watch(gamificationControllerProvider.future);
-  return gameState.totalLevels;
+  final gameStateAsync = ref.watch(gamificationControllerProvider);
+  return gameStateAsync.maybeWhen(
+    data: (gameState) => gameState.totalLevels,
+    orElse: () => 0,
+  );
 });

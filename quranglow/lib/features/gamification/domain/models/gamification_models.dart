@@ -239,7 +239,7 @@ class UserGameProfile {
           ? DateTime.tryParse(json['lastActiveDate'] as String)
           : null,
       joinDate: json['joinDate'] != null
-          ? DateTime.tryParse(json['joinDate'] as String)
+          ? DateTime.tryParse(json['joinDate'] as String) ?? DateTime.now()
           : DateTime.now(),
       currentStreak: json['currentStreak'] as int? ?? 0,
     );

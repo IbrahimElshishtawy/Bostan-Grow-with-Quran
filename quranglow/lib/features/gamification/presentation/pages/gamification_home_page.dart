@@ -8,7 +8,6 @@ import 'package:quranglow/features/gamification/domain/models/gamification_model
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/gamification_header.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/level_node_widget.dart';
-import 'package:quranglow/features/gamification/presentation/widgets/level_node_painter.dart';
 
 class GameificationHomePage extends ConsumerWidget {
   const GameificationHomePage({super.key});
