@@ -1,6 +1,5 @@
 /// Custom painter for drawing curved paths between level nodes
 
-library level_node_painter;
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';

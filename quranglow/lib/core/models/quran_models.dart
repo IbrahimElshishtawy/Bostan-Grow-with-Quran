@@ -1,6 +1,5 @@
 /// Core Quran data models for API integration
 
-library quran_models;
 
 enum ReciterName {
   misharyrashid('Mishary Rashid Al-Afasy'),

@@ -1,6 +1,5 @@
 /// Gamification controller for managing game state and logic
 
-library gamification_controller;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/features/gamification/data/gamification_repository.dart';

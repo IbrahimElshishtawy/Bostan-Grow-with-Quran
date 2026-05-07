@@ -1,7 +1,6 @@
 /// Recitation API service for audio playback
 /// Supports multiple reciters: Mishary Rashid, Al-Husary, Abdul Basit
 
-library recitation_api_service;
 
 import 'package:dio/dio.dart';
 import 'package:quranglow/core/models/quran_models.dart';

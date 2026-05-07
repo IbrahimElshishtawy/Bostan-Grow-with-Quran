@@ -1,6 +1,5 @@
 /// Gamification Riverpod providers for state management
 
-library gamification_providers;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
