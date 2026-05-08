@@ -8,13 +8,16 @@ final locationServiceEnabledProvider = FutureProvider<bool>((ref) async {
 });
 
 /// Check location permissions
-final locationPermissionProvider = FutureProvider<LocationPermission>((ref) async {
+final locationPermissionProvider = FutureProvider<LocationPermission>((
+  ref,
+) async {
   return await Geolocator.checkPermission();
 });
 
 /// Request location permissions
-final requestLocationPermissionProvider =
-    FutureProvider<LocationPermission>((ref) async {
+final requestLocationPermissionProvider = FutureProvider<LocationPermission>((
+  ref,
+) async {
   return await Geolocator.requestPermission();
 });
 
@@ -29,7 +32,7 @@ final userPositionProvider = FutureProvider<Position?>((ref) async {
 
     // Check permission
     var permission = await ref.watch(locationPermissionProvider.future);
-    
+
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
@@ -52,15 +55,16 @@ final userPositionProvider = FutureProvider<Position?>((ref) async {
 });
 
 /// Get user latitude and longitude as tuple
-final userCoordinatesProvider =
-    Provider.family<(double, double)?, Position?>((ref, position) {
+final userCoordinatesProvider = Provider.family<(double, double)?, Position?>((
+  ref,
+  position,
+) {
   if (position == null) return null;
   return (position.latitude, position.longitude);
 });
 
 /// Stream of position changes (for real-time location updates)
-final positionStreamProvider =
-    StreamProvider<Position>((ref) async* {
+final positionStreamProvider = StreamProvider<Position>((ref) async* {
   try {
     final isEnabled = await Geolocator.isLocationServiceEnabled();
     if (!isEnabled) {

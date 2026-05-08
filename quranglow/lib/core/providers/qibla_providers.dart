@@ -7,8 +7,10 @@ import 'package:quranglow/core/providers/location_providers.dart';
 
 /// Calculate Qibla direction based on location (latitude, longitude)
 /// Returns bearing in degrees (0-360) where 0 = North, 90 = East, 180 = South, 270 = West
-final qiblaDirectionProvider =
-    Provider.family<double?, Position?>((ref, position) {
+final qiblaDirectionProvider = Provider.family<double?, Position?>((
+  ref,
+  position,
+) {
   if (position == null) return null;
 
   try {
@@ -24,7 +26,8 @@ final qiblaDirectionProvider =
     final dLon = lon2 - lon1;
 
     final y = math.sin(dLon) * math.cos(lat2);
-    final x = math.cos(lat1) * math.sin(lat2) -
+    final x =
+        math.cos(lat1) * math.sin(lat2) -
         math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
 
     var bearing = math.atan2(y, x) * (180 / math.pi);
@@ -50,8 +53,7 @@ final compassHeadingProvider = StreamProvider<double>((ref) async* {
 });
 
 /// Calculate angle between device heading and Qibla direction
-final qiblaAngleProvider =
-    Provider<double>((ref) {
+final qiblaAngleProvider = Provider<double>((ref) {
   final compassHeadingAsync = ref.watch(compassHeadingProvider);
   final positionAsync = ref.watch(userPositionProvider);
 

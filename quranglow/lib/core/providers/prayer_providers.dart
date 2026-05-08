@@ -4,16 +4,22 @@ import 'package:quranglow/core/models/prayer_models.dart';
 
 /// Prayer times provider - stub for now, will be replaced with actual calculations
 final prayerTimesProvider =
-    FutureProvider.family<List<PrayerTime>, (double, double)>((ref, coords) async {
-  // This will be replaced with actual Adhan library implementation
-  // For now, return empty list
-  return [];
-});
+    FutureProvider.family<List<PrayerTime>, (double, double)>((
+      ref,
+      coords,
+    ) async {
+      // This will be replaced with actual Adhan library implementation
+      // For now, return empty list
+      return [];
+    });
 
 /// Get next prayer time from schedule
-final nextPrayerProvider = Provider.family<PrayerTime?, List<PrayerTime>>((ref, prayers) {
+final nextPrayerProvider = Provider.family<PrayerTime?, List<PrayerTime>>((
+  ref,
+  prayers,
+) {
   final now = DateTime.now();
-  
+
   try {
     return prayers.firstWhere((prayer) => prayer.time.isAfter(now));
   } catch (e) {
@@ -52,7 +58,8 @@ class PrayerStreakState {
 
 class PrayerStreakNotifier extends StateNotifier<PrayerStreakState> {
   PrayerStreakNotifier()
-      : super(PrayerStreakState(
+    : super(
+        PrayerStreakState(
           currentStreak: 0,
           longestStreak: 0,
           lastPrayerDate: DateTime.now(),
@@ -63,24 +70,21 @@ class PrayerStreakNotifier extends StateNotifier<PrayerStreakState> {
             'maghrib': false,
             'isha': false,
           },
-        ));
+        ),
+      );
 
   void markPrayerCompleted(String prayerName) {
     state = state.copyWith(
-      todaysPrayers: {
-        ...state.todaysPrayers,
-        prayerName: true,
-      },
+      todaysPrayers: {...state.todaysPrayers, prayerName: true},
     );
   }
 
   void incrementStreak() {
     state = state.copyWith(
       currentStreak: state.currentStreak + 1,
-      longestStreak:
-          state.currentStreak + 1 > state.longestStreak
-              ? state.currentStreak + 1
-              : state.longestStreak,
+      longestStreak: state.currentStreak + 1 > state.longestStreak
+          ? state.currentStreak + 1
+          : state.longestStreak,
     );
   }
 
@@ -91,8 +95,8 @@ class PrayerStreakNotifier extends StateNotifier<PrayerStreakState> {
 
 final prayerStreakProvider =
     StateNotifierProvider<PrayerStreakNotifier, PrayerStreakState>((ref) {
-  return PrayerStreakNotifier();
-});
+      return PrayerStreakNotifier();
+    });
 
 /// Prayer XP system
 class PrayerXPState {
@@ -106,11 +110,7 @@ class PrayerXPState {
     required this.xpForNextLevel,
   });
 
-  PrayerXPState copyWith({
-    int? totalXP,
-    int? level,
-    int? xpForNextLevel,
-  }) {
+  PrayerXPState copyWith({int? totalXP, int? level, int? xpForNextLevel}) {
     return PrayerXPState(
       totalXP: totalXP ?? this.totalXP,
       level: level ?? this.level,
@@ -124,11 +124,9 @@ class PrayerXPNotifier extends StateNotifier<PrayerXPState> {
   static const int baseXPForLevel = 100;
 
   PrayerXPNotifier()
-      : super(PrayerXPState(
-          totalXP: 0,
-          level: 1,
-          xpForNextLevel: baseXPForLevel,
-        ));
+    : super(
+        PrayerXPState(totalXP: 0, level: 1, xpForNextLevel: baseXPForLevel),
+      );
 
   void addXP(int amount) {
     int newTotal = state.totalXP + amount;
@@ -158,7 +156,8 @@ class PrayerXPNotifier extends StateNotifier<PrayerXPState> {
   }
 }
 
-final prayerXPProvider =
-    StateNotifierProvider<PrayerXPNotifier, PrayerXPState>((ref) {
-  return PrayerXPNotifier();
-});
+final prayerXPProvider = StateNotifierProvider<PrayerXPNotifier, PrayerXPState>(
+  (ref) {
+    return PrayerXPNotifier();
+  },
+);
