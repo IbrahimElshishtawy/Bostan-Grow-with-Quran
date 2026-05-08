@@ -1,6 +1,3 @@
-/// Prayer times models and calculations
-import 'package:intl/intl.dart';
-
 enum PrayerType {
   fajr('Fajr', 'الفجر'),
   sunrise('Sunrise', 'الشروق'),
@@ -156,7 +153,8 @@ class PrayerStats {
     DateTime? lastPrayerDate,
   }) {
     return PrayerStats(
-      totalPrayersCompleted: totalPrayersCompleted ?? this.totalPrayersCompleted,
+      totalPrayersCompleted:
+          totalPrayersCompleted ?? this.totalPrayersCompleted,
       currentStreak: currentStreak ?? this.currentStreak,
       longestStreak: longestStreak ?? this.longestStreak,
       completionRate: completionRate ?? this.completionRate,
@@ -226,11 +224,7 @@ class PrayerAchievement {
 }
 
 class HijriDate {
-  const HijriDate({
-    required this.day,
-    required this.month,
-    required this.year,
-  });
+  const HijriDate({required this.day, required this.month, required this.year});
 
   final int day;
   final int month;

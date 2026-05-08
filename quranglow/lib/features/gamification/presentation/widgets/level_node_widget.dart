@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
@@ -122,12 +121,12 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                           color: locked
                               ? Colors.grey[300]!
                               : completed
-                                  ? mastered
-                                      ? GameificationColors.goldAccent
-                                      : GameificationColors.primaryGreen
-                                  : widget.isActive
-                                      ? GameificationColors.goldAccent
-                                      : GameificationColors.primaryGreenLight,
+                              ? mastered
+                                    ? GameificationColors.goldAccent
+                                    : GameificationColors.primaryGreen
+                              : widget.isActive
+                              ? GameificationColors.goldAccent
+                              : GameificationColors.primaryGreenLight,
                           width: 4,
                         ),
                       ),
@@ -139,8 +138,8 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                           valueColor: AlwaysStoppedAnimation<Color>(
                             completed
                                 ? mastered
-                                    ? GameificationColors.goldAccent
-                                    : GameificationColors.primaryGreen
+                                      ? GameificationColors.goldAccent
+                                      : GameificationColors.primaryGreen
                                 : GameificationColors.goldLight,
                           ),
                           strokeWidth: 4,
@@ -158,15 +157,18 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                             ? []
                             : [
                                 BoxShadow(
-                                  color: (completed
-                                          ? mastered
-                                              ? GameificationColors.goldAccent
-                                              : GameificationColors.primaryGreen
-                                          : GameificationColors.goldAccent)
-                                      .withValues(alpha: 0.3),
+                                  color:
+                                      (completed
+                                              ? mastered
+                                                    ? GameificationColors
+                                                          .goldAccent
+                                                    : GameificationColors
+                                                          .primaryGreen
+                                              : GameificationColors.goldAccent)
+                                          .withValues(alpha: 0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
-                                )
+                                ),
                               ],
                         gradient: _getGradient(locked, completed, mastered),
                       ),
@@ -174,8 +176,8 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                         locked
                             ? Icons.lock_rounded
                             : widget.level.isMystery
-                                ? Icons.card_giftcard_rounded
-                                : _getStationIcon(widget.level.type),
+                            ? Icons.card_giftcard_rounded
+                            : _getStationIcon(widget.level.type),
                         color: Colors.white,
                         size: 32,
                       ),
@@ -186,22 +188,33 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                       Positioned(
                         top: -8,
                         right: -8,
-                        child: const Icon(
-                          Icons.auto_awesome,
-                          color: GameificationColors.goldAccent,
-                          size: 24,
-                        ).animate(onPlay: (c) => c.repeat()).rotate(duration: 4.seconds).scale(duration: 1.seconds, curve: Curves.easeInOut),
+                        child:
+                            const Icon(
+                                  Icons.auto_awesome,
+                                  color: GameificationColors.goldAccent,
+                                  size: 24,
+                                )
+                                .animate(onPlay: (c) => c.repeat())
+                                .rotate(duration: 4.seconds)
+                                .scale(
+                                  duration: 1.seconds,
+                                  curve: Curves.easeInOut,
+                                ),
                       ),
 
                     // 5. Gold Mastery Crown Above Node
                     if (mastered)
                       Positioned(
                         top: -20,
-                        child: const Icon(
-                          Icons.workspace_premium_rounded,
-                          color: GameificationColors.goldAccent,
-                          size: 26,
-                        ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 2.seconds).slideY(begin: 0.1, end: -0.1),
+                        child:
+                            const Icon(
+                                  Icons.workspace_premium_rounded,
+                                  color: GameificationColors.goldAccent,
+                                  size: 26,
+                                )
+                                .animate(onPlay: (c) => c.repeat(reverse: true))
+                                .shimmer(duration: 2.seconds)
+                                .slideY(begin: 0.1, end: -0.1),
                       ),
 
                     // 6. Mini Task Count Badge (e.g. 2/5 completed)
@@ -210,11 +223,17 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                         bottom: 0,
                         right: 0,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: GameificationColors.darkNavyLight,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: GameificationColors.goldAccent, width: 1.5),
+                            border: Border.all(
+                              color: GameificationColors.goldAccent,
+                              width: 1.5,
+                            ),
                           ),
                           child: Text(
                             '${(widget.level.taskProgress * 5).round()}/5',
@@ -249,7 +268,7 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -260,16 +279,22 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                       fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: locked ? Colors.grey : GameificationColors.primaryGreenDark,
+                      color: locked
+                          ? Colors.grey
+                          : GameificationColors.primaryGreenDark,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    widget.level.isMystery ? 'محطة المفاجآت والكنز' : widget.level.type.arabicLabel,
+                    widget.level.isMystery
+                        ? 'محطة المفاجآت والكنز'
+                        : widget.level.type.arabicLabel,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: locked ? Colors.grey : GameificationColors.goldDark,
+                      color: locked
+                          ? Colors.grey
+                          : GameificationColors.goldDark,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -279,7 +304,9 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                       Icon(
                         Icons.star_rounded,
                         size: 14,
-                        color: locked ? Colors.grey : GameificationColors.goldAccent,
+                        color: locked
+                            ? Colors.grey
+                            : GameificationColors.goldAccent,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -318,7 +345,10 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
     }
     if (completed) {
       return const LinearGradient(
-        colors: [GameificationColors.primaryGreen, GameificationColors.primaryGreenLight],
+        colors: [
+          GameificationColors.primaryGreen,
+          GameificationColors.primaryGreenLight,
+        ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       );

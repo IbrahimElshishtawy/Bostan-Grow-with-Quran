@@ -1,3 +1,5 @@
+// ignore_for_file: dangling_library_doc_comments, unnecessary_import, deprecated_member_use
+
 /// Prayer Streak and Rewards Display Widget
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/cupertino.dart' as ui show BackdropFilter;

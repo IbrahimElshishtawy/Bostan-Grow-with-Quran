@@ -1,3 +1,6 @@
+// ignore_for_file: unused_local_variable
+
+// ignore: dangling_library_doc_comments
 /// Prayer times calculation and management service
 import 'dart:math';
 import 'package:quranglow/core/models/prayer_models.dart';
@@ -102,12 +105,16 @@ class PrayerTimesService {
   static DateTime _calculateNoon(DateTime date, double longitude) {
     final dayOfYear = date.difference(DateTime(date.year, 1, 1)).inDays;
     final b = 360.0 / 365.0 * (dayOfYear - 81);
-    final eot = 9.87 * sin(2 * _toRadians(b)) -
+    final eot =
+        9.87 * sin(2 * _toRadians(b)) -
         7.53 * cos(_toRadians(b)) -
         1.5 * sin(_toRadians(b));
     final noon = 12.0 - (longitude / 15.0) - (eot / 60.0);
-    return DateTime(date.year, date.month, date.day)
-        .add(Duration(hours: noon.toInt(), minutes: ((noon % 1) * 60).toInt()));
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).add(Duration(hours: noon.toInt(), minutes: ((noon % 1) * 60).toInt()));
   }
 
   static double _calculateTimeOffset(double latitude, double angle) {
@@ -127,10 +134,7 @@ class PrayerTimesService {
 }
 
 class PrayerTracker {
-  PrayerTracker({
-    required this.stats,
-    required this.achievements,
-  });
+  PrayerTracker({required this.stats, required this.achievements});
 
   PrayerStats stats;
   List<PrayerAchievement> achievements;
@@ -138,10 +142,7 @@ class PrayerTracker {
   /// Mark prayer as completed
   void completePrayer(PrayerTime prayer) {
     final now = DateTime.now();
-    final updatedPrayer = prayer.copyWith(
-      isCompleted: true,
-      completedAt: now,
-    );
+    final updatedPrayer = prayer.copyWith(isCompleted: true, completedAt: now);
 
     // Update stats
     stats = stats.copyWith(

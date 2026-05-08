@@ -1,10 +1,9 @@
+// ignore_for_file: dangling_library_doc_comments
+
 /// Premium Prayer and Qibla Super Screen
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
-import 'package:quranglow/core/models/prayer_models.dart';
-import 'package:quranglow/core/models/qibla_models.dart';
-import 'package:quranglow/features/prayer/application/prayer_controller.dart';
 
 class PrayerQiblaScreen extends ConsumerStatefulWidget {
   const PrayerQiblaScreen({super.key});
@@ -31,7 +30,10 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
     )..repeat();
 
     _compassRotation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
-      CurvedAnimation(parent: _compassAnimationController, curve: Curves.linear),
+      CurvedAnimation(
+        parent: _compassAnimationController,
+        curve: Curves.linear,
+      ),
     );
   }
 
@@ -49,10 +51,7 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1B5E20),
-              const Color(0xFF0B0F12),
-            ],
+            colors: [const Color(0xFF1B5E20), const Color(0xFF0B0F12)],
           ),
         ),
         child: SafeArea(
@@ -102,9 +101,9 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
           const SizedBox(height: 8),
           Text(
             'Makkah, Saudi Arabia',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white70,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
           ),
         ],
       ),
@@ -156,7 +155,9 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                            color: const Color(
+                              0xFFD4AF37,
+                            ).withValues(alpha: 0.4),
                             blurRadius: 30,
                             spreadRadius: 5,
                           ),
@@ -210,8 +211,9 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
                               borderRadius: BorderRadius.circular(4),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFD4AF37)
-                                      .withValues(alpha: 0.6),
+                                  color: const Color(
+                                    0xFFD4AF37,
+                                  ).withValues(alpha: 0.6),
                                   blurRadius: 10,
                                 ),
                               ],
@@ -235,7 +237,9 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.8),
+                            color: const Color(
+                              0xFFD4AF37,
+                            ).withValues(alpha: 0.8),
                             blurRadius: 20,
                             spreadRadius: 2,
                           ),
@@ -261,17 +265,18 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
                     children: [
                       Text(
                         '45.2°',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFFD4AF37),
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: const Color(0xFFD4AF37),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Direction',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white70,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.white70),
                       ),
                     ],
                   ),
@@ -279,17 +284,18 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
                     children: [
                       Text(
                         '7,234 km',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFFD4AF37),
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: const Color(0xFFD4AF37),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Distance',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white70,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.white70),
                       ),
                     ],
                   ),
@@ -297,17 +303,18 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
                     children: [
                       Text(
                         'NE',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFFD4AF37),
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: const Color(0xFFD4AF37),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Bearing',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white70,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.white70),
                       ),
                     ],
                   ),
@@ -374,17 +381,17 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
         borderRadius: BorderRadius.circular(16),
         gradient: isNext
             ? LinearGradient(
-              colors: [
-                const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                const Color(0xFFE8C547).withValues(alpha: 0.1),
-              ],
-            )
+                colors: [
+                  const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                  const Color(0xFFE8C547).withValues(alpha: 0.1),
+                ],
+              )
             : LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.08),
-                Colors.white.withValues(alpha: 0.04),
-              ],
-            ),
+                colors: [
+                  Colors.white.withValues(alpha: 0.08),
+                  Colors.white.withValues(alpha: 0.04),
+                ],
+              ),
         border: Border.all(
           color: isNext
               ? const Color(0xFFD4AF37).withValues(alpha: 0.6)
@@ -537,9 +544,9 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
                   ),
                   Text(
                     '${percentage.toStringAsFixed(0)}%',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.white70,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: Colors.white70),
                   ),
                 ],
               ),
@@ -549,9 +556,9 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
         const SizedBox(height: 8),
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Colors.white70,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: Colors.white70),
         ),
       ],
     );
@@ -636,9 +643,9 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Colors.white70,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: Colors.white70),
         ),
       ],
     );

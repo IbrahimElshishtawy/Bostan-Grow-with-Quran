@@ -1,5 +1,6 @@
 // ignore_for_file: unused_field
 
+// ignore: dangling_library_doc_comments
 /// Recitation API service for audio streaming with quality options
 import 'package:dio/dio.dart';
 import 'package:quranglow/core/models/audio_models.dart';
@@ -128,7 +129,7 @@ class RecitationApiService {
     final formattedSurah = surahNumber.toString().padLeft(3, '0');
     final formattedAyah = ayahNumber.toString().padLeft(3, '0');
 
-    return '$_everyayahBase/$reciterId/${formattedSurah}${formattedAyah}.mp3';
+    return '$_everyayahBase/$reciterId/$formattedSurah$formattedAyah.mp3';
   }
 
   String _constructSurahAudioUrl(

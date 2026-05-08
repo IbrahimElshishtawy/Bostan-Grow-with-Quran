@@ -1,5 +1,5 @@
 /// Core Quran data models for API integration
-
+library;
 
 enum ReciterName {
   misharyrashid('Mishary Rashid Al-Afasy'),
@@ -151,9 +151,7 @@ class RecitationAudio {
         identifier: json['reciterId'] as String? ?? '',
       ),
       audioUrl: json['audioUrl'] as String? ?? '',
-      duration: Duration(
-        seconds: json['duration'] as int? ?? 0,
-      ),
+      duration: Duration(seconds: json['duration'] as int? ?? 0),
     );
   }
 

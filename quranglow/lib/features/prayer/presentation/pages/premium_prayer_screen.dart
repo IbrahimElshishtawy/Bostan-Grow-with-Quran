@@ -1,8 +1,11 @@
+// ignore_for_file: deprecated_member_use, depend_on_referenced_packages
+
 /// Premium Prayer Times + Qibla Screen
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:quranglow/core/constants/app_colors.dart';
 import 'package:quranglow/core/models/prayer_models.dart';
 import 'package:quranglow/core/providers/location_providers.dart';
 import 'package:quranglow/core/providers/prayer_providers.dart';
@@ -194,7 +197,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
               data: (heading) {
                 final qiblaDirection =
                     ref.watch(qiblaDirectionProvider(position)) ?? 0;
-                final isFacingQibla = ref.watch(isFacingQiblaProvider) ?? false;
+                final isFacingQibla = ref.watch(isFacingQiblaProvider);
 
                 return Column(
                   children: [

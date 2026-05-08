@@ -1,3 +1,5 @@
+// ignore_for_file: dangling_library_doc_comments
+
 /// Offline support and caching manager
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -17,7 +19,7 @@ class OfflineManager {
   Future<bool> isOnline() async {
     try {
       final result = await _connectivity.checkConnectivity();
-      return result != ConnectivityResult.none;
+      return !result.contains(ConnectivityResult.none);
     } catch (e) {
       return false;
     }
@@ -78,7 +80,7 @@ class OfflineManager {
   /// Stream connectivity changes
   Stream<bool> onConnectivityChanged() {
     return _connectivity.onConnectivityChanged.map(
-      (result) => result != ConnectivityResult.none,
+      (result) => !result.contains(ConnectivityResult.none),
     );
   }
 }

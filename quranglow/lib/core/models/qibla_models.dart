@@ -1,4 +1,6 @@
 /// Qibla compass models and calculations
+library;
+
 import 'dart:math';
 
 class QiblaDirection {
@@ -43,7 +45,8 @@ class QiblaDirection {
     final dLng = kaabaLngRad - lngRad;
 
     final y = sin(dLng) * cos(kaabaLatRad);
-    final x = cos(latRad) * sin(kaabaLatRad) -
+    final x =
+        cos(latRad) * sin(kaabaLatRad) -
         sin(latRad) * cos(kaabaLatRad) * cos(dLng);
 
     var angle = atan2(y, x) * 180.0 / pi;
@@ -63,7 +66,8 @@ class QiblaDirection {
     final dLat = kaabaLatRad - latRad;
     final dLng = kaabaLngRad - lngRad;
 
-    final a = sin(dLat / 2) * sin(dLat / 2) +
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
         cos(latRad) * cos(kaabaLatRad) * sin(dLng / 2) * sin(dLng / 2);
 
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));

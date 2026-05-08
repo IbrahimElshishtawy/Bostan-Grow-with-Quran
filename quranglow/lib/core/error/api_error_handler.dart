@@ -1,3 +1,5 @@
+// ignore_for_file: dangling_library_doc_comments
+
 /// API error handling and mapping
 import 'package:dio/dio.dart';
 
@@ -23,15 +25,10 @@ class ApiErrorHandler {
     }
 
     if (error is Exception) {
-      return ApiException(
-        message: error.toString(),
-        originalException: error,
-      );
+      return ApiException(message: error.toString(), originalException: error);
     }
 
-    return ApiException(
-      message: 'An unknown error occurred',
-    );
+    return ApiException(message: 'An unknown error occurred');
   }
 
   static ApiException _handleDioException(DioException error) {
@@ -88,10 +85,7 @@ class ApiErrorHandler {
     final statusCode = response.statusCode ?? 0;
     final message = _getErrorMessage(statusCode, response.data);
 
-    return ApiException(
-      message: message,
-      statusCode: statusCode,
-    );
+    return ApiException(message: message, statusCode: statusCode);
   }
 
   static String _getErrorMessage(int statusCode, dynamic responseData) {
@@ -114,8 +108,7 @@ class ApiErrorHandler {
         return 'Service unavailable. Please try again later.';
       default:
         if (responseData is Map<String, dynamic>) {
-          return responseData['message'] as String? ??
-              'Error: $statusCode';
+          return responseData['message'] as String? ?? 'Error: $statusCode';
         }
         return 'Error: $statusCode';
     }

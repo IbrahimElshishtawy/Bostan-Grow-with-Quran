@@ -1,3 +1,5 @@
+// ignore_for_file: dangling_library_doc_comments
+
 /// Tafsir API service for Quranic interpretation
 import 'package:dio/dio.dart';
 import 'package:quranglow/core/models/tafsir_models.dart';
@@ -69,9 +71,7 @@ class TafsirApiService {
         tafsirs: tafsirs,
       );
     } catch (e) {
-      throw Exception(
-        'Failed to fetch tafsir collection: $e',
-      );
+      throw Exception('Failed to fetch tafsir collection: $e');
     }
   }
 
@@ -96,9 +96,7 @@ class TafsirApiService {
 
       return tafsirs;
     } catch (e) {
-      throw Exception(
-        'Failed to fetch tafsir range: $e',
-      );
+      throw Exception('Failed to fetch tafsir range: $e');
     }
   }
 

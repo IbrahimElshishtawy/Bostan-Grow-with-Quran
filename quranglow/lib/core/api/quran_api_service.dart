@@ -1,5 +1,6 @@
 /// Quran API service for fetching Quran data
 /// Integrates with api.alquran.cloud and Quran.com APIs
+library;
 
 import 'package:dio/dio.dart';
 import 'package:quranglow/core/models/quran_models.dart';
@@ -129,9 +130,7 @@ class QuranApiService {
   /// Search for Ayahs by keyword
   Future<List<Ayah>> searchAyahs(String keyword) async {
     try {
-      final response = await dio.get(
-        '$_alquranCloudBase/search/$keyword/all',
-      );
+      final response = await dio.get('$_alquranCloudBase/search/$keyword/all');
       final data = response.data as Map<String, dynamic>;
       final results = (data['data']['matches'] as List<dynamic>)
           .map((m) => Ayah.fromJson(m as Map<String, dynamic>))

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, dangling_library_doc_comments
+
 /// Animated Qibla Compass Widget
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
@@ -77,8 +79,6 @@ class _QiblaCompassState extends State<QiblaCompass>
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
-          final angle = widget.deviceHeading * (math.pi / 180);
-
           return Stack(
             alignment: Alignment.center,
             children: [

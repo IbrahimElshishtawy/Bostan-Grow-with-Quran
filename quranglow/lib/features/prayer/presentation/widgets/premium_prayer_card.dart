@@ -1,3 +1,6 @@
+// ignore_for_file: unnecessary_import, deprecated_member_use
+
+// ignore: dangling_library_doc_comments
 /// Premium Prayer Card Widget
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' as ui show BackdropFilter;

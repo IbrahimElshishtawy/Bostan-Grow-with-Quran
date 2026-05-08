@@ -1,3 +1,5 @@
+// ignore_for_file: dangling_library_doc_comments
+
 /// Professional Adhan Notification Settings Screen
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -266,7 +268,8 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.amberAccent,
+            activeThumbColor: Colors.amberAccent,
+            activeTrackColor: Colors.amberAccent.withValues(alpha: 0.5),
           ),
         ],
       ),

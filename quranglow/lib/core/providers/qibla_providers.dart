@@ -1,3 +1,5 @@
+// ignore_for_file: dangling_library_doc_comments
+
 /// Qibla direction and compass Riverpod providers
 import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,8 +68,12 @@ final qiblaAngleProvider = Provider<double>((ref) {
 
           var angle = qiblaDir - compassHeading;
           // Normalize to -180 to 180
-          while (angle > 180) angle -= 360;
-          while (angle < -180) angle += 360;
+          while (angle > 180) {
+            angle -= 360;
+          }
+          while (angle < -180) {
+            angle += 360;
+          }
 
           return angle;
         },

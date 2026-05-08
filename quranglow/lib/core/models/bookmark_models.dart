@@ -1,6 +1,3 @@
-/// Bookmark models for saving and organizing verses
-import 'package:quranglow/core/models/quran_models.dart';
-
 class Bookmark {
   const Bookmark({
     required this.id,
@@ -27,7 +24,8 @@ class Bookmark {
       id: json['id'] as String? ?? '',
       surahNumber: json['surahNumber'] as int? ?? 0,
       ayahNumber: json['ayahNumber'] as int? ?? 0,
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
       note: json['note'] as String? ?? '',
       tags: List<String>.from(json['tags'] as List<dynamic>? ?? []),
@@ -93,10 +91,12 @@ class BookmarkFolder {
     return BookmarkFolder(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
       description: json['description'] as String? ?? '',
-      bookmarks: (json['bookmarks'] as List<dynamic>?)
+      bookmarks:
+          (json['bookmarks'] as List<dynamic>?)
               ?.map((b) => Bookmark.fromJson(b as Map<String, dynamic>))
               .toList() ??
           [],
@@ -132,9 +132,7 @@ class BookmarkFolder {
   }
 
   BookmarkFolder addBookmark(Bookmark bookmark) {
-    return copyWith(
-      bookmarks: [...bookmarks, bookmark],
-    );
+    return copyWith(bookmarks: [...bookmarks, bookmark]);
   }
 
   BookmarkFolder removeBookmark(String bookmarkId) {

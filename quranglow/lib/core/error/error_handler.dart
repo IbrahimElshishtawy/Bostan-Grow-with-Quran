@@ -1,12 +1,9 @@
 /// Enterprise-level error handling and logging
+library;
+
 import 'package:flutter/foundation.dart';
 
-enum ErrorSeverity {
-  info,
-  warning,
-  error,
-  critical,
-}
+enum ErrorSeverity { info, warning, error, critical }
 
 class AppError {
   AppError({
@@ -203,10 +200,7 @@ class SilentErrorRecovery {
   }
 
   /// Try operation with fallback
-  static T tryOrDefault<T>(
-    T Function() operation,
-    T defaultValue,
-  ) {
+  static T tryOrDefault<T>(T Function() operation, T defaultValue) {
     try {
       return operation();
     } catch (e) {
@@ -243,7 +237,9 @@ class LoggingService {
     _logs.add(entry);
 
     if (kDebugMode) {
-      debugPrint('[${entry.level.name.toUpperCase()}] ${entry.tag ?? 'APP'}: $message');
+      debugPrint(
+        '[${entry.level.name.toUpperCase()}] ${entry.tag ?? 'APP'}: $message',
+      );
       if (data != null) {
         debugPrint('Data: $data');
       }
@@ -278,12 +274,7 @@ class LoggingService {
   }
 }
 
-enum LogLevel {
-  debug,
-  info,
-  warning,
-  error,
-}
+enum LogLevel { debug, info, warning, error }
 
 class LogEntry {
   LogEntry({

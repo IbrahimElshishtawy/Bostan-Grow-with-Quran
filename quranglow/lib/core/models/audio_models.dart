@@ -1,4 +1,6 @@
 /// Audio models for playback and streaming
+library;
+
 import 'package:quranglow/core/models/quran_models.dart';
 
 enum AudioQuality {
@@ -11,14 +13,7 @@ enum AudioQuality {
   final int bitrate;
 }
 
-enum PlaybackState {
-  idle,
-  loading,
-  playing,
-  paused,
-  stopped,
-  error,
-}
+enum PlaybackState { idle, loading, playing, paused, stopped, error }
 
 class AudioTrack {
   const AudioTrack({
@@ -151,8 +146,8 @@ class PlaybackSession {
 
   QueueItem? get currentTrack =>
       currentIndex >= 0 && currentIndex < queue.length
-          ? queue[currentIndex]
-          : null;
+      ? queue[currentIndex]
+      : null;
 
   bool get hasNext => currentIndex < queue.length - 1;
   bool get hasPrevious => currentIndex > 0;
@@ -180,11 +175,7 @@ class PlaybackSession {
   }
 }
 
-enum RepeatMode {
-  off,
-  one,
-  all,
-}
+enum RepeatMode { off, one, all }
 
 class AudioMetadata {
   const AudioMetadata({

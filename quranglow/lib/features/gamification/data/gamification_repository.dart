@@ -1,12 +1,9 @@
-import 'dart:math' as math;
 import 'package:quranglow/core/storage/local_storage.dart';
 import 'package:quranglow/core/storage/local_storage_ext.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 
 class GameificationRepository {
-  GameificationRepository({
-    required this.storage,
-  });
+  GameificationRepository({required this.storage});
 
   final LocalStorage storage;
 
@@ -18,13 +15,11 @@ class GameificationRepository {
   Future<UserGameProfile> getUserProfile(String userId) async {
     try {
       final key = '$_profileKeyPrefix$userId';
-      final Map<String, dynamic>? data = await storage.getJson<Map<String, dynamic>>(key);
+      final Map<String, dynamic>? data = await storage
+          .getJson<Map<String, dynamic>>(key);
 
       if (data != null) {
-        return UserGameProfile.fromJson({
-          'userId': userId,
-          ...data,
-        });
+        return UserGameProfile.fromJson({'userId': userId, ...data});
       }
 
       // Create initial profile if it doesn't exist
@@ -102,7 +97,7 @@ class GameificationRepository {
     try {
       final levels = await getLevels(userId);
       final index = levels.indexWhere((l) => l.id == levelId);
-      
+
       if (index != -1) {
         levels[index] = updatedLevel;
       } else {
@@ -127,10 +122,7 @@ class GameificationRepository {
   }
 
   /// Update user XP and level
-  Future<void> updateUserXp(
-    String userId,
-    int xpGained,
-  ) async {
+  Future<void> updateUserXp(String userId, int xpGained) async {
     try {
       final profile = await getUserProfile(userId);
       final newTotalXp = profile.totalXp + xpGained;
@@ -138,10 +130,7 @@ class GameificationRepository {
 
       await setUserProfile(
         userId,
-        profile.copyWith(
-          totalXp: newTotalXp,
-          currentLevel: newLevel,
-        ),
+        profile.copyWith(totalXp: newTotalXp, currentLevel: newLevel),
       );
     } catch (e) {
       throw Exception('Failed to update user XP: $e');
@@ -199,10 +188,7 @@ class GameificationRepository {
       final profile = await getUserProfile(userId);
       final clampedHearts = hearts.clamp(0, 5);
 
-      await setUserProfile(
-        userId,
-        profile.copyWith(hearts: clampedHearts),
-      );
+      await setUserProfile(userId, profile.copyWith(hearts: clampedHearts));
     } catch (e) {
       throw Exception('Failed to update hearts: $e');
     }
@@ -247,7 +233,9 @@ class GameificationRepository {
       if (raw != null && raw.isNotEmpty) {
         return raw
             .whereType<Map>()
-            .map((item) => DailyMission.fromJson(Map<String, dynamic>.from(item)))
+            .map(
+              (item) => DailyMission.fromJson(Map<String, dynamic>.from(item)),
+            )
             .toList();
       }
 
