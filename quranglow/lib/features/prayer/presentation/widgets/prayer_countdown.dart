@@ -55,16 +55,10 @@ class _PrayerCountdownState extends State<PrayerCountdown>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.amber.shade50,
-            Colors.orange.shade50,
-          ],
+          colors: [Colors.amber.shade50, Colors.orange.shade50],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.amber.shade200,
-          width: 2,
-        ),
+        border: Border.all(color: Colors.amber.shade200, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.amber.withOpacity(0.2),
@@ -93,7 +87,8 @@ class _PrayerCountdownState extends State<PrayerCountdown>
           AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
-              final remaining = widget.timeRemaining -
+              final remaining =
+                  widget.timeRemaining -
                   Duration(milliseconds: (_controller.value * 1000).toInt());
               final hours = remaining.inHours;
               final minutes = remaining.inMinutes % 60;
@@ -104,11 +99,17 @@ class _PrayerCountdownState extends State<PrayerCountdown>
                 children: [
                   _buildTimerUnit(hours.toString().padLeft(2, '0'), 'H'),
                   const SizedBox(width: 8),
-                  const Text(':', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                  const Text(
+                    ':',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(width: 8),
                   _buildTimerUnit(minutes.toString().padLeft(2, '0'), 'M'),
                   const SizedBox(width: 8),
-                  const Text(':', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                  const Text(
+                    ':',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(width: 8),
                   _buildTimerUnit(seconds.toString().padLeft(2, '0'), 'S'),
                 ],
