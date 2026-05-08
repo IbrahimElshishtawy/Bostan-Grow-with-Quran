@@ -38,19 +38,14 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.emerald.shade700,
-              Colors.emerald.shade900,
-            ],
+            colors: [Colors.emerald.shade700, Colors.emerald.shade900],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
               // Album Art with animated background
-              Expanded(
-                child: _buildAlbumArtSection(),
-              ),
+              Expanded(child: _buildAlbumArtSection()),
 
               // Player Controls Section
               _buildPlayerControlsSection(),
@@ -90,10 +85,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        Colors.amber.shade200,
-                        Colors.amber.shade600,
-                      ],
+                      colors: [Colors.amber.shade200, Colors.amber.shade600],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -222,19 +214,11 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildControlButton(
-          Icons.shuffle,
-          Colors.white70,
-          onPressed: () {},
-        ),
+        _buildControlButton(Icons.shuffle, Colors.white70, onPressed: () {}),
         _buildLargeControlButton(Icons.skip_previous),
         _buildLargeControlButton(Icons.play_arrow, isPlay: true),
         _buildLargeControlButton(Icons.skip_next),
-        _buildControlButton(
-          Icons.repeat,
-          Colors.white70,
-          onPressed: () {},
-        ),
+        _buildControlButton(Icons.repeat, Colors.white70, onPressed: () {}),
       ],
     );
   }
@@ -292,10 +276,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLargeControlButton(
-    IconData icon, {
-    bool isPlay = false,
-  }) {
+  Widget _buildLargeControlButton(IconData icon, {bool isPlay = false}) {
     return Container(
       width: isPlay ? 64 : 52,
       height: isPlay ? 64 : 52,
@@ -362,7 +343,9 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isSelected ? color.withOpacity(0.3) : Colors.white.withOpacity(0.1),
+        color: isSelected
+            ? color.withOpacity(0.3)
+            : Colors.white.withOpacity(0.1),
         border: Border.all(
           color: color.withOpacity(0.5),
           width: isSelected ? 2 : 1,
@@ -405,10 +388,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.share, color: Colors.white),
-              title: const Text(
-                'Share',
-                style: TextStyle(color: Colors.white),
-              ),
+              title: const Text('Share', style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
@@ -441,7 +421,9 @@ class WaveformPainter extends CustomPainter {
     final numBars = ((size.width / (barWidth + gap)) - 1).toInt();
 
     for (int i = 0; i < numBars; i++) {
-      final x = i * (barWidth + gap) + (size.width / 2 - numBars * (barWidth + gap) / 2);
+      final x =
+          i * (barWidth + gap) +
+          (size.width / 2 - numBars * (barWidth + gap) / 2);
       final height = 10 + (math.sin(i * 0.5) * 15);
 
       canvas.drawLine(

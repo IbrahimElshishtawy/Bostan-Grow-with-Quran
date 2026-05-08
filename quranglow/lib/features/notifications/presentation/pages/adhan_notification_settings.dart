@@ -22,20 +22,14 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.emerald.shade50,
-              Colors.blue.shade50,
-            ],
+            colors: [Colors.emerald.shade50, Colors.blue.shade50],
           ),
         ),
         child: ListView(
           children: [
             // Permissions Status Card
             notificationPermission.when(
-              data: (permission) => _buildPermissionCard(
-                context,
-                permission,
-              ),
+              data: (permission) => _buildPermissionCard(context, permission),
               error: (error, stackTrace) => const SizedBox.shrink(),
               loading: () => Padding(
                 padding: const EdgeInsets.all(16),
@@ -139,7 +133,9 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildPermissionCard(
-      BuildContext context, NotificationPermissionState permission) {
+    BuildContext context,
+    NotificationPermissionState permission,
+  ) {
     final isGranted = permission.notificationsEnabled;
 
     return Container(
@@ -165,10 +161,14 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isGranted ? 'Notifications Enabled' : 'Notifications Disabled',
+                  isGranted
+                      ? 'Notifications Enabled'
+                      : 'Notifications Disabled',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isGranted ? Colors.green.shade700 : Colors.orange.shade700,
+                    color: isGranted
+                        ? Colors.green.shade700
+                        : Colors.orange.shade700,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -178,7 +178,9 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
                       : 'Enable notifications to receive prayer alerts',
                   style: TextStyle(
                     fontSize: 12,
-                    color: isGranted ? Colors.green.shade600 : Colors.orange.shade600,
+                    color: isGranted
+                        ? Colors.green.shade600
+                        : Colors.orange.shade600,
                   ),
                 ),
               ],
@@ -255,10 +257,7 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -355,22 +354,10 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
               isExpanded: true,
               underline: const SizedBox.shrink(),
               items: const [
-                DropdownMenuItem(
-                  value: 'default',
-                  child: Text('Default'),
-                ),
-                DropdownMenuItem(
-                  value: 'makkah',
-                  child: Text('Makkah'),
-                ),
-                DropdownMenuItem(
-                  value: 'madinah',
-                  child: Text('Madinah'),
-                ),
-                DropdownMenuItem(
-                  value: 'alaqsa',
-                  child: Text('Al-Aqsa'),
-                ),
+                DropdownMenuItem(value: 'default', child: Text('Default')),
+                DropdownMenuItem(value: 'makkah', child: Text('Makkah')),
+                DropdownMenuItem(value: 'madinah', child: Text('Madinah')),
+                DropdownMenuItem(value: 'alaqsa', child: Text('Al-Aqsa')),
               ],
             ),
           ),
@@ -415,22 +402,10 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
               isExpanded: true,
               underline: const SizedBox.shrink(),
               items: const [
-                DropdownMenuItem(
-                  value: 5,
-                  child: Text('5 minutes before'),
-                ),
-                DropdownMenuItem(
-                  value: 10,
-                  child: Text('10 minutes before'),
-                ),
-                DropdownMenuItem(
-                  value: 15,
-                  child: Text('15 minutes before'),
-                ),
-                DropdownMenuItem(
-                  value: 30,
-                  child: Text('30 minutes before'),
-                ),
+                DropdownMenuItem(value: 5, child: Text('5 minutes before')),
+                DropdownMenuItem(value: 10, child: Text('10 minutes before')),
+                DropdownMenuItem(value: 15, child: Text('15 minutes before')),
+                DropdownMenuItem(value: 30, child: Text('30 minutes before')),
               ],
             ),
           ),

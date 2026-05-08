@@ -46,7 +46,8 @@ class _StreakRewardCardState extends State<StreakRewardCard>
 
   @override
   Widget build(BuildContext context) {
-    final progressPercent = widget.totalXP / (widget.totalXP + widget.xpToNextLevel);
+    final progressPercent =
+        widget.totalXP / (widget.totalXP + widget.xpToNextLevel);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -64,7 +65,6 @@ class _StreakRewardCardState extends State<StreakRewardCard>
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-        
             ui.BackdropFilter(
               filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
@@ -125,7 +125,9 @@ class _StreakRewardCardState extends State<StreakRewardCard>
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.purple.shade400,
                           borderRadius: BorderRadius.circular(12),
@@ -245,10 +247,7 @@ class _StreakRewardCardState extends State<StreakRewardCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            icon,
-            style: const TextStyle(fontSize: 20),
-          ),
+          Text(icon, style: const TextStyle(fontSize: 20)),
           const SizedBox(height: 6),
           Text(
             value,

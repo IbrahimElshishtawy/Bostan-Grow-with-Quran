@@ -5,11 +5,7 @@ class ShimmerLoading extends StatefulWidget {
   final Widget child;
   final bool isLoading;
 
-  const ShimmerLoading({
-    super.key,
-    required this.child,
-    this.isLoading = true,
-  });
+  const ShimmerLoading({super.key, required this.child, this.isLoading = true});
 
   @override
   State<ShimmerLoading> createState() => _ShimmerLoadingState();

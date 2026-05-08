@@ -66,10 +66,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.emerald.shade50,
-              Colors.blue.shade50,
-            ],
+            colors: [Colors.emerald.shade50, Colors.blue.shade50],
           ),
         ),
         child: positionAsync.when(
@@ -166,10 +163,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
         type: PrayerType.dhuhr,
         time: now.add(const Duration(hours: 1)),
       ),
-      PrayerTime(
-        type: PrayerType.asr,
-        time: now.add(const Duration(hours: 5)),
-      ),
+      PrayerTime(type: PrayerType.asr, time: now.add(const Duration(hours: 5))),
       PrayerTime(
         type: PrayerType.maghrib,
         time: now.add(const Duration(hours: 8)),
@@ -200,8 +194,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
               data: (heading) {
                 final qiblaDirection =
                     ref.watch(qiblaDirectionProvider(position)) ?? 0;
-                final isFacingQibla =
-                    ref.watch(isFacingQiblaProvider) ?? false;
+                final isFacingQibla = ref.watch(isFacingQiblaProvider) ?? false;
 
                 return Column(
                   children: [
@@ -333,16 +326,10 @@ class PremiumPrayerScreen extends ConsumerWidget {
           children: [
             Text(
               prayer.type.englishName,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              prayer.type.arabicName,
-              style: const TextStyle(fontSize: 18),
-            ),
+            Text(prayer.type.arabicName, style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 16),
             Text(
               'Time: ${DateFormat('hh:mm a').format(prayer.time)}',
@@ -355,10 +342,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
                 backgroundColor: Colors.emerald,
                 minimumSize: const Size.fromHeight(50),
               ),
-              child: const Text(
-                'Close',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Close', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -368,8 +352,8 @@ class PremiumPrayerScreen extends ConsumerWidget {
 
   void _showSettings(BuildContext context) {
     // Implementation for settings
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Settings coming soon')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Settings coming soon')));
   }
 }

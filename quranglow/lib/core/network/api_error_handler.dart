@@ -52,10 +52,7 @@ class ApiFallback<T> {
   final Future<T> Function() primary;
   final Future<T> Function() fallback;
 
-  ApiFallback({
-    required this.primary,
-    required this.fallback,
-  });
+  ApiFallback({required this.primary, required this.fallback});
 
   Future<T> execute() async {
     try {
@@ -96,7 +93,9 @@ class ApiError implements Exception {
   bool get isRetryable {
     return type == ApiErrorType.networkError ||
         type == ApiErrorType.timeoutError ||
-        (type == ApiErrorType.serverError && statusCode != null && statusCode! >= 500);
+        (type == ApiErrorType.serverError &&
+            statusCode != null &&
+            statusCode! >= 500);
   }
 
   bool get isAuthError => type == ApiErrorType.authenticationError;
