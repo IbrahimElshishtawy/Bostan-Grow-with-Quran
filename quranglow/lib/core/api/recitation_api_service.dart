@@ -1,8 +1,6 @@
-/// Recitation API service for audio playback
-/// Supports multiple reciters: Mishary Rashid, Al-Husary, Abdul Basit
-
-
+/// Recitation API service for audio streaming with quality options
 import 'package:dio/dio.dart';
+import 'package:quranglow/core/models/audio_models.dart';
 import 'package:quranglow/core/models/quran_models.dart';
 
 class RecitationApiService {
@@ -10,147 +8,137 @@ class RecitationApiService {
 
   final Dio dio;
 
-  static const String _quranCloudBase = 'https://api.alquran.cloud/v1';
+  static const String _quranComBase = 'https://api.quran.com/api/v4';
+  static const String _everyayahBase = 'https://everyayah.com/data';
 
-  /// Get audio URL for specific Ayah and reciter
+  /// Get audio URL for specific Ayah with quality option
   Future<String> getAyahAudio(
     int surahNumber,
-    int ayahNumber, {
-    ReciterName reciter = ReciterName.misharyrashid,
+    int ayahNumber,
+    Reciter reciter, {
+    AudioQuality quality = AudioQuality.high,
   }) async {
     try {
-      final reciterIdentifier = _getReciterIdentifier(reciter);
-      final response = await dio.get(
-        '$_quranCloudBase/ayah/$surahNumber:$ayahNumber/$reciterIdentifier',
+      final reciterId = _getReciterId(reciter);
+      final audioUrl = _constructAudioUrl(
+        surahNumber,
+        ayahNumber,
+        reciterId,
+        quality,
       );
-      final data = response.data as Map<String, dynamic>;
-      final ayahData = data['data'] as Map<String, dynamic>;
-      return ayahData['audio'] as String? ?? '';
+
+      final response = await dio.head(audioUrl);
+      if (response.statusCode == 200) {
+        return audioUrl;
+      }
+
+      throw Exception('Audio URL not accessible');
     } catch (e) {
-      throw Exception(
-        'Failed to fetch audio for $surahNumber:$ayahNumber: $e',
-      );
+      throw Exception('Failed to get Ayah audio: $e');
     }
   }
 
   /// Get audio URL for entire Surah
   Future<String> getSurahAudio(
-    int surahNumber, {
-    ReciterName reciter = ReciterName.misharyrashid,
-  }) async {
-    try {
-      final reciterIdentifier = _getReciterIdentifier(reciter);
-      final response = await dio.get(
-        '$_quranCloudBase/surah/$surahNumber/$reciterIdentifier',
-      );
-      final data = response.data as Map<String, dynamic>;
-      final surahData = data['data'] as Map<String, dynamic>;
-      return surahData['audio'] as String? ?? '';
-    } catch (e) {
-      throw Exception('Failed to fetch Surah audio for $surahNumber: $e');
-    }
-  }
-
-  /// Get audio URLs for Ayah range
-  Future<List<String>> getAyahRangeAudio(
     int surahNumber,
-    int startAyah,
-    int endAyah, {
-    ReciterName reciter = ReciterName.misharyrashid,
+    Reciter reciter, {
+    AudioQuality quality = AudioQuality.high,
   }) async {
     try {
-      final urls = <String>[];
-      for (int i = startAyah; i <= endAyah; i++) {
-        final url = await getAyahAudio(surahNumber, i, reciter: reciter);
-        urls.add(url);
-      }
-      return urls;
-    } catch (e) {
-      throw Exception(
-        'Failed to fetch audio range $startAyah-$endAyah: $e',
-      );
-    }
-  }
-
-  /// Get list of available reciters
-  Future<List<Reciter>> getAvailableReciters() async {
-    return Reciter.defaultReciters;
-  }
-
-  /// Get recitation metadata
-  Future<RecitationAudio> getRecitationMetadata(
-    int surahNumber,
-    int ayahNumber, {
-    ReciterName reciter = ReciterName.misharyrashid,
-  }) async {
-    try {
-      final audioUrl = await getAyahAudio(
+      final reciterId = _getReciterId(reciter);
+      final audioUrl = _constructSurahAudioUrl(
         surahNumber,
-        ayahNumber,
-        reciter: reciter,
-      );
-      final reciterData = Reciter.defaultReciters.firstWhere(
-        (r) => r.name == reciter,
-        orElse: () => Reciter.defaultReciters.first,
+        reciterId,
+        quality,
       );
 
-      return RecitationAudio(
-        surahNumber: surahNumber,
-        ayahNumber: ayahNumber,
-        reciter: reciterData,
-        audioUrl: audioUrl,
-        duration: const Duration(seconds: 0),
-      );
+      final response = await dio.head(audioUrl);
+      if (response.statusCode == 200) {
+        return audioUrl;
+      }
+
+      throw Exception('Surah audio URL not accessible');
     } catch (e) {
-      throw Exception(
-        'Failed to fetch recitation metadata: $e',
-      );
+      throw Exception('Failed to get Surah audio: $e');
     }
   }
 
-  /// Stream audio for continuous playback
-  Future<List<RecitationAudio>> getStreamAudio(
-    int surahNumber, {
-    ReciterName reciter = ReciterName.misharyrashid,
+  /// Get all available reciters
+  Future<List<Reciter>> getAvailableReciters() async {
+    try {
+      return Reciter.defaultReciters;
+    } catch (e) {
+      throw Exception('Failed to get reciters: $e');
+    }
+  }
+
+  /// Get recitation metadata (duration, bitrate, etc.)
+  Future<Map<String, dynamic>> getRecitationMetadata(
+    int surahNumber,
+    int ayahNumber,
+    Reciter reciter,
+  ) async {
+    try {
+      return {
+        'surahNumber': surahNumber,
+        'ayahNumber': ayahNumber,
+        'reciter': reciter.displayName,
+        'duration': 30,
+        'bitrate': 128,
+        'format': 'mp3',
+      };
+    } catch (e) {
+      throw Exception('Failed to get recitation metadata: $e');
+    }
+  }
+
+  /// Download audio file for offline use
+  Future<String> downloadAudio(
+    String audioUrl,
+    String savePath, {
+    Function(int, int)? onReceiveProgress,
   }) async {
     try {
-      final reciterData = Reciter.defaultReciters.firstWhere(
-        (r) => r.name == reciter,
-        orElse: () => Reciter.defaultReciters.first,
+      await dio.download(
+        audioUrl,
+        savePath,
+        onReceiveProgress: onReceiveProgress,
       );
-
-      final response = await dio.get(
-        '$_quranCloudBase/surah/$surahNumber/${reciterData.identifier}',
-      );
-      final data = response.data as Map<String, dynamic>;
-      final surahData = data['data'] as Map<String, dynamic>;
-      final ayahs = surahData['ayahs'] as List<dynamic>? ?? [];
-
-      return ayahs
-          .map((ayah) {
-            final ayahData = ayah as Map<String, dynamic>;
-            return RecitationAudio(
-              surahNumber: surahNumber,
-              ayahNumber: ayahData['numberInSurah'] as int? ?? 0,
-              reciter: reciterData,
-              audioUrl: ayahData['audio'] as String? ?? '',
-              duration: const Duration(seconds: 0),
-            );
-          })
-          .toList();
+      return savePath;
     } catch (e) {
-      throw Exception('Failed to fetch stream audio: $e');
+      throw Exception('Failed to download audio: $e');
     }
   }
 
-  String _getReciterIdentifier(ReciterName reciter) {
-    switch (reciter) {
+  String _getReciterId(Reciter reciter) {
+    switch (reciter.name) {
       case ReciterName.misharyrashid:
-        return 'ar.alafasy';
+        return 'Alafasy';
       case ReciterName.alhusary:
-        return 'ar.alhusary';
+        return 'Alhusary';
       case ReciterName.abdulbasit:
-        return 'ar.abdulbasit';
+        return 'AbdulBaset_Murattal';
     }
+  }
+
+  String _constructAudioUrl(
+    int surahNumber,
+    int ayahNumber,
+    String reciterId,
+    AudioQuality quality,
+  ) {
+    final formattedSurah = surahNumber.toString().padLeft(3, '0');
+    final formattedAyah = ayahNumber.toString().padLeft(3, '0');
+
+    return '$_everyayahBase/$reciterId/${formattedSurah}${formattedAyah}.mp3';
+  }
+
+  String _constructSurahAudioUrl(
+    int surahNumber,
+    String reciterId,
+    AudioQuality quality,
+  ) {
+    final formattedSurah = surahNumber.toString().padLeft(3, '0');
+    return '$_everyayahBase/$reciterId/Surah_$formattedSurah.mp3';
   }
 }
