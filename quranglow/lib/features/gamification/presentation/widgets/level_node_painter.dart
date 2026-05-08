@@ -30,6 +30,9 @@ class QuranJourneyPathPainter extends CustomPainter {
     final completedPath = Path();
     final activePath = Path();
 
+    bool isCompletedPathEmpty = true;
+    bool isActivePathEmpty = true;
+
     Offset lastPoint = _getNodeOffset(0, width);
     mainPath.moveTo(lastPoint.dx, lastPoint.dy);
 
@@ -43,10 +46,16 @@ class QuranJourneyPathPainter extends CustomPainter {
       mainPath.quadraticBezierTo(controlX, controlY, currentPoint.dx, currentPoint.dy);
 
       if (i <= completedCount) {
-        if (completedPath.isEmpty) completedPath.moveTo(lastPoint.dx, lastPoint.dy);
+        if (isCompletedPathEmpty) {
+          completedPath.moveTo(lastPoint.dx, lastPoint.dy);
+          isCompletedPathEmpty = false;
+        }
         completedPath.quadraticBezierTo(controlX, controlY, currentPoint.dx, currentPoint.dy);
       } else if (i == activeIndex + 1) {
-        if (activePath.isEmpty) activePath.moveTo(lastPoint.dx, lastPoint.dy);
+        if (isActivePathEmpty) {
+          activePath.moveTo(lastPoint.dx, lastPoint.dy);
+          isActivePathEmpty = false;
+        }
         activePath.quadraticBezierTo(controlX, controlY, currentPoint.dx, currentPoint.dy);
       }
 
@@ -78,10 +87,12 @@ class QuranJourneyPathPainter extends CustomPainter {
     canvas.drawPath(mainPath, pathPaint);
 
     // 2. Draw completed path segments
-    canvas.drawPath(completedPath, completedPathPaint);
+    if (!isCompletedPathEmpty) {
+      canvas.drawPath(completedPath, completedPathPaint);
+    }
 
     // 3. Draw active glowing pathway segments
-    if (activePath.isNotEmpty) {
+    if (!isActivePathEmpty) {
       final activeGlowPaint = Paint()
         ..color = GameificationColors.goldAccent.withValues(alpha: 0.25 * (1 + math.sin(animationValue * math.pi * 2)))
         ..strokeWidth = 16
