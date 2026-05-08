@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field
+
 /// Recitation API service for audio streaming with quality options
 import 'package:dio/dio.dart';
 import 'package:quranglow/core/models/audio_models.dart';
@@ -46,11 +48,7 @@ class RecitationApiService {
   }) async {
     try {
       final reciterId = _getReciterId(reciter);
-      final audioUrl = _constructSurahAudioUrl(
-        surahNumber,
-        reciterId,
-        quality,
-      );
+      final audioUrl = _constructSurahAudioUrl(surahNumber, reciterId, quality);
 
       final response = await dio.head(audioUrl);
       if (response.statusCode == 200) {
