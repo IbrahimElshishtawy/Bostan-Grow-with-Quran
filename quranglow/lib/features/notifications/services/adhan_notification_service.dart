@@ -20,8 +20,7 @@ class AdhanNotificationService {
   Future<void> initialize() async {
     _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
-    const androidSettings =
-        AndroidInitializationSettings('app_icon');
+    const androidSettings = AndroidInitializationSettings('app_icon');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -61,12 +60,14 @@ class AdhanNotificationService {
 
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(adhanChannel);
 
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(reminderChannel);
   }
 
@@ -102,9 +103,7 @@ class AdhanNotificationService {
             presentSound: true,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAndAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.inexact,
       );
     } catch (e) {
       throw Exception('Failed to schedule Adhan notification: $e');
@@ -140,9 +139,7 @@ class AdhanNotificationService {
             presentSound: true,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAndAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.inexact,
       );
     } catch (e) {
       throw Exception('Failed to schedule reminder notification: $e');
@@ -172,25 +169,30 @@ class AdhanNotificationService {
   Future<bool> requestPermissions() async {
     final androidPlugin = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
 
     final iosPlugin = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>();
+          IOSFlutterLocalNotificationsPlugin
+        >();
 
     bool androidGranted = true;
     bool iosGranted = true;
 
     if (androidPlugin != null) {
-      androidGranted = await androidPlugin.requestNotificationsPermission() ?? false;
+      androidGranted =
+          await androidPlugin.requestNotificationsPermission() ?? false;
     }
 
     if (iosPlugin != null) {
-      iosGranted = await iosPlugin.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      ) ?? false;
+      iosGranted =
+          await iosPlugin.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
     }
 
     return androidGranted && iosGranted;
@@ -200,7 +202,8 @@ class AdhanNotificationService {
   Future<bool> areNotificationsEnabled() async {
     final androidPlugin = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
 
     if (androidPlugin != null) {
       return await androidPlugin.areNotificationsEnabled() ?? false;
@@ -241,7 +244,8 @@ class AdhanSettings {
     return AdhanSettings(
       enableAdhan: enableAdhan ?? this.enableAdhan,
       enableReminders: enableReminders ?? this.enableReminders,
-      reminderMinutesBefore: reminderMinutesBefore ?? this.reminderMinutesBefore,
+      reminderMinutesBefore:
+          reminderMinutesBefore ?? this.reminderMinutesBefore,
       adhanVolume: adhanVolume ?? this.adhanVolume,
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
       silentModeHandling: silentModeHandling ?? this.silentModeHandling,
@@ -275,8 +279,4 @@ class AdhanSettings {
   }
 }
 
-enum SilentModeHandling {
-  respectSilent,
-  ignoreSilent,
-  vibrateOnly,
-}
+enum SilentModeHandling { respectSilent, ignoreSilent, vibrateOnly }
