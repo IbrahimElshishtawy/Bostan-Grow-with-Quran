@@ -43,14 +43,16 @@ class AdhanSettingsState {
 /// Adhan settings notifier
 class AdhanSettingsNotifier extends StateNotifier<AdhanSettingsState> {
   AdhanSettingsNotifier()
-      : super(AdhanSettingsState(
+    : super(
+        AdhanSettingsState(
           enableAdhan: true,
           enableReminders: true,
           reminderMinutesBefore: 5,
           adhanVolume: 1.0,
           vibrationEnabled: true,
           selectedAdhanVoice: 'default',
-        ));
+        ),
+      );
 
   void updateEnableAdhan(bool value) {
     state = state.copyWith(enableAdhan: value);
@@ -80,16 +82,11 @@ class AdhanSettingsNotifier extends StateNotifier<AdhanSettingsState> {
 /// Adhan settings provider
 final adhanSettingsProvider =
     StateNotifierProvider<AdhanSettingsNotifier, AdhanSettingsState>((ref) {
-  return AdhanSettingsNotifier();
-});
+      return AdhanSettingsNotifier();
+    });
 
 /// Available Adhan sounds
-const adhanSounds = [
-  'default',
-  'makkah',
-  'madinah',
-  'alaqsa',
-];
+const adhanSounds = ['default', 'makkah', 'madinah', 'alaqsa'];
 
 /// Notification permissions state
 class NotificationPermissionState {
@@ -119,25 +116,25 @@ class NotificationPermissionState {
 /// Check notification permissions
 final notificationPermissionProvider =
     FutureProvider<NotificationPermissionState>((ref) async {
-  final service = AdhanNotificationService();
-  
-  try {
-    final permissions = await service.requestPermissions();
-    final enabled = await service.areNotificationsEnabled();
-    
-    return NotificationPermissionState(
-      androidGranted: permissions,
-      iosGranted: permissions,
-      notificationsEnabled: enabled,
-    );
-  } catch (e) {
-    return NotificationPermissionState(
-      androidGranted: false,
-      iosGranted: false,
-      notificationsEnabled: false,
-    );
-  }
-});
+      final service = AdhanNotificationService();
+
+      try {
+        final permissions = await service.requestPermissions();
+        final enabled = await service.areNotificationsEnabled();
+
+        return NotificationPermissionState(
+          androidGranted: permissions,
+          iosGranted: permissions,
+          notificationsEnabled: enabled,
+        );
+      } catch (e) {
+        return NotificationPermissionState(
+          androidGranted: false,
+          iosGranted: false,
+          notificationsEnabled: false,
+        );
+      }
+    });
 
 /// Track notification scheduled state
 class NotificationScheduleState {

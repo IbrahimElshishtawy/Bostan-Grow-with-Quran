@@ -64,10 +64,7 @@ class _QiblaCompassState extends State<QiblaCompass>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.teal.shade100,
-            Colors.teal.shade50,
-          ],
+          colors: [Colors.teal.shade100, Colors.teal.shade50],
         ),
         boxShadow: [
           BoxShadow(
@@ -87,15 +84,14 @@ class _QiblaCompassState extends State<QiblaCompass>
             children: [
               // Outer circle with graduation marks
               CustomPaint(
-                painter: CompassPainter(
-                  deviceHeading: widget.deviceHeading,
-                ),
+                painter: CompassPainter(deviceHeading: widget.deviceHeading),
                 size: Size(widget.size, widget.size),
               ),
 
               // Qibla indicator needle (from center)
               Transform.rotate(
-                angle: (widget.qiblaDirection - widget.deviceHeading) *
+                angle:
+                    (widget.qiblaDirection - widget.deviceHeading) *
                     (math.pi / 180),
                 child: Padding(
                   padding: EdgeInsets.only(top: widget.size / 4),
@@ -136,8 +132,10 @@ class _QiblaCompassState extends State<QiblaCompass>
                 Positioned(
                   top: 20,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.shade400,
                       borderRadius: BorderRadius.circular(20),
@@ -206,8 +204,16 @@ class CompassPainter extends CustomPainter {
     }
   }
 
-  void _drawDirection(Canvas canvas, Offset center, double radius,
-      String direction, double angle, double fontSize, Size size, Paint paint) {
+  void _drawDirection(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    String direction,
+    double angle,
+    double fontSize,
+    Size size,
+    Paint paint,
+  ) {
     final angleRad = (angle - deviceHeading) * (math.pi / 180);
     final offset = Offset(
       center.dx + (radius - 25) * math.sin(angleRad),
