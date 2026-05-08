@@ -1,5 +1,6 @@
 /// Premium Prayer Card Widget
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui' as ui;
 import 'package:quranglow/core/models/prayer_models.dart';
