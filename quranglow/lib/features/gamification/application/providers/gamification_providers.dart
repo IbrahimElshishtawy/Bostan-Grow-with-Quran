@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// Gamification Riverpod providers for local offline-first state management
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';

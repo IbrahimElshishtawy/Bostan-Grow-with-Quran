@@ -1,3 +1,5 @@
+// ignore_for_file: dangling_library_doc_comments
+
 /// Premium Spotify-like Audio Player Screen
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,7 +36,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -74,7 +76,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     blurRadius: 40,
                     spreadRadius: 20,
                   ),
@@ -118,7 +120,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
               textAlign: TextAlign.center,
             ),
@@ -180,14 +182,14 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           child: LinearProgressIndicator(
             value: 0.45,
             minHeight: 6,
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
             valueColor: const AlwaysStoppedAnimation(Colors.white),
           ),
         ),
         const SizedBox(height: 8),
-        Row(
+        const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
+          children: [
             Text(
               '2:15',
               style: TextStyle(
@@ -227,7 +229,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -285,7 +287,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 12,
             spreadRadius: 2,
           ),
@@ -306,7 +308,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
       ),
       child: IconButton(
         icon: Icon(icon, color: color),
@@ -320,7 +322,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
+        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -344,10 +346,10 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isSelected
-            ? color.withOpacity(0.3)
-            : Colors.white.withOpacity(0.1),
+            ? color.withValues(alpha: 0.3)
+            : Colors.white.withValues(alpha: 0.1),
         border: Border.all(
-          color: color.withOpacity(0.5),
+          color: color.withValues(alpha: 0.5),
           width: isSelected ? 2 : 1,
         ),
         borderRadius: BorderRadius.circular(20),
@@ -355,7 +357,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.7),
+          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
@@ -411,12 +413,12 @@ class WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.7)
+      ..color = Colors.white.withValues(alpha: 0.7)
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
     final centerY = size.height / 2;
-    final barWidth = 4.0;
+    const barWidth = 4.0;
     const gap = 3.0;
     final numBars = ((size.width / (barWidth + gap)) - 1).toInt();
 

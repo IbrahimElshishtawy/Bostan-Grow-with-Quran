@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// Audio player state controller
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/models/audio_models.dart';

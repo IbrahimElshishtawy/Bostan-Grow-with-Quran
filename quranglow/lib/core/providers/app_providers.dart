@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// Riverpod providers for state management
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

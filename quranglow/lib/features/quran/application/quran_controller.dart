@@ -1,4 +1,6 @@
 /// Main Quran state controller
+library;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/api/quran_api_service.dart';
 import 'package:quranglow/core/models/quran_models.dart';
@@ -37,14 +39,14 @@ class QuranState {
 
 class QuranController extends StateNotifier<QuranState> {
   QuranController({required this.quranApiService})
-      : super(
-          const QuranState(
-            currentSurah: null,
-            currentAyah: null,
-            allSurahs: [],
-            isLoading: false,
-          ),
-        );
+    : super(
+        const QuranState(
+          currentSurah: null,
+          currentAyah: null,
+          allSurahs: [],
+          isLoading: false,
+        ),
+      );
 
   final QuranApiService quranApiService;
 
@@ -53,15 +55,9 @@ class QuranController extends StateNotifier<QuranState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final surahs = await quranApiService.getAllSurahs();
-      state = state.copyWith(
-        allSurahs: surahs,
-        isLoading: false,
-      );
+      state = state.copyWith(allSurahs: surahs, isLoading: false);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -70,15 +66,9 @@ class QuranController extends StateNotifier<QuranState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final surah = await quranApiService.getSurah(surahNumber);
-      state = state.copyWith(
-        currentSurah: surah,
-        isLoading: false,
-      );
+      state = state.copyWith(currentSurah: surah, isLoading: false);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 

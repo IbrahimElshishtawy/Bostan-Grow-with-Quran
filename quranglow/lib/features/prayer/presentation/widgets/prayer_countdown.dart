@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 /// Prayer Countdown Timer Widget
+library;
+
 import 'package:flutter/material.dart';
 
 class PrayerCountdown extends StatefulWidget {

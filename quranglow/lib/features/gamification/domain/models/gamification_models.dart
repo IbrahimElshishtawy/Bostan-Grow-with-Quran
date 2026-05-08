@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// Gamification domain models for the premium Quran Journey progression system
 
 enum StationType {

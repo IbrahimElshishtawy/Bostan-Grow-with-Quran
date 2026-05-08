@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// Notification and Adhan settings Riverpod providers
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/features/notifications/services/adhan_notification_service.dart';

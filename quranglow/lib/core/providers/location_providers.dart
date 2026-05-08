@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// Location and Geolocation Riverpod providers
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';

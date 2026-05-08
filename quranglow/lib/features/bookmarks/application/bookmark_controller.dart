@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// Bookmark management controller
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/models/bookmark_models.dart';

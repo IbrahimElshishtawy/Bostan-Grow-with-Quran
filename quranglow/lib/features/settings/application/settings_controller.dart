@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// User settings and preferences controller
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
