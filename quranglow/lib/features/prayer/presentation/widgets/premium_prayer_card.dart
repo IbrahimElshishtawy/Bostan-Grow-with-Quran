@@ -24,7 +24,7 @@ class PremiumPrayerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeRemaining = prayer.time.difference(DateTime.now());
     final isUpcoming = timeRemaining.isNegative == false;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -33,7 +33,9 @@ class PremiumPrayerCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: isNext ? Colors.amber.withOpacity(0.3) : Colors.black.withOpacity(0.1),
+              color: isNext
+                  ? Colors.amber.withOpacity(0.3)
+                  : Colors.black.withOpacity(0.1),
               blurRadius: 20,
               spreadRadius: 3,
             ),
@@ -173,7 +175,9 @@ class PremiumPrayerCard extends StatelessWidget {
                           child: Center(
                             child: Icon(
                               isCompleted ? Icons.check : Icons.add,
-                              color: isCompleted ? Colors.white : Colors.grey.shade600,
+                              color: isCompleted
+                                  ? Colors.white
+                                  : Colors.grey.shade600,
                               size: 24,
                             ),
                           ),
@@ -190,8 +194,10 @@ class PremiumPrayerCard extends StatelessWidget {
                   top: 8,
                   right: 8,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.shade400,
                       borderRadius: BorderRadius.circular(8),
