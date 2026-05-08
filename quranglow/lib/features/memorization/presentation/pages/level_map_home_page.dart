@@ -138,7 +138,7 @@ class _PlayerHeader extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+        padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -627,7 +627,7 @@ class _LevelPathRow extends StatelessWidget {
     final alignment = Alignment(currentX * 2 - 1, 0);
 
     return SizedBox(
-      height: 118,
+      height: 140, // تم زيادة الارتفاع هنا من 118 إلى 140 لحل المشكلة
       child: CustomPaint(
         painter: _LevelPathPainter(
           previousX: previousX,

@@ -38,7 +38,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.emerald.shade700, Colors.emerald.shade900],
+            colors: [Colors.white60, Colors.blueGrey],
           ),
         ),
         child: SafeArea(
@@ -255,7 +255,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
             child: Row(
               children: [
                 _buildQualityButton('Low', Colors.grey),
-                _buildQualityButton('Normal', Colors.emerald, isSelected: true),
+                _buildQualityButton('Normal', Colors.orangeAccent, isSelected: true),
                 _buildQualityButton('High', Colors.blue),
               ],
             ),
@@ -294,7 +294,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       child: IconButton(
         icon: Icon(
           icon,
-          color: Colors.emerald.shade700,
+          color: Colors.indigoAccent.shade700,
           size: isPlay ? 32 : 24,
         ),
         onPressed: () {},

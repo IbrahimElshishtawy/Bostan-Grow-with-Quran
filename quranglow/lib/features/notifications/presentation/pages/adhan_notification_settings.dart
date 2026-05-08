@@ -14,7 +14,7 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Adhan & Prayer Notifications'),
-        backgroundColor: Colors.emerald,
+        backgroundColor: Colors.amberAccent,
         elevation: 0,
       ),
       body: Container(
@@ -22,7 +22,7 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.emerald.shade50, Colors.blue.shade50],
+            colors: [Colors.amberAccent, Colors.blue.shade50],
           ),
         ),
         child: ListView(
@@ -37,7 +37,7 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Colors.emerald),
+                      valueColor: AlwaysStoppedAnimation(Colors.amberAccent),
                     ),
                   ),
                 ),
@@ -119,7 +119,7 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
                 icon: const Icon(Icons.notifications_active),
                 label: const Text('Test Notification'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.emerald,
+                  backgroundColor: Colors.amberAccent,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -266,7 +266,7 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.emerald,
+            activeColor: Colors.amberAccent,
           ),
         ],
       ),
@@ -298,7 +298,7 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
                 '${(value * 100).toStringAsFixed(0)}%',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.emerald.shade600,
+                  color: Colors.amberAccent.shade700,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -310,7 +310,7 @@ class AdhanNotificationSettingsScreen extends ConsumerWidget {
             onChanged: onChanged,
             min: 0,
             max: 1,
-            activeColor: Colors.emerald,
+            activeColor: Colors.amberAccent,
             inactiveColor: Colors.grey.shade300,
           ),
         ],

@@ -66,7 +66,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.emerald.shade50, Colors.blue.shade50],
+            colors: [Colors.tealAccent.shade200, Colors.blue.shade50],
           ),
         ),
         child: positionAsync.when(
@@ -87,7 +87,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
           error: (error, stackTrace) => _buildLocationError(context),
           loading: () => const Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(Colors.emerald),
+              valueColor: AlwaysStoppedAnimation(Colors.tealAccent),
             ),
           ),
         ),
@@ -124,7 +124,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
                   // Implement location request
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.emerald,
+                  backgroundColor: Colors.tealAccent.shade400,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
                     vertical: 12,
@@ -220,7 +220,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
               loading: () => const Padding(
                 padding: EdgeInsets.all(32),
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation(Colors.emerald),
+                  valueColor: AlwaysStoppedAnimation(Colors.deepOrangeAccent),
                 ),
               ),
             ),
@@ -339,7 +339,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.emerald,
+                backgroundColor: Colors.tealAccent.shade400,
                 minimumSize: const Size.fromHeight(50),
               ),
               child: const Text('Close', style: TextStyle(color: Colors.white)),

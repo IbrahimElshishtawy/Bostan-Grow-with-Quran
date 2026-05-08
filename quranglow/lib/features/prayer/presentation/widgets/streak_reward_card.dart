@@ -1,5 +1,6 @@
 /// Prayer Streak and Rewards Display Widget
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart' as ui show BackdropFilter;
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 

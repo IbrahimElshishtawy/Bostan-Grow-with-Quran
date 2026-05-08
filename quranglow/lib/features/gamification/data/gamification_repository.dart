@@ -1,39 +1,33 @@
-/// Gamification repository for managing user progress and levels
-/// Integrates with Firebase Firestore and local Hive cache
-
-
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math' as math;
+import 'package:quranglow/core/storage/local_storage.dart';
+import 'package:quranglow/core/storage/local_storage_ext.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 
 class GameificationRepository {
   GameificationRepository({
-    required this.firestore,
+    required this.storage,
   });
 
-  final FirebaseFirestore firestore;
+  final LocalStorage storage;
 
-  static const String _usersCollection = 'users';
-  static const String _gameProfileDoc = 'gameProfile';
-  static const String _levelsCollection = 'levels';
+  static const String _profileKeyPrefix = 'gamification_profile_v2_';
+  static const String _levelsKeyPrefix = 'gamification_levels_v2_';
+  static const String _missionsKeyPrefix = 'gamification_missions_v2_';
 
-  /// Get user's game profile
+  /// Get user's game profile from local Hive storage
   Future<UserGameProfile> getUserProfile(String userId) async {
     try {
-      final doc = await firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .collection(_gameProfileDoc)
-          .doc('profile')
-          .get();
+      final key = '$_profileKeyPrefix$userId';
+      final Map<String, dynamic>? data = await storage.getJson<Map<String, dynamic>>(key);
 
-      if (doc.exists) {
+      if (data != null) {
         return UserGameProfile.fromJson({
           'userId': userId,
-          ...doc.data() ?? {},
+          ...data,
         });
       }
 
-      // Create initial profile if doesn't exist
+      // Create initial profile if it doesn't exist
       final initialProfile = UserGameProfile(
         userId: userId,
         totalXp: 0,
@@ -46,115 +40,87 @@ class GameificationRepository {
         lastActiveDate: null,
         joinDate: DateTime.now(),
         currentStreak: 0,
+        coins: 100,
+        achievements: const [],
+        streakFreezeCount: 1,
+        chestsClaimed: const [],
       );
 
       await setUserProfile(userId, initialProfile);
       return initialProfile;
     } catch (e) {
-      throw Exception('Failed to get user profile: $e');
+      throw Exception('Failed to get user profile from Hive: $e');
     }
   }
 
-  /// Save user's game profile
+  /// Save user's game profile to local Hive storage
   Future<void> setUserProfile(String userId, UserGameProfile profile) async {
     try {
+      final key = '$_profileKeyPrefix$userId';
       final data = profile.toJson();
       data.remove('userId');
-
-      await firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .collection(_gameProfileDoc)
-          .doc('profile')
-          .set(data, SetOptions(merge: true));
+      await storage.setJson(key, data);
     } catch (e) {
-      throw Exception('Failed to save user profile: $e');
+      throw Exception('Failed to save user profile in Hive: $e');
     }
   }
 
-  /// Get all game levels
+  /// Get all game levels from local Hive storage
   Future<List<GameLevel>> getLevels(String userId) async {
     try {
-      final snapshot = await firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .collection(_levelsCollection)
-          .orderBy('sequence')
-          .get();
+      final key = '$_levelsKeyPrefix$userId';
+      final List<dynamic>? raw = await storage.getJson<List<dynamic>>(key);
 
-      return snapshot.docs
-          .map((doc) => GameLevel.fromJson({
-                'id': doc.id,
-                ...doc.data(),
-              }))
+      if (raw == null) return [];
+
+      return raw
+          .whereType<Map>()
+          .map((item) => GameLevel.fromJson(Map<String, dynamic>.from(item)))
           .toList();
     } catch (e) {
-      throw Exception('Failed to get levels: $e');
+      throw Exception('Failed to get levels from Hive: $e');
     }
   }
 
   /// Get specific level
   Future<GameLevel?> getLevel(String userId, String levelId) async {
     try {
-      final doc = await firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .collection(_levelsCollection)
-          .doc(levelId)
-          .get();
-
-      if (doc.exists) {
-        return GameLevel.fromJson({
-          'id': doc.id,
-          ...doc.data() ?? {},
-        });
-      }
-      return null;
+      final levels = await getLevels(userId);
+      final index = levels.indexWhere((l) => l.id == levelId);
+      return index != -1 ? levels[index] : null;
     } catch (e) {
       throw Exception('Failed to get level: $e');
     }
   }
 
-  /// Update level progress
+  /// Update level progress in local Hive storage
   Future<void> updateLevelProgress(
     String userId,
     String levelId,
     GameLevel updatedLevel,
   ) async {
     try {
-      final data = updatedLevel.toJson();
-      data.remove('id');
+      final levels = await getLevels(userId);
+      final index = levels.indexWhere((l) => l.id == levelId);
+      
+      if (index != -1) {
+        levels[index] = updatedLevel;
+      } else {
+        levels.add(updatedLevel);
+      }
 
-      await firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .collection(_levelsCollection)
-          .doc(levelId)
-          .set(data, SetOptions(merge: true));
+      final key = '$_levelsKeyPrefix$userId';
+      await storage.setJson(key, levels.map((l) => l.toJson()).toList());
     } catch (e) {
-      throw Exception('Failed to update level progress: $e');
+      throw Exception('Failed to update level progress in Hive: $e');
     }
   }
 
   /// Create or initialize levels for user
   Future<void> initializeLevels(String userId, List<GameLevel> levels) async {
     try {
-      final batch = firestore.batch();
-
-      for (final level in levels) {
-        final data = level.toJson();
-        data.remove('id');
-
-        final docRef = firestore
-            .collection(_usersCollection)
-            .doc(userId)
-            .collection(_levelsCollection)
-            .doc(level.id);
-
-        batch.set(docRef, data, SetOptions(merge: true));
-      }
-
-      await batch.commit();
+      final key = '$_levelsKeyPrefix$userId';
+      await storage.setJson(key, levels.map((l) => l.toJson()).toList());
     } catch (e) {
       throw Exception('Failed to initialize levels: $e');
     }
@@ -190,6 +156,8 @@ class GameificationRepository {
       final lastActive = profile.lastActiveDate;
 
       int newStreak = profile.currentStreak;
+      int freezesLeft = profile.streakFreezeCount;
+
       if (lastActive == null) {
         newStreak = 1;
       } else {
@@ -197,7 +165,13 @@ class GameificationRepository {
         if (daysDifference == 1) {
           newStreak = profile.currentStreak + 1;
         } else if (daysDifference > 1) {
-          newStreak = 1;
+          // If missed a day, check if streak freeze can shield!
+          if (freezesLeft > 0) {
+            freezesLeft--;
+            newStreak = profile.currentStreak; // keep streak alive!
+          } else {
+            newStreak = 1;
+          }
         }
       }
 
@@ -211,6 +185,7 @@ class GameificationRepository {
           currentStreak: newStreak,
           longestStreak: longestStreak,
           lastActiveDate: now,
+          streakFreezeCount: freezesLeft,
         ),
       );
     } catch (e) {
@@ -254,60 +229,88 @@ class GameificationRepository {
         'totalStars': totalStars,
         'totalLevels': levels.length,
         'progressPercent': levels.isEmpty ? 0 : completedLevels / levels.length,
+        'coins': profile.coins,
+        'achievementsCount': profile.achievements.length,
+        'freezes': profile.streakFreezeCount,
       };
     } catch (e) {
       throw Exception('Failed to get user stats: $e');
     }
   }
 
-  /// Stream user profile updates
-  Stream<UserGameProfile> streamUserProfile(String userId) {
-    return firestore
-        .collection(_usersCollection)
-        .doc(userId)
-        .collection(_gameProfileDoc)
-        .doc('profile')
-        .snapshots()
-        .map((doc) {
-      if (doc.exists) {
-        return UserGameProfile.fromJson({
-          'userId': userId,
-          ...doc.data() ?? {},
-        });
-      }
-      throw Exception('Profile not found');
-    });
-  }
-
-  /// Stream levels updates
-  Stream<List<GameLevel>> streamLevels(String userId) {
-    return firestore
-        .collection(_usersCollection)
-        .doc(userId)
-        .collection(_levelsCollection)
-        .orderBy('sequence')
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => GameLevel.fromJson({
-                'id': doc.id,
-                ...doc.data(),
-              }))
-          .toList();
-    });
-  }
-
-  /// Sync local data with Firebase
-  Future<void> syncWithFirebase(
-    String userId,
-    UserGameProfile profile,
-    List<GameLevel> levels,
-  ) async {
+  /// Get daily missions from local storage
+  Future<List<DailyMission>> getDailyMissions(String userId) async {
     try {
-      await setUserProfile(userId, profile);
-      await initializeLevels(userId, levels);
+      final key = '$_missionsKeyPrefix$userId';
+      final List<dynamic>? raw = await storage.getJson<List<dynamic>>(key);
+
+      if (raw != null && raw.isNotEmpty) {
+        return raw
+            .whereType<Map>()
+            .map((item) => DailyMission.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+      }
+
+      final defaultMissions = [
+        const DailyMission(
+          id: 'mission_complete_station',
+          title: 'Complete a Station',
+          arabicTitle: 'أكمل محطة في مسار القرآن',
+          target: 1,
+          progress: 0,
+          xpReward: 100,
+          isCompleted: false,
+        ),
+        const DailyMission(
+          id: 'mission_xp_goal',
+          title: 'Earn 150 XP Today',
+          arabicTitle: 'احصد 150 نقطة خبرة اليوم',
+          target: 150,
+          progress: 0,
+          xpReward: 150,
+          isCompleted: false,
+        ),
+        const DailyMission(
+          id: 'mission_listen_task',
+          title: 'Listen to 2 Recitations',
+          arabicTitle: 'استمع إلى تلاوتين',
+          target: 2,
+          progress: 0,
+          xpReward: 80,
+          isCompleted: false,
+        ),
+      ];
+
+      await saveDailyMissions(userId, defaultMissions);
+      return defaultMissions;
     } catch (e) {
-      throw Exception('Failed to sync with Firebase: $e');
+      throw Exception('Failed to get daily missions: $e');
+    }
+  }
+
+  /// Save daily missions to local storage
+  Future<void> saveDailyMissions(String userId, List<DailyMission> m) async {
+    try {
+      final key = '$_missionsKeyPrefix$userId';
+      await storage.setJson(key, m.map((item) => item.toJson()).toList());
+    } catch (e) {
+      throw Exception('Failed to save daily missions: $e');
+    }
+  }
+
+  /// Stream user profile (mocked with future stream for offline)
+  Stream<UserGameProfile> streamUserProfile(String userId) async* {
+    while (true) {
+      yield await getUserProfile(userId);
+      await Future.delayed(const Duration(seconds: 15));
+    }
+  }
+
+  /// Stream levels (mocked with future stream for offline)
+  Stream<List<GameLevel>> streamLevels(String userId) async* {
+    while (true) {
+      yield await getLevels(userId);
+      await Future.delayed(const Duration(seconds: 15));
     }
   }
 }

@@ -1,15 +1,18 @@
-/// Gamification domain models for the progression system
+/// Gamification domain models for the premium Quran Journey progression system
 
+enum StationType {
+  learning('محطة التفسير والتدبر', 'Study meaning and Tajweed'),
+  listening('محطة الاستماع والترتيل', 'Listen to beautiful recitation'),
+  reading('محطة القراءة والتحسين', 'Read verses with focus'),
+  writing('محطة الكتابة والبناء', 'Reconstruct verses word by word'),
+  memorization('محطة الحفظ والتمكين', 'Spaced repetition memorization'),
+  revisionGate('بوابة المراجعة والتمكين', 'Solidify previous achievements'),
+  bossChallenge('التحدي الأكبر للتدبر', 'Surah master boss challenge'),
+  mysteryStation('المحطة الغامضة والمفاجأة', 'Mystery reward bonus station');
 
-enum LevelType {
-  surah('Surah Level'),
-  tajweed('Tajweed Lesson'),
-  review('Review Checkpoint'),
-  bossTest('Boss Test'),
-  dailyChallenge('Daily Challenge');
-
-  const LevelType(this.label);
-  final String label;
+  const StationType(this.arabicLabel, this.englishLabel);
+  final String arabicLabel;
+  final String englishLabel;
 }
 
 class GameLevel {
@@ -33,11 +36,18 @@ class GameLevel {
     required this.difficulty,
     this.nextReviewDate,
     this.completedAt,
+    this.isListenCompleted = false,
+    this.isReadCompleted = false,
+    this.isWriteCompleted = false,
+    this.isMemorizeCompleted = false,
+    this.isQuizCompleted = false,
+    this.masteryLevel = 0, // 0 = Standard, 1 = Gold Crown Mastery Replay
+    this.isMystery = false,
   });
 
   final String id;
   final int sequence;
-  final LevelType type;
+  final StationType type;
   final int surahId;
   final String surahName;
   final int ayahStart;
@@ -55,14 +65,33 @@ class GameLevel {
   final DateTime? nextReviewDate;
   final DateTime? completedAt;
 
-  bool get isCompleted => starsEarned > 0;
+  final bool isListenCompleted;
+  final bool isReadCompleted;
+  final bool isWriteCompleted;
+  final bool isMemorizeCompleted;
+  final bool isQuizCompleted;
+  
+  final int masteryLevel;
+  final bool isMystery;
+
+  bool get isCompleted => isListenCompleted && isReadCompleted && isWriteCompleted && isMemorizeCompleted && isQuizCompleted;
   bool get isPerfect => starsEarned == maxStars;
   int get ayahCount => ayahEnd - ayahStart + 1;
+
+  double get taskProgress {
+    int done = 0;
+    if (isListenCompleted) done++;
+    if (isReadCompleted) done++;
+    if (isWriteCompleted) done++;
+    if (isMemorizeCompleted) done++;
+    if (isQuizCompleted) done++;
+    return done / 5.0;
+  }
 
   GameLevel copyWith({
     String? id,
     int? sequence,
-    LevelType? type,
+    StationType? type,
     int? surahId,
     String? surahName,
     int? ayahStart,
@@ -79,6 +108,13 @@ class GameLevel {
     String? difficulty,
     DateTime? nextReviewDate,
     DateTime? completedAt,
+    bool? isListenCompleted,
+    bool? isReadCompleted,
+    bool? isWriteCompleted,
+    bool? isMemorizeCompleted,
+    bool? isQuizCompleted,
+    int? masteryLevel,
+    bool? isMystery,
   }) {
     return GameLevel(
       id: id ?? this.id,
@@ -100,6 +136,13 @@ class GameLevel {
       difficulty: difficulty ?? this.difficulty,
       nextReviewDate: nextReviewDate ?? this.nextReviewDate,
       completedAt: completedAt ?? this.completedAt,
+      isListenCompleted: isListenCompleted ?? this.isListenCompleted,
+      isReadCompleted: isReadCompleted ?? this.isReadCompleted,
+      isWriteCompleted: isWriteCompleted ?? this.isWriteCompleted,
+      isMemorizeCompleted: isMemorizeCompleted ?? this.isMemorizeCompleted,
+      isQuizCompleted: isQuizCompleted ?? this.isQuizCompleted,
+      masteryLevel: masteryLevel ?? this.masteryLevel,
+      isMystery: isMystery ?? this.isMystery,
     );
   }
 
@@ -123,13 +166,20 @@ class GameLevel {
     'difficulty': difficulty,
     'nextReviewDate': nextReviewDate?.toIso8601String(),
     'completedAt': completedAt?.toIso8601String(),
+    'isListenCompleted': isListenCompleted,
+    'isReadCompleted': isReadCompleted,
+    'isWriteCompleted': isWriteCompleted,
+    'isMemorizeCompleted': isMemorizeCompleted,
+    'isQuizCompleted': isQuizCompleted,
+    'masteryLevel': masteryLevel,
+    'isMystery': isMystery,
   };
 
   factory GameLevel.fromJson(Map<String, dynamic> json) {
     return GameLevel(
       id: json['id'] as String? ?? '',
       sequence: json['sequence'] as int? ?? 0,
-      type: _parseLevelType(json['type']),
+      type: _parseStationType(json['type']),
       surahId: json['surahId'] as int? ?? 0,
       surahName: json['surahName'] as String? ?? '',
       ayahStart: json['ayahStart'] as int? ?? 1,
@@ -150,6 +200,13 @@ class GameLevel {
       completedAt: json['completedAt'] != null
           ? DateTime.tryParse(json['completedAt'] as String)
           : null,
+      isListenCompleted: json['isListenCompleted'] as bool? ?? false,
+      isReadCompleted: json['isReadCompleted'] as bool? ?? false,
+      isWriteCompleted: json['isWriteCompleted'] as bool? ?? false,
+      isMemorizeCompleted: json['isMemorizeCompleted'] as bool? ?? false,
+      isQuizCompleted: json['isQuizCompleted'] as bool? ?? false,
+      masteryLevel: json['masteryLevel'] as int? ?? 0,
+      isMystery: json['isMystery'] as bool? ?? false,
     );
   }
 }
@@ -167,6 +224,10 @@ class UserGameProfile {
     required this.lastActiveDate,
     required this.joinDate,
     required this.currentStreak,
+    this.coins = 100,
+    this.achievements = const [],
+    this.streakFreezeCount = 1, // Streak Freeze Shield item
+    this.chestsClaimed = const [], // Surprise reward chests index e.g., 'chest_3'
   });
 
   final String userId;
@@ -180,6 +241,11 @@ class UserGameProfile {
   final DateTime? lastActiveDate;
   final DateTime joinDate;
   final int currentStreak;
+  final int coins;
+  final List<String> achievements;
+  
+  final int streakFreezeCount;
+  final List<String> chestsClaimed;
 
   int get xpToNextLevel => ((currentLevel + 1) * 1000) - totalXp;
   double get levelProgress => (totalXp % 1000) / 1000.0;
@@ -196,6 +262,10 @@ class UserGameProfile {
     DateTime? lastActiveDate,
     DateTime? joinDate,
     int? currentStreak,
+    int? coins,
+    List<String>? achievements,
+    int? streakFreezeCount,
+    List<String>? chestsClaimed,
   }) {
     return UserGameProfile(
       userId: userId ?? this.userId,
@@ -209,6 +279,10 @@ class UserGameProfile {
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       joinDate: joinDate ?? this.joinDate,
       currentStreak: currentStreak ?? this.currentStreak,
+      coins: coins ?? this.coins,
+      achievements: achievements ?? this.achievements,
+      streakFreezeCount: streakFreezeCount ?? this.streakFreezeCount,
+      chestsClaimed: chestsClaimed ?? this.chestsClaimed,
     );
   }
 
@@ -224,6 +298,10 @@ class UserGameProfile {
     'lastActiveDate': lastActiveDate?.toIso8601String(),
     'joinDate': joinDate.toIso8601String(),
     'currentStreak': currentStreak,
+    'coins': coins,
+    'achievements': achievements,
+    'streakFreezeCount': streakFreezeCount,
+    'chestsClaimed': chestsClaimed,
   };
 
   factory UserGameProfile.fromJson(Map<String, dynamic> json) {
@@ -243,6 +321,72 @@ class UserGameProfile {
           ? DateTime.tryParse(json['joinDate'] as String) ?? DateTime.now()
           : DateTime.now(),
       currentStreak: json['currentStreak'] as int? ?? 0,
+      coins: json['coins'] as int? ?? 100,
+      achievements: List<String>.from(json['achievements'] ?? const []),
+      streakFreezeCount: json['streakFreezeCount'] as int? ?? 1,
+      chestsClaimed: List<String>.from(json['chestsClaimed'] ?? const []),
+    );
+  }
+}
+
+class DailyMission {
+  const DailyMission({
+    required this.id,
+    required this.title,
+    required this.arabicTitle,
+    required this.target,
+    required this.progress,
+    required this.xpReward,
+    required this.isCompleted,
+  });
+
+  final String id;
+  final String title;
+  final String arabicTitle;
+  final int target;
+  final int progress;
+  final int xpReward;
+  final bool isCompleted;
+
+  DailyMission copyWith({
+    String? id,
+    String? title,
+    String? arabicTitle,
+    int? target,
+    int? progress,
+    int? xpReward,
+    bool? isCompleted,
+  }) {
+    return DailyMission(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      arabicTitle: arabicTitle ?? this.arabicTitle,
+      target: target ?? this.target,
+      progress: progress ?? this.progress,
+      xpReward: xpReward ?? this.xpReward,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'arabicTitle': arabicTitle,
+    'target': target,
+    'progress': progress,
+    'xpReward': xpReward,
+    'isCompleted': isCompleted,
+  };
+
+  factory DailyMission.fromJson(Map<String, dynamic> json) {
+    return DailyMission(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      arabicTitle: json['arabicTitle'] as String? ?? '',
+      target: json['target'] as int? ?? 0,
+      progress: json['progress'] as int? ?? 0,
+      xpReward: json['xpReward'] as int? ?? 0,
+      isCompleted: json['isCompleted'] as bool? ?? false,
     );
   }
 }
@@ -253,12 +397,14 @@ class GameState {
     required this.levels,
     required this.isLoading,
     required this.error,
+    this.dailyMissions = const [],
   });
 
   final UserGameProfile userProfile;
   final List<GameLevel> levels;
   final bool isLoading;
   final String? error;
+  final List<DailyMission> dailyMissions;
 
   int get totalLevels => levels.length;
   int get completedLevels => levels.where((l) => l.isCompleted).length;
@@ -289,12 +435,14 @@ class GameState {
     List<GameLevel>? levels,
     bool? isLoading,
     String? error,
+    List<DailyMission>? dailyMissions,
   }) {
     return GameState(
       userProfile: userProfile ?? this.userProfile,
       levels: levels ?? this.levels,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
+      dailyMissions: dailyMissions ?? this.dailyMissions,
     );
   }
 }
@@ -307,6 +455,7 @@ class LevelCompletionResult {
     required this.unlockedNextLevel,
     required this.newTotalXp,
     required this.leveledUp,
+    required this.coinsEarned,
   });
 
   final String levelId;
@@ -315,15 +464,16 @@ class LevelCompletionResult {
   final bool unlockedNextLevel;
   final int newTotalXp;
   final bool leveledUp;
+  final int coinsEarned;
 }
 
-LevelType _parseLevelType(dynamic value) {
-  if (value is LevelType) return value;
+StationType _parseStationType(dynamic value) {
+  if (value is StationType) return value;
   if (value is String) {
-    return LevelType.values.firstWhere(
+    return StationType.values.firstWhere(
       (t) => t.name == value,
-      orElse: () => LevelType.surah,
+      orElse: () => StationType.learning,
     );
   }
-  return LevelType.surah;
+  return StationType.learning;
 }

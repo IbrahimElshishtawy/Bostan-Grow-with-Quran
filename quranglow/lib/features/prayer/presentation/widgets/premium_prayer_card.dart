@@ -1,5 +1,6 @@
 /// Premium Prayer Card Widget
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as ui show BackdropFilter;
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui' as ui;
@@ -74,15 +75,15 @@ class PremiumPrayerCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            Colors.emerald.shade400,
-                            Colors.emerald.shade600,
+                            Colors.tealAccent.shade400,
+                            Colors.amberAccent.shade700,
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.emerald.withOpacity(0.4),
+                            color: Colors.amberAccent.withOpacity(0.4),
                             blurRadius: 10,
                           ),
                         ],
