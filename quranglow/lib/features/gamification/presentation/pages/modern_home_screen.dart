@@ -16,6 +16,32 @@ class ModernHomeScreen extends ConsumerStatefulWidget {
 
 class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
   final double _rowHeight = 220.0;
+  late final ScrollController _scrollController;
+  int _dailyGoal = 10; // Default selection
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Dynamic scroll focusing to roughly around 600-700 range to match our upcoming vertical scale!
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted && _scrollController.hasClients) {
+          _scrollController.animateTo(
+            650.0, // Perfect center target for stretched map
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.fastOutSlowIn,
+          );
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,40 +82,39 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           ),
         ),
 
-        // 2. Global Decorative Mandalas background
+        // 2. Soft glowing orb mesh background (Extreme Premium)
         Positioned(
-          right: -80,
-          bottom: 80,
-          child: Opacity(
-            opacity: 0.08,
-            child: Image.asset(
-              'assets/images/islamic_pattern.png',
-              width: 300,
-              height: 300,
-              color: Colors.black,
+          top: -100,
+          right: -100,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF2E7D32).withValues(alpha: 0.15),
             ),
-          ),
+          ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 5.seconds, begin: const Offset(1,1), end: const Offset(1.3, 1.3)),
         ),
         Positioned(
-          left: -100,
-          bottom: 250,
-          child: Opacity(
-            opacity: 0.08,
-            child: Image.asset(
-              'assets/images/islamic_pattern.png',
-              width: 300,
-              height: 300,
-              color: Colors.black,
+          top: 300,
+          left: -150,
+          child: Container(
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF8B6F47).withValues(alpha: 0.1),
             ),
-          ),
+          ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 6.seconds, begin: const Offset(1,1), end: const Offset(1.2, 1.2)),
         ),
 
         // 3. Scrollable Content
         Positioned.fill(
           child: CustomScrollView(
+            controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
-              const SliverToBoxAdapter(child: SizedBox(height: 48)),
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
               // 3a. Header: Top Title
               SliverToBoxAdapter(
@@ -98,34 +123,40 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(width: 48), // placeholder for symmetry
+                      // 1. The Drawer Button placed first (RTL will map to physical RIGHT)
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.menu_rounded, color: Colors.white70),
+                      ),
+
+                      // 2. The Centered Titles
                       Column(
                         children: [
-                          Text(
+                          const Text(
                             'مسار الحفظ',
                             style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 26, // Slightly scaled down for elegance
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
                             ),
                           ),
                           Text(
                             'درب التميز',
                             style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white60,
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white12,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.menu_rounded, color: Colors.white70),
-                      ),
+                      
+                      // 3. The balancing spacer placed last (RTL maps to physical LEFT)
+                      const SizedBox(width: 48), 
                     ],
                   ),
                 ),
@@ -162,6 +193,13 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                     ],
                   ),
                 ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+              // 3x. Goal Selection Injection (New Feature requested)
+              SliverToBoxAdapter(
+                child: _buildGoalSelector(),
               ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -489,29 +527,29 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     // Index 4: Locked padlock (Far Right)
     
     final offsets = [
-      Offset(centerX - 80, 80),       // Node 0 (Top Left)
-      Offset(centerX + 80, 120),      // Node 1 (Top Right)
-      Offset(centerX, 340),           // Node 2 (Active Center)
-      Offset(centerX - 90, 550),      // Node 3 (Bottom Left)
-      Offset(centerX + 90, 650),      // Node 4 (Bottom Right)
+      Offset(centerX - 90, 120),       // Node 0 (Stretched Top Left)
+      Offset(centerX + 90, 450),      // Node 1 (Heavily Spaced Right)
+      Offset(centerX, 850),           // Node 2 (Deep Center Active)
+      Offset(centerX - 90, 1250),     // Node 3 (Way down Left)
+      Offset(centerX + 90, 1650),     // Node 4 (Bottom Right)
     ];
 
     return SizedBox(
-      height: 800,
+      height: 1800, // Heavily extended track
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           // Background Painting Layer (Path lines + diagonal deco stripes)
           Positioned.fill(
             child: CustomPaint(
-              painter: _RefinedPathPainter(offsets: offsets),
+              painter: _RefinedPathPainter(offsets: offsets, activeIndex: 2),
             ),
           ),
 
-          // Intermediate Chest placed between Node 0 and 1 visually
+          // Intermediate Chest placed nicely between Node 0 and 1 visually
           Positioned(
             left: centerX - 35,
-            top: 100,
+            top: 285, // Placed mid-segment vertically
             child: Stack(
               alignment: Alignment.center,
               clipBehavior: Clip.none,
@@ -646,8 +684,8 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
             
             Image.asset(
               assetPath,
-              width: isActive ? 140 : isLocked ? 130 : 110,
-              height: isActive ? 140 : isLocked ? 130 : 110,
+              width: isActive ? 105 : isLocked ? 95 : 85,
+              height: isActive ? 105 : isLocked ? 95 : 85,
               fit: BoxFit.contain,
             ),
           ],
@@ -678,65 +716,170 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
   }
 
+  Widget _buildGoalSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Text(
+              'حدد هدفك اليومي للمراجعة:',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [10, 20, 30].map((goal) {
+              final isActive = _dailyGoal == goal;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _dailyGoal = goal),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: isActive 
+                          ? const Color(0xFF4E7440) 
+                          : Colors.black.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isActive 
+                            ? Colors.white.withValues(alpha: 0.4) 
+                            : Colors.transparent,
+                        width: 1.5,
+                      ),
+                      boxShadow: isActive ? [
+                        BoxShadow(
+                          color: const Color(0xFF4E7440).withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ] : [],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '$goal',
+                          style: TextStyle(
+                            fontSize: 18,
+                            height: 1.1,
+                            fontWeight: FontWeight.w900,
+                            color: isActive ? Colors.white : Colors.white70,
+                          ),
+                        ),
+                        Text(
+                          'آية / يوم',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isActive ? Colors.white70 : Colors.white54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _RefinedPathPainter extends CustomPainter {
   final List<Offset> offsets;
+  final int activeIndex;
 
-  _RefinedPathPainter({required this.offsets});
+  _RefinedPathPainter({required this.offsets, this.activeIndex = 0});
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Draw Background Decorative Diagonal Stripes just like in screenshot!
-    final stripePaint = Paint()
-      ..color = Colors.black12
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.square;
-
-    // Drawing distinct diagonal background lines seen in visual
-    canvas.drawLine(const Offset(0, 500), const Offset(250, 750), stripePaint);
-    canvas.drawLine(const Offset(0, 540), const Offset(220, 760), stripePaint);
-    
     if (offsets.length < 2) return;
 
-    // 2. Draw The Curvy Progression Path
-    final path = Path();
-    path.moveTo(offsets[0].dx, offsets[0].dy);
-
-    // Manual precise quadratic paths following exactly screenshot visual curve shape
-    
-    // Segment 0 -> 1 (Soft curve across top)
+    // 2. Define Shared Curve Geometries
+    // 0 -> 1
     final ctrl1X = (offsets[0].dx + offsets[1].dx) / 2;
     final ctrl1Y = (offsets[0].dy + offsets[1].dy) / 2 + 20;
-    path.quadraticBezierTo(ctrl1X, ctrl1Y, offsets[1].dx, offsets[1].dy);
 
-    // Segment 1 -> 2 (Deep curve flowing right then center down)
-    // Point 1 is right, Point 2 is center down. Control point is far right down.
+    // 1 -> 2
     final ctrl2X = offsets[1].dx + 40;
     final ctrl2Y = (offsets[1].dy + offsets[2].dy) / 2;
-    path.quadraticBezierTo(ctrl2X, ctrl2Y, offsets[2].dx, offsets[2].dy);
 
-    // Segment 2 -> 3 (Curve flow from center down to left)
+    // 2 -> 3
     final ctrl3X = offsets[2].dx - 50;
     final ctrl3Y = (offsets[2].dy + offsets[3].dy) / 2;
-    path.quadraticBezierTo(ctrl3X, ctrl3Y, offsets[3].dx, offsets[3].dy);
-    
-    // Segment 3 -> 4
+
+    // 3 -> 4
     final ctrl4X = (offsets[3].dx + offsets[4].dx) / 2;
     final ctrl4Y = (offsets[3].dy + offsets[4].dy) / 2 + 20;
-    path.quadraticBezierTo(ctrl4X, ctrl4Y, offsets[4].dx, offsets[4].dy);
 
-    // Main thick path line
-    final pathPaint = Paint()
-      ..color = const Color(0xFF34493A).withValues(alpha: 0.4) // Visual match
+    // 3. Create FULL Track Path
+    final fullPath = Path();
+    fullPath.moveTo(offsets[0].dx, offsets[0].dy);
+    fullPath.quadraticBezierTo(ctrl1X, ctrl1Y, offsets[1].dx, offsets[1].dy);
+    fullPath.quadraticBezierTo(ctrl2X, ctrl2Y, offsets[2].dx, offsets[2].dy);
+    fullPath.quadraticBezierTo(ctrl3X, ctrl3Y, offsets[3].dx, offsets[3].dy);
+    fullPath.quadraticBezierTo(ctrl4X, ctrl4Y, offsets[4].dx, offsets[4].dy);
+
+    // 4. Create ACTIVE Filled Track Path up to current node
+    final fillPath = Path();
+    fillPath.moveTo(offsets[0].dx, offsets[0].dy);
+    
+    if (activeIndex >= 1) {
+      fillPath.quadraticBezierTo(ctrl1X, ctrl1Y, offsets[1].dx, offsets[1].dy);
+    }
+    if (activeIndex >= 2) {
+      fillPath.quadraticBezierTo(ctrl2X, ctrl2Y, offsets[2].dx, offsets[2].dy);
+    }
+    if (activeIndex >= 3) {
+      fillPath.quadraticBezierTo(ctrl3X, ctrl3Y, offsets[3].dx, offsets[3].dy);
+    }
+    if (activeIndex >= 4) {
+      fillPath.quadraticBezierTo(ctrl4X, ctrl4Y, offsets[4].dx, offsets[4].dy);
+    }
+
+    // 5. Drawing Logic
+    
+    // a. Draw the Empty Base Path (The unlit track)
+    final basePaint = Paint()
+      ..color = const Color(0xFF2E3F33).withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;
+    
+    canvas.drawPath(fullPath, basePaint);
 
-    canvas.drawPath(path, pathPaint);
+    // b. Draw GLOw under the active fill path (The neon engine)
+    final glowPaint = Paint()
+      ..color = const Color(0xFFB4D455).withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0)
+      ..strokeCap = StrokeCap.round;
+    
+    canvas.drawPath(fillPath, glowPaint);
+
+    // c. Draw Top highlight of fill path (The vibrant green wire)
+    final vibrantPaint = Paint()
+      ..color = const Color(0xFFBDE156) 
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round;
+    
+    canvas.drawPath(fillPath, vibrantPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
