@@ -31,7 +31,6 @@ import 'package:quranglow/features/surah/presentation/pages/surah_list_page.dart
 import 'package:quranglow/features/tafsir/presentation/pages/tafsir_explorer_page.dart';
 import 'package:quranglow/features/tafsir/presentation/pages/tafsir_reader_page.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_args.dart';
-import 'package:quranglow/features/gamification/presentation/pages/gamification_home_page.dart';
 import 'package:quranglow/features/gamification/presentation/pages/modern_home_screen.dart';
 import 'app_routes.dart';
 

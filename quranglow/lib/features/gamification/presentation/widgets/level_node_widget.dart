@@ -77,9 +77,11 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
 
     return Center(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
           children: [
             GestureDetector(
               onTapDown: _handleTapDown,
@@ -249,7 +251,7 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
 
             // Station Title & Info (Arabic + English)
             Container(
@@ -330,6 +332,7 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
             ).animate().fade(duration: 400.ms).scale(delay: 100.ms),
           ],
         ),
+      ),
       ),
     );
   }

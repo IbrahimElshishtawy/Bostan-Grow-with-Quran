@@ -25,7 +25,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F3E6), // Soft sandy beige
+        backgroundColor: const Color(0xFFC1B298), // Darker sandy base
         body: gameStateAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => Center(child: Text('Error: $error')),
@@ -38,646 +38,722 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
   Widget _buildContent(GameState gameState) {
     return Stack(
       children: [
-        // 1. Background Layer (Gradient + Pattern)
-        Positioned.fill(child: _buildBackground()),
+        // 1. Base Background Layer (Precise Gradient match)
+        Positioned.fill(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF101812), // Near Black Green Top
+                  Color(0xFF1D3527), // Deep Green Main
+                  Color(0xFF504232), // Deep Sandy Brown transition
+                  Color(0xFFD4C4AA), // Light Sandy Bottom
+                ],
+                stops: [0.0, 0.2, 0.6, 1.0],
+              ),
+            ),
+          ),
+        ),
 
-        // 2. Main Content Scroll
+        // 2. Global Decorative Mandalas background
+        Positioned(
+          right: -80,
+          bottom: 80,
+          child: Opacity(
+            opacity: 0.08,
+            child: Image.asset(
+              'assets/images/islamic_pattern.png',
+              width: 300,
+              height: 300,
+              color: Colors.black,
+            ),
+          ),
+        ),
+        Positioned(
+          left: -100,
+          bottom: 250,
+          child: Opacity(
+            opacity: 0.08,
+            child: Image.asset(
+              'assets/images/islamic_pattern.png',
+              width: 300,
+              height: 300,
+              color: Colors.black,
+            ),
+          ),
+        ),
+
+        // 3. Scrollable Content
         Positioned.fill(
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // Top Safe Area Spacer
-              const SliverToBoxAdapter(child: SizedBox(height: 44)),
+              const SliverToBoxAdapter(child: SizedBox(height: 48)),
 
-              // Header (Title & Stats)
+              // 3a. Header: Top Title
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildHeaderSection(gameState),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(width: 48), // placeholder for symmetry
+                      Column(
+                        children: [
+                          Text(
+                            'مسار الحفظ',
+                            style: GoogleFonts.cairo(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                          Text(
+                            'درب التميز',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              color: Colors.white60,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white12,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.menu_rounded, color: Colors.white70),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-
+              
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-              // Today's Review Section
+              // 3b. Top Stats Row (Precise layout from image)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildReviewSection(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Left Item: Glowing Moon
+                      _buildIconStatItem(
+                        iconPath: 'assets/images/moon.png', // Fallback to icon for now, but glow it
+                        isCrescent: true,
+                        title: 'الأوراد المنجزة',
+                        value: '15/30 أوراد',
+                      ),
+                      // Center Item: Book
+                      _buildIconStatItem(
+                        iconData: Icons.menu_book_rounded,
+                        title: 'الآيات المحفوظة',
+                        value: '1205 آية',
+                      ),
+                      // Right Item: Calendar
+                      _buildIconStatItem(
+                        iconData: Icons.calendar_month_rounded,
+                        title: 'الالتزام اليومي',
+                        value: '25 يوم',
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-              // The Progression Path (Map)
+              // 3c. Top Progress Card
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildPathTitle(gameState),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF223E2D).withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '%',
+                              style: GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  'نسبة التقدم',
+                                  style: GoogleFonts.cairo(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.trending_up_rounded, color: Colors.white, size: 24),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: FractionallySizedBox(
+                            widthFactor: 0.85,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFFBBD068),
+                                    Color(0xFF89A658),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
 
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+              // 3d. Review Today Header Section
               SliverToBoxAdapter(
-                child: _buildProgressionMap(gameState),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF839E65),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'مراجعة اليوم',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Text(
+                          'المستويات التي حان وقت تثبيتها',
+                          style: GoogleFonts.cairo(
+                            color: Colors.white60,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+              // 3e. Sakeena Challenge Card
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF1C3226).withValues(alpha: 0.9),
+                          const Color(0xFF152535).withValues(alpha: 0.9),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3E4F37),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            'ابدأ',
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'تحدي السكينة',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              'لقد أتممت مراجعة اليوم بنجاح!',
+                              style: GoogleFonts.cairo(
+                                fontSize: 13,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Icon(
+                          Icons.nights_stay_rounded,
+                          color: Colors.white30,
+                          size: 40,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 40)),
+
+              // 3f. Hifz Path Title inside sandy area
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF384E36),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'مسار الحفظ',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white.withValues(alpha: 0.95),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Text(
+                          '1 من 781 مستوى',
+                          style: GoogleFonts.cairo(
+                            color: Colors.white60,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3g. The Advanced Path Map with Precise Coordinates
+              SliverToBoxAdapter(
+                child: _buildPrecisePathMap(gameState),
               ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
         ),
+
+        // 4. Custom Bottom Navigation matching image
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: _buildBottomNav(),
+        ),
       ],
     );
   }
 
-  Widget _buildBackground() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF1B3224), // Deep Dark Olive
-            Color(0xFF274532), // Dark Green
-            Color(0xFFE8DDC9), // Lighter Blend
-            Color(0xFFF8F3E6), // Sandy Beige
-          ],
-          stops: [0.0, 0.25, 0.5, 0.7],
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Transparent tiled pattern watermark
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.04,
-              child: Image.asset(
-                'assets/images/islamic_pattern.png',
-                repeat: ImageRepeat.repeat,
-                color: Colors.white,
-                blendMode: BlendMode.dstATop,
-              ),
-            ),
-          ),
-          // Bottom large decorative watermarks for visuals like screenshot
-          Positioned(
-            bottom: -50,
-            right: -50,
-            child: Opacity(
-              opacity: 0.1,
-              child: Image.asset(
-                'assets/images/islamic_pattern.png',
-                width: 250,
-                height: 250,
-                color: Colors.black,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 250,
-            left: -80,
-            child: Opacity(
-              opacity: 0.05,
-              child: Image.asset(
-                'assets/images/islamic_pattern.png',
-                width: 250,
-                height: 250,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderSection(GameState gameState) {
-    final user = gameState.userProfile;
+  Widget _buildIconStatItem({
+    IconData? iconData,
+    String? iconPath,
+    required String title,
+    required String value,
+    bool isCrescent = false,
+  }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Top Header Bar with Menu
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Stack(
+          alignment: Alignment.center,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'مسار الحفظ',
-                  style: GoogleFonts.cairo(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  'درب التميز',
-                  style: GoogleFonts.cairo(
-                    fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.menu_rounded, color: Colors.white),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // Stats Row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildStatItem(
-              icon: Icons.nights_stay,
-              title: 'الأوراد المنجزة',
-              value: '15/30 أوراد',
-              glowColor: Colors.amber,
-            ),
-            _buildStatItem(
-              icon: Icons.auto_stories_rounded,
-              title: 'الآيات المحفوظة',
-              value: '${user.totalXp ~/ 10} آية', // Simulating based on XP
-              glowColor: Colors.lightBlueAccent,
-            ),
-            _buildStatItem(
-              icon: Icons.calendar_today_rounded,
-              title: 'الالتزام اليومي',
-              value: '${user.currentStreak} يوم',
-              glowColor: Colors.greenAccent,
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        // Progress Bar Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '%',
-                    style: GoogleFonts.cairo(
-                      color: Colors.white60,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        'نسبة التقدم',
-                        style: GoogleFonts.cairo(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.insights_rounded, color: Colors.white70, size: 20),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Stack(
-                  children: [
-                    Container(
-                      height: 14,
-                      width: double.infinity,
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                    FractionallySizedBox(
-                      widthFactor: 0.75, // Hardcoded matching example image
-                      child: Container(
-                        height: 14,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.yellow.shade700,
-                              Colors.greenAccent.shade400,
-                            ],
-                          ),
-                        ),
-                      ),
+            if (isCrescent)
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD54F).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      spreadRadius: 10,
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color glowColor,
-  }) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: glowColor.withValues(alpha: 0.2),
-                  blurRadius: 15,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 26),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: GoogleFonts.cairo(
-              fontSize: 11,
-              color: Colors.white70,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          Text(
-            value,
-            style: GoogleFonts.cairo(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 20,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'مراجعة اليوم',
-              style: GoogleFonts.cairo(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            isCrescent
+                ? const Icon(Icons.nights_stay_rounded, color: Color(0xFFFFF59D), size: 34)
+                : Icon(iconData, color: Colors.white70, size: 32),
           ],
         ),
+        const SizedBox(height: 8),
         Text(
-          'المستويات التي حان وقت تثبيتها',
-          style: GoogleFonts.cairo(
-            fontSize: 12,
-            color: Colors.white60,
-          ),
+          title,
+          style: GoogleFonts.cairo(fontSize: 11, color: Colors.white60),
         ),
-        const SizedBox(height: 12),
-        
-        // Glassmorphic Challenge Card
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A2B22).withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'تحدي السكينة',
-                          style: GoogleFonts.cairo(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'لقد أتممت مراجعة اليوم بنجاح!',
-                          style: GoogleFonts.cairo(
-                            fontSize: 13,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.nights_stay, color: Colors.white30, size: 40),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2A4031),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'ابدأ',
-                      style: GoogleFonts.cairo(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        Text(
+          value,
+          style: GoogleFonts.cairo(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white.withValues(alpha: 0.9),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPathTitle(GameState gameState) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 20,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2E4A3A),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'مسار الحفظ',
-              style: GoogleFonts.cairo(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1A2B22),
-              ),
-            ),
-          ],
-        ),
-        Text(
-          '${gameState.completedLevels} من ${gameState.levels.length} مستوى',
-          style: GoogleFonts.cairo(
-            fontSize: 12,
-            color: Colors.black54,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProgressionMap(GameState gameState) {
+  // Redesigned map mapping strictly into visual coordinates of reference
+  Widget _buildPrecisePathMap(GameState gameState) {
     final double width = MediaQuery.of(context).size.width;
-    final int total = gameState.levels.length;
+    final double centerX = width / 2;
+
+    // Define strict pixel placement offsets mapping to visual image structure
+    // Index 0: Level 1 (Left-ish)
+    // Chest: Center mid-way
+    // Index 1: Level 1-2 (Right-ish)
+    // Index 2: Level 2 (Active, Center-down)
+    // Index 3: Locked with key (Far Left)
+    // Index 4: Locked padlock (Far Right)
+    
+    final offsets = [
+      Offset(centerX - 80, 80),       // Node 0 (Top Left)
+      Offset(centerX + 80, 120),      // Node 1 (Top Right)
+      Offset(centerX, 340),           // Node 2 (Active Center)
+      Offset(centerX - 90, 550),      // Node 3 (Bottom Left)
+      Offset(centerX + 90, 650),      // Node 4 (Bottom Right)
+    ];
 
     return SizedBox(
-      height: total * _rowHeight + 100,
+      height: 800,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Curved Path Line
+          // Background Painting Layer (Path lines + diagonal deco stripes)
           Positioned.fill(
             child: CustomPaint(
-              painter: _PathPainter(
-                count: total,
-                rowHeight: _rowHeight,
-                completedCount: gameState.completedLevels,
-              ),
+              painter: _RefinedPathPainter(offsets: offsets),
             ),
           ),
 
-          // Nodes Layout
-          ...List.generate(total, (index) {
-            final level = gameState.levels[index];
-            final isActive = level.id == gameState.currentLevel?.id;
+          // Intermediate Chest placed between Node 0 and 1 visually
+          Positioned(
+            left: centerX - 35,
+            top: 100,
+            child: Image.asset('assets/images/chest.png', width: 70, height: 70)
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .scale(duration: 2.seconds, begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
+          ),
 
-            // Position Math matched with CustomPainter
-            final double dx = width / 2 + math.sin(index * 1.1) * 80;
-            final double dy = index * _rowHeight + 40;
-
-            return Positioned(
-              left: dx - 80,
-              top: dy,
-              width: 160,
-              child: _buildNodeWidget(level, isActive),
-            );
-          }),
-          
-          // Add intermediate treasure chest example at index 0.5
-          if (total > 1)
+          // Rendering each Node widget with exact positioning
+          for (int i = 0; i < offsets.length; i++)
             Positioned(
-              left: width / 2 - 40,
-              top: _rowHeight * 0.6,
-              child: Image.asset(
-                'assets/images/chest.png',
-                width: 70,
-                height: 70,
-              ).animate(onPlay: (c) => c.repeat(reverse: true))
-              .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 2.seconds),
+              left: offsets[i].dx - 75,
+              top: offsets[i].dy - 75,
+              width: 150,
+              child: _buildRefinedNode(i),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildNodeWidget(GameLevel level, bool isActive) {
-    final bool isCompleted = level.isCompleted;
-    final bool isLocked = !level.isUnlocked;
+  // Helper to generate hardcoded nodes mapping to specific indices in mockup for realism
+  Widget _buildRefinedNode(int nodeIndex) {
+    String assetPath = 'assets/images/quran_completed.png';
+    bool isCompleted = false;
+    bool isActive = false;
+    bool isLocked = false;
+    String title = '';
+    String subTitle = '';
+    bool showStars = false;
 
-    String assetPath;
-    if (isCompleted) {
-      assetPath = 'assets/images/quran_completed.png';
-    } else if (isActive) {
-      assetPath = 'assets/images/gate_active.png';
-    } else if (isLocked) {
-      assetPath = 'assets/images/gate_locked.png';
-    } else {
-      assetPath = 'assets/images/gate_unlocked.png';
+    switch (nodeIndex) {
+      case 0:
+        assetPath = 'assets/images/quran_completed.png';
+        isCompleted = true;
+        showStars = true;
+        title = 'مستوى ١:';
+        subTitle = 'سورة الفاتحة ١-٧';
+        break;
+      case 1:
+        assetPath = 'assets/images/quran_completed.png';
+        isCompleted = true;
+        showStars = true;
+        title = 'مستوى ١:';
+        subTitle = 'سورة البقرة ١-٦';
+        break;
+      case 2:
+        assetPath = 'assets/images/gate_active.png';
+        isActive = true;
+        title = 'مستوى ٢:';
+        subTitle = 'سورة البقرة ١-١٠';
+        break;
+      case 3:
+        assetPath = 'assets/images/gate_unlocked.png'; // Has key in my generation
+        isLocked = true;
+        break;
+      case 4:
+        assetPath = 'assets/images/gate_locked.png';
+        isLocked = true;
+        break;
     }
 
-    return GestureDetector(
-      onTap: isLocked ? null : () => _openLevel(level),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Star Rating Above for completed ones
-          if (isCompleted)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(3, (i) => const Icon(Icons.star_rounded, color: Colors.amber, size: 16)),
-            )
-          else
-            const SizedBox(height: 16),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Stars Above Completed Nodes
+        if (showStars)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(3, (x) => Icon(Icons.star_rounded, color: const Color(0xFFE0B566).withValues(alpha: 0.8), size: 16)),
+          )
+        else
+          const SizedBox(height: 16),
 
-          // The 3D Visual Node
-          Stack(
-            alignment: Alignment.center,
+        // Visual Asset
+        Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            if (isActive)
+              // Backlight glow for the plant arch
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFE082).withValues(alpha: 0.3),
+                      blurRadius: 40,
+                      spreadRadius: 20,
+                    ),
+                  ],
+                ),
+              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 1.5.seconds, begin: const Offset(0.8,0.8), end: const Offset(1.1,1.1)),
+            
+            Image.asset(
+              assetPath,
+              width: isActive ? 140 : isLocked ? 130 : 110,
+              height: isActive ? 140 : isLocked ? 130 : 110,
+              fit: BoxFit.contain,
+            ),
+          ],
+        ),
+
+        // Subtitles beneath non-locked nodes
+        if (!isLocked)
+          Column(
             children: [
-              // Active Glow Effect
-              if (isActive)
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.amber.withValues(alpha: 0.3),
-                        blurRadius: 30,
-                        spreadRadius: 10,
-                      ),
-                    ],
-                  ),
-                ).animate(onPlay: (c) => c.repeat(reverse: true))
-                .scale(begin: const Offset(0.8, 0.8), duration: 1.5.seconds),
-
-              // The Main Asset Image
-              Image.asset(
-                assetPath,
-                width: 120,
-                height: 120,
-                fit: BoxFit.contain,
+              Text(
+                title,
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                subTitle,
+                style: GoogleFonts.cairo(
+                  fontSize: 12,
+                  color: Colors.black54,
+                ),
               ),
             ],
           ),
+      ],
+    );
+  }
 
-          const SizedBox(height: 4),
-
-          // Label
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: isLocked ? Colors.grey.shade300.withValues(alpha: 0.5) : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'مستوى ${level.sequence}:',
-                  style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: isLocked ? Colors.grey.shade700 : const Color(0xFF1A2B22),
-                  ),
-                ),
-                Text(
-                  '${level.surahName} ${level.ayahStart}-${level.ayahEnd}',
-                  style: GoogleFonts.cairo(
-                    fontSize: 11,
-                    color: isLocked ? Colors.grey.shade600 : const Color(0xFF3A4B42),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+  Widget _buildBottomNav() {
+    return Container(
+      height: 90,
+      decoration: const BoxDecoration(
+        color: Color(0xFF25331D),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(Icons.person_outline_rounded, 'الملف الشخصي', false),
+          _buildNavItem(Icons.bubble_chart_outlined, 'الأذكار', false),
+          _buildNavItem(Icons.volunteer_activism_outlined, 'التبرعات', false),
+          _buildNavItem(Icons.menu_book_rounded, 'المصحف', false),
+          _buildNavItem(Icons.bar_chart_rounded, 'الإحصاءات', false),
+          _buildNavItem(Icons.map_rounded, 'الرئيسية', true),
         ],
       ),
     );
   }
 
-  void _openLevel(GameLevel level) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StationTasksSheet(level: level),
+  Widget _buildNavItem(IconData icon, String label, bool isActive) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: EdgeInsets.all(isActive ? 8 : 0),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF425236) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: isActive ? const Color(0xFFB5CCAA) : Colors.white54,
+            size: 28,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.cairo(
+            fontSize: 10,
+            color: isActive ? const Color(0xFFB5CCAA) : Colors.white54,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
     );
   }
 }
 
-// Helper CustomPainter for the path connector
-class _PathPainter extends CustomPainter {
-  final int count;
-  final double rowHeight;
-  final int completedCount;
+class _RefinedPathPainter extends CustomPainter {
+  final List<Offset> offsets;
 
-  _PathPainter({
-    required this.count,
-    required this.rowHeight,
-    required this.completedCount,
-  });
+  _RefinedPathPainter({required this.offsets});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (count < 2) return;
+    // 1. Draw Background Decorative Diagonal Stripes just like in screenshot!
+    final stripePaint = Paint()
+      ..color = Colors.black12
+      ..strokeWidth = 14
+      ..strokeCap = StrokeCap.square;
 
-    final double width = size.width;
+    // Drawing distinct diagonal background lines seen in visual
+    canvas.drawLine(const Offset(0, 500), const Offset(250, 750), stripePaint);
+    canvas.drawLine(const Offset(0, 540), const Offset(220, 760), stripePaint);
+    
+    if (offsets.length < 2) return;
 
+    // 2. Draw The Curvy Progression Path
     final path = Path();
-    Offset last = _getOffset(0, width);
-    path.moveTo(last.dx, last.dy);
+    path.moveTo(offsets[0].dx, offsets[0].dy);
 
-    for (int i = 1; i < count; i++) {
-      final current = _getOffset(i, width);
-      
-      // Build organic quadratic curve logic
-      final ctrlX = (last.dx + current.dx) / 2 + math.cos(i * 0.8) * 40;
-      final ctrlY = (last.dy + current.dy) / 2;
+    // Manual precise quadratic paths following exactly screenshot visual curve shape
+    
+    // Segment 0 -> 1 (Soft curve across top)
+    final ctrl1X = (offsets[0].dx + offsets[1].dx) / 2;
+    final ctrl1Y = (offsets[0].dy + offsets[1].dy) / 2 + 20;
+    path.quadraticBezierTo(ctrl1X, ctrl1Y, offsets[1].dx, offsets[1].dy);
 
-      path.quadraticBezierTo(ctrlX, ctrlY, current.dx, current.dy);
-      last = current;
-    }
+    // Segment 1 -> 2 (Deep curve flowing right then center down)
+    // Point 1 is right, Point 2 is center down. Control point is far right down.
+    final ctrl2X = offsets[1].dx + 40;
+    final ctrl2Y = (offsets[1].dy + offsets[2].dy) / 2;
+    path.quadraticBezierTo(ctrl2X, ctrl2Y, offsets[2].dx, offsets[2].dy);
 
-    // Main Line paint
-    final paint = Paint()
-      ..color = const Color(0xFF556C5B).withValues(alpha: 0.5) // Soft darker line
+    // Segment 2 -> 3 (Curve flow from center down to left)
+    final ctrl3X = offsets[2].dx - 50;
+    final ctrl3Y = (offsets[2].dy + offsets[3].dy) / 2;
+    path.quadraticBezierTo(ctrl3X, ctrl3Y, offsets[3].dx, offsets[3].dy);
+    
+    // Segment 3 -> 4
+    final ctrl4X = (offsets[3].dx + offsets[4].dx) / 2;
+    final ctrl4Y = (offsets[3].dy + offsets[4].dy) / 2 + 20;
+    path.quadraticBezierTo(ctrl4X, ctrl4Y, offsets[4].dx, offsets[4].dy);
+
+    // Main thick path line
+    final pathPaint = Paint()
+      ..color = const Color(0xFF34493A).withValues(alpha: 0.4) // Visual match
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawPath(path, paint);
-  }
-
-  Offset _getOffset(int index, double totalWidth) {
-    final double dx = totalWidth / 2 + math.sin(index * 1.1) * 80;
-    // Shift downward to match the Node images exact center anchor
-    final double dy = index * rowHeight + 40 + 60; 
-    return Offset(dx, dy);
+    canvas.drawPath(path, pathPaint);
   }
 
   @override
