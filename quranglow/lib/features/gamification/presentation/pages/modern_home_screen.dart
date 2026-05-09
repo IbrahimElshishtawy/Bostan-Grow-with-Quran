@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/components/station_tasks_sheet.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/modern_home/refined_path_painter.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/modern_home/active_level_footer.dart';
 
 class ModernHomeScreen extends ConsumerStatefulWidget {
   const ModernHomeScreen({super.key});
@@ -24,14 +26,22 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     super.initState();
     _scrollController = ScrollController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Dynamic scroll focusing to roughly around 600-700 range to match our upcoming vertical scale!
-      Future.delayed(const Duration(milliseconds: 600), () {
+      // 1. Scroll focusing to the BASE (Level 1) at the bottom of the long track!
+      Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted && _scrollController.hasClients) {
+          // Dynamic scroll will snap perfectly to the bottom of the generated height
           _scrollController.animateTo(
-            650.0, // Perfect center target for stretched map
-            duration: const Duration(milliseconds: 1200),
+            _scrollController.position.maxScrollExtent, 
+            duration: const Duration(milliseconds: 1600),
             curve: Curves.fastOutSlowIn,
           );
+        }
+      });
+      
+      // 2. Show the Goal Selection Dialog automatically on launch!
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          _showGoalSelectorBottomSheet(context);
         }
       });
     });
@@ -155,15 +165,19 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // 1. The Drawer Button placed first (RTL will map to physical RIGHT)
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.menu_rounded,
-                          color: Colors.white70,
+                      GestureDetector(
+                        onTap: () => Scaffold.of(context).openDrawer(),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          ),
+                          child: const Icon(
+                            Icons.menu_rounded,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
 
@@ -198,44 +212,49 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-              // 3b. Top Stats Row (Precise layout from image)
+              // 3b. Top Stats Tile (Grouped Glassmorphism as requested)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Left Item: Glowing Moon
-                      _buildIconStatItem(
-                        iconPath:
-                            'assets/images/moon.png', // Fallback to icon for now, but glow it
-                        isCrescent: true,
-                        title: 'الأوراد المنجزة',
-                        value: '15/30 أوراد',
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
                       ),
-                      // Center Item: Book
-                      _buildIconStatItem(
-                        iconData: Icons.menu_book_rounded,
-                        title: 'الآيات المحفوظة',
-                        value: '1205 آية',
-                      ),
-                      // Right Item: Calendar
-                      _buildIconStatItem(
-                        iconData: Icons.calendar_month_rounded,
-                        title: 'الالتزام اليومي',
-                        value: '25 يوم',
-                      ),
-                    ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 15,
+                        )
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildIconStatItem(
+                          iconPath: 'assets/images/moon.png',
+                          isCrescent: true,
+                          title: 'الأوراد المنجزة',
+                          value: '15/30 أوراد',
+                        ),
+                        _buildIconStatItem(
+                          iconData: Icons.menu_book_rounded,
+                          title: 'الآيات المحفوظة',
+                          value: '1205 آية',
+                        ),
+                        _buildIconStatItem(
+                          iconData: Icons.calendar_month_rounded,
+                          title: 'الالتزام اليومي',
+                          value: '25 يوم',
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
-              // 3x. Goal Selection Injection (New Feature requested)
-              SliverToBoxAdapter(child: _buildGoalSelector()),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
               // 3c. Top Progress Card
               SliverToBoxAdapter(
@@ -316,125 +335,6 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
-
-              // 3d. Review Today Header Section
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 5,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF839E65),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'مراجعة اليوم',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: Text(
-                          'المستويات التي حان وقت تثبيتها',
-                          style: TextStyle(color: Colors.white60, fontSize: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-              // 3e. Sakeena Challenge Card
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF1C3226).withValues(alpha: 0.9),
-                          const Color(0xFF152535).withValues(alpha: 0.9),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3E4F37),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Text(
-                            'ابدأ',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'تحدي السكينة',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              'لقد أتممت مراجعة اليوم بنجاح!',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 16),
-                        Icon(
-                          Icons.nights_stay_rounded,
-                          color: Colors.white30,
-                          size: 40,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 40)),
 
@@ -491,7 +391,19 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           ),
         ),
 
-        /* Bottom Nav removed as requested to avoid collision with main navigation */
+        // 4. Persistent Floating Footer (Extract Premium Widget)
+        Positioned(
+          bottom: 115, // Slightly pushed up to fully clear glass nav bar
+          left: 16,
+          right: 16,
+          child: ActiveLevelFooter(
+            currentLevel: 2,
+            levelDetails: 'سورة البقرة (آيات ١-١٠)',
+            onStart: () {
+              // Trigger next game phase
+            },
+          ),
+        ),
       ],
     );
   }
@@ -551,31 +463,34 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     final double width = MediaQuery.of(context).size.width;
     final double centerX = width / 2;
 
-    // Define strict pixel placement offsets mapping to visual image structure
-    // Index 0: Level 1 (Left-ish)
-    // Chest: Center mid-way
-    // Index 1: Level 1-2 (Right-ish)
-    // Index 2: Level 2 (Active, Center-down)
-    // Index 3: Locked with key (Far Left)
-    // Index 4: Locked padlock (Far Right)
+    // DYNAMIC ARRAY GENERATION: Inverted Y calculation to render Level 1 AT BOTTOM!
+    final int totalLevels = 35;
+    final double spacingY = 320.0;
+    final double mapTotalHeight = (totalLevels * spacingY) + 300.0;
 
-    final offsets = [
-      Offset(centerX - 90, 120), // Node 0 (Stretched Top Left)
-      Offset(centerX + 90, 450), // Node 1 (Heavily Spaced Right)
-      Offset(centerX, 850), // Node 2 (Deep Center Active)
-      Offset(centerX - 90, 1250), // Node 3 (Way down Left)
-      Offset(centerX + 90, 1650), // Node 4 (Bottom Right)
-    ];
+    final offsets = List.generate(totalLevels, (index) {
+      // Alternating S-curve pattern
+      double dx = centerX;
+      if (index % 4 == 1) {
+        dx += 90;
+      } else if (index % 4 == 3) {
+        dx -= 90;
+      }
+      
+      // Invert height so Index 0 has maximum height (the lowest visual point)
+      double dy = mapTotalHeight - 200.0 - (index * spacingY);
+      return Offset(dx, dy);
+    });
 
     return SizedBox(
-      height: 1800, // Heavily extended track
+      height: mapTotalHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Background Painting Layer (Path lines + diagonal deco stripes)
+          // The Custom Refined Path Painter (Imported Module)
           Positioned.fill(
             child: CustomPaint(
-              painter: _RefinedPathPainter(offsets: offsets, activeIndex: 2),
+              painter: RefinedPathPainter(offsets: offsets, activeIndex: 2),
             ),
           ),
 
@@ -602,36 +517,25 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     String subTitle = '';
     bool showStars = false;
 
-    switch (nodeIndex) {
-      case 0:
-        assetPath = 'assets/images/quran_completed.png';
-        isCompleted = true;
-        showStars = true;
-        title = 'مستوى ١:';
-        subTitle = 'سورة الفاتحة ١-٧';
-        break;
-      case 1:
-        assetPath = 'assets/images/quran_completed.png';
-        isCompleted = true;
-        showStars = true;
-        title = 'مستوى ١:';
-        subTitle = 'سورة البقرة ١-٦';
-        break;
-      case 2:
-        assetPath = 'assets/images/gate_active.png';
-        isActive = true;
-        title = 'مستوى ٢:';
-        subTitle = 'سورة البقرة ١-١٠';
-        break;
-      case 3:
-        assetPath =
-            'assets/images/gate_unlocked.png'; // Has key in my generation
-        isLocked = true;
-        break;
-      case 4:
-        assetPath = 'assets/images/gate_locked.png';
-        isLocked = true;
-        break;
+    final displayIndex = nodeIndex + 1;
+
+    if (nodeIndex < 2) {
+      assetPath = 'assets/images/quran_completed.png';
+      isCompleted = true;
+      showStars = true;
+      title = 'مستوى $displayIndex:';
+      subTitle = 'حفظ متقن';
+    } else if (nodeIndex == 2) {
+      assetPath = 'assets/images/gate_active.png';
+      isActive = true;
+      title = 'مستوى $displayIndex:';
+      subTitle = 'سورة البقرة ١-١٠';
+    } else {
+      isLocked = true;
+      // Dynamically toggle between alternative gate icons based on index
+      assetPath = (nodeIndex % 2 == 0) 
+          ? 'assets/images/gate_unlocked.png' 
+          : 'assets/images/gate_locked.png';
     }
 
     return Column(
@@ -862,91 +766,76 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
       ),
     );
   }
-}
 
-class _RefinedPathPainter extends CustomPainter {
-  final List<Offset> offsets;
-  final int activeIndex;
-
-  _RefinedPathPainter({required this.offsets, this.activeIndex = 0});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (offsets.length < 2) return;
-
-    // 2. Define Shared Curve Geometries
-    // 0 -> 1
-    final ctrl1X = (offsets[0].dx + offsets[1].dx) / 2;
-    final ctrl1Y = (offsets[0].dy + offsets[1].dy) / 2 + 20;
-
-    // 1 -> 2
-    final ctrl2X = offsets[1].dx + 40;
-    final ctrl2Y = (offsets[1].dy + offsets[2].dy) / 2;
-
-    // 2 -> 3
-    final ctrl3X = offsets[2].dx - 50;
-    final ctrl3Y = (offsets[2].dy + offsets[3].dy) / 2;
-
-    // 3 -> 4
-    final ctrl4X = (offsets[3].dx + offsets[4].dx) / 2;
-    final ctrl4Y = (offsets[3].dy + offsets[4].dy) / 2 + 20;
-
-    // 3. Create FULL Track Path
-    final fullPath = Path();
-    fullPath.moveTo(offsets[0].dx, offsets[0].dy);
-    fullPath.quadraticBezierTo(ctrl1X, ctrl1Y, offsets[1].dx, offsets[1].dy);
-    fullPath.quadraticBezierTo(ctrl2X, ctrl2Y, offsets[2].dx, offsets[2].dy);
-    fullPath.quadraticBezierTo(ctrl3X, ctrl3Y, offsets[3].dx, offsets[3].dy);
-    fullPath.quadraticBezierTo(ctrl4X, ctrl4Y, offsets[4].dx, offsets[4].dy);
-
-    // 4. Create ACTIVE Filled Track Path up to current node
-    final fillPath = Path();
-    fillPath.moveTo(offsets[0].dx, offsets[0].dy);
-
-    if (activeIndex >= 1) {
-      fillPath.quadraticBezierTo(ctrl1X, ctrl1Y, offsets[1].dx, offsets[1].dy);
-    }
-    if (activeIndex >= 2) {
-      fillPath.quadraticBezierTo(ctrl2X, ctrl2Y, offsets[2].dx, offsets[2].dy);
-    }
-    if (activeIndex >= 3) {
-      fillPath.quadraticBezierTo(ctrl3X, ctrl3Y, offsets[3].dx, offsets[3].dy);
-    }
-    if (activeIndex >= 4) {
-      fillPath.quadraticBezierTo(ctrl4X, ctrl4Y, offsets[4].dx, offsets[4].dy);
-    }
-
-    // 5. Drawing Logic
-
-    // a. Draw the Empty Base Path (The unlit track)
-    final basePaint = Paint()
-      ..color = const Color(0xFF2E3F33).withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(fullPath, basePaint);
-
-    // b. Draw GLOw under the active fill path (The neon engine)
-    final glowPaint = Paint()
-      ..color = const Color(0xFFB4D455).withValues(alpha: 0.4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0)
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(fillPath, glowPaint);
-
-    // c. Draw Top highlight of fill path (The vibrant green wire)
-    final vibrantPaint = Paint()
-      ..color = const Color(0xFFBDE156)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(fillPath, vibrantPaint);
+  // Beautiful modal launcher to trigger immediate user goal setup!
+  void _showGoalSelectorBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF15251B),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'اختر وردك القرآني المفضل',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'حدد هدف المراجعة اليومية للبدء في رحلة الحفظ الممتعة',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(height: 32),
+                _buildGoalSelector(),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFBDE156),
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'حفظ والانطلاق',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
