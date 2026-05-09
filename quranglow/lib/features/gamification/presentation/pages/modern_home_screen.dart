@@ -21,18 +21,23 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
   late final ScrollController _scrollController;
   int _dailyGoal = 10; // Default selection
 
+  // High-performance listener to toggle CTA footer visibility dynamically on scroll
+  final ValueNotifier<bool> _showFooterNotifier = ValueNotifier(true);
+  double _cachedActiveNodeY = -1.0;
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _scrollController.addListener(_onScrollUpdate);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 1. Dynamic scroll auto-focusing onto the ACTIVE CURRENT LEVEL wherever it is on path
+      // 1. Perform Initial Focus Scroll exactly onto the CURRENT Level to begin!
       Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted && _scrollController.hasClients) {
-          // We will find actual approximate scroll target based on standard spacing later, 
-          // but for now setting initial smooth slide to safe top region or customized offset.
+        if (mounted && _scrollController.hasClients && _cachedActiveNodeY > 0) {
+          final double centerViewOffset = (_cachedActiveNodeY - 350.0).clamp(0.0, _scrollController.position.maxScrollExtent);
           _scrollController.animateTo(
-            0, // Default to top for now, we can improve logic to calculate precise active level position if required
+            centerViewOffset,
             duration: const Duration(milliseconds: 1600),
             curve: Curves.fastOutSlowIn,
           );
@@ -48,9 +53,30 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     });
   }
 
+  void _onScrollUpdate() {
+    if (!_scrollController.hasClients || _cachedActiveNodeY < 0) return;
+    
+    final double scrollOffset = _scrollController.offset;
+    
+    // Smart Visibility Logic: Detect if the Active Node is physically within the primary viewport range!
+    // The viewport height is typically 700-900px. 
+    // If node is roughly between scrollOffset and scrollOffset + 600, it's in view!
+    final bool isNodeInViewport = (scrollOffset > _cachedActiveNodeY - 700) && 
+                                (scrollOffset < _cachedActiveNodeY + 100);
+
+    // Footer visibility state SHOULD be INVERTED! (Visible when Node IS NOT in viewport)
+    final bool shouldShow = !isNodeInViewport;
+
+    if (_showFooterNotifier.value != shouldShow) {
+      _showFooterNotifier.value = shouldShow;
+    }
+  }
+
   @override
   void dispose() {
+    _scrollController.removeListener(_onScrollUpdate);
     _scrollController.dispose();
+    _showFooterNotifier.dispose();
     super.dispose();
   }
 
@@ -58,21 +84,41 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
   Widget build(BuildContext context) {
     final gameStateAsync = ref.watch(gamificationControllerProvider);
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFC1B298), // Darker sandy base
-        body: gameStateAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('Error: $error')),
-          data: (gameState) => _buildContent(gameState),
-        ),
-      ),
+    return gameStateAsync.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stackTrace) => Scaffold(body: Center(child: Text('Error: $error'))),
+      data: (gameState) {
+        // PRE-CALCULATE the EXACT target Y coordinate of the Active Node once during build cycle
+        // This synchronizes with actual render offsets generator logic!
+        final levels = gameState.levels;
+        int activeIdx = levels.indexWhere((l) => l.isUnlocked && !l.isCompleted);
+        if (activeIdx == -1) activeIdx = 0;
+        
+        double currentY = 150.0;
+        for (int i = 0; i < levels.length; i++) {
+          if (i % 10 == 0) currentY += 220.0; // Match Header Gap logic!
+          if (i == activeIdx) {
+            _cachedActiveNodeY = currentY;
+            break;
+          }
+          currentY += 320.0; // Match spacing logic!
+        }
+
+        // Find current active level details for the Footer bindings!
+        final activeLevel = levels[activeIdx];
+        final activeLevelTitle = activeLevel.surahName;
+        
+        return _buildContent(gameState, activeLevelTitle, activeIdx + 1);
+      },
     );
   }
 
-  Widget _buildContent(GameState gameState) {
-    return Stack(
+  Widget _buildContent(GameState gameState, String activeLevelTitle, int activeLevelSeq) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFC1B298),
+        body: Stack(
       children: [
         // 1. Premium Generated Visual Background Layer
         Positioned.fill(
@@ -392,22 +438,35 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           ),
         ),
 
-        // 4. Persistent Floating Footer (Extract Premium Widget)
-        Positioned(
-          bottom: 115, // Slightly pushed up to fully clear glass nav bar
-          left: 16,
-          right: 16,
-          child: ActiveLevelFooter(
-            currentLevel: 2,
-            levelDetails: 'سورة البقرة (آيات ١-١٠)',
-            onStart: () {
-              // Trigger next game phase
-            },
-          ),
+        // 4. Persistent Floating Footer (Extract Premium Widget) with Dynamic Auto-Hide Logic!
+        ValueListenableBuilder<bool>(
+          valueListenable: _showFooterNotifier,
+          builder: (context, isVisible, _) {
+            return AnimatedPositioned(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOutQuart,
+              bottom: isVisible ? 115 : -120, // Slide down totally out of bounds when hidden!
+              left: 16,
+              right: 16,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 400),
+                opacity: isVisible ? 1.0 : 0.0,
+                child: ActiveLevelFooter(
+                  currentLevel: activeLevelSeq,
+                  levelDetails: 'سورة $activeLevelTitle',
+                  onStart: () {
+                    // Immediate shortcut handler
+                  },
+                ),
+              ),
+            );
+          },
         ),
       ],
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _buildIconStatItem({
     IconData? iconData,

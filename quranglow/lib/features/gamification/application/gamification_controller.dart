@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/features/gamification/data/gamification_repository.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
+import 'package:quranglow/core/data/surah_names_ar.dart';
 
 /// Static service to trigger soft satisfying Islamic-inspired UI haptics and sounds
 class PremiumFeedbackService {
@@ -44,7 +45,8 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       var levels = await repository.getLevels(userId);
       final missions = await repository.getDailyMissions(userId);
 
-      if (levels.isEmpty) {
+      // Automatically upgrade legacy small data schemas to full 114 Quran Coverage!
+      if (levels.isEmpty || levels.length < 100) {
         levels = _generateSpiritualJourneyStations();
         await repository.initializeLevels(userId, levels);
       }
@@ -401,86 +403,46 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
   }
 
   /// Generate default beautifully distributed stations across Surahs for the Spiritual Journey Map
+  /// Generates the comprehensive complete Quran Roadmap comprising all 114 Divine Surahs!
   List<GameLevel> _generateSpiritualJourneyStations() {
     final List<GameLevel> stations = [];
     
-    final journeyGroups = [
-      _JourneyGroup('s1', 1, 1, 7, 'الفاتحة والتدشين', 'The spiritual opening of the hearts', StationType.learning, 100),
-      _JourneyGroup('s78', 78, 1, 16, 'النبأ العظيم', 'Deep news of eternity', StationType.listening, 120),
-      _JourneyGroup('s79', 79, 1, 20, 'النازعات والخشوع', 'Solemnity of soul departure', StationType.reading, 120),
-      _JourneyGroup('s80', 80, 1, 15, 'عبس والتذكرة', 'Divine reminder of care', StationType.writing, 130),
-      _JourneyGroup('s81', 81, 1, 14, 'التكوير والانفطار', 'Cosmic changes and alignment', StationType.memorization, 140),
-      _JourneyGroup('gate1', 78, 1, 40, 'بوابة التمكين الجزء الأول', 'First spiritual consolidation gate', StationType.revisionGate, 150),
-      _JourneyGroup('s82', 82, 1, 19, 'الانفطار والعدل', 'Cosmic splitting and mercy', StationType.learning, 110),
-      _JourneyGroup('s83', 83, 1, 10, 'المطففين والأمانة', 'Integrity in life and business', StationType.listening, 120),
-      _JourneyGroup('s84', 84, 1, 12, 'الانشقاق والاستعداد', 'Splitting of heaven & final destiny', StationType.reading, 120),
-      _JourneyGroup('s85', 85, 1, 11, 'البروج والثبات', 'The celestial mansions and resilience', StationType.writing, 130),
-      _JourneyGroup('s86', 86, 1, 17, 'الطارق والنجم الساطع', 'The nightcomer and human creation', StationType.memorization, 140),
-      _JourneyGroup('boss1', 85, 1, 22, 'التحدي الأكبر لثبات العقيدة', 'Sovereign test of Surah Al-Buruj', StationType.bossChallenge, 300),
-      _JourneyGroup('s87', 87, 1, 19, 'الأعلى والتنزيه', 'Praise of the Most High', StationType.learning, 110),
-      _JourneyGroup('s88', 88, 1, 16, 'الغاشية واليقظة', 'The overwhelming event and path', StationType.listening, 120),
-      _JourneyGroup('s89', 89, 1, 15, 'الفجر والليالي العشر', 'The dawn and divine light', StationType.reading, 120),
-      _JourneyGroup('s90', 90, 1, 20, 'البلد والجهاد الداخلي', 'The sacred city and steep path', StationType.writing, 130),
-      _JourneyGroup('s91', 91, 1, 15, 'الشمس وتزكية النفس', 'The sun and purity of the soul', StationType.memorization, 140),
-      _JourneyGroup('gate2', 87, 1, 19, 'بوابة التمكين الجزء الثاني', 'Second spiritual consolidation gate', StationType.revisionGate, 150),
-      _JourneyGroup('s92', 92, 1, 21, 'الليل وسعي الإنسان', 'The night and diverse human efforts', StationType.learning, 110),
-      _JourneyGroup('s93', 93, 1, 11, 'الضحى والأمل', 'The morning brightness and relief', StationType.listening, 120),
-      _JourneyGroup('s94', 94, 1, 8, 'الشرح وتيسير العسر', 'Expansion of chest and relief', StationType.reading, 120),
-      _JourneyGroup('s95', 95, 1, 8, 'التين وخلق الإنسان', 'The fig and human design', StationType.writing, 130),
-      _JourneyGroup('s96', 96, 1, 19, 'العلق وأول الوحي', 'Read in the name of your Lord', StationType.memorization, 140),
-      _JourneyGroup('boss2', 96, 1, 19, 'تحدي آية اقرأ والوعي', 'Sovereign test of Surah Al-Alaq', StationType.bossChallenge, 350),
-      _JourneyGroup('s97', 97, 1, 5, 'القدر ونور القرآن', 'The night of decree and destiny', StationType.learning, 110),
-      _JourneyGroup('s98', 98, 1, 8, 'البينة والبرهان', 'The clear evidence and truth', StationType.listening, 120),
-      _JourneyGroup('s99', 99, 1, 8, 'الزلزلة والحساب', 'The earthquake and weight of actions', StationType.reading, 120),
-      _JourneyGroup('s100', 100, 1, 11, 'العاديات وضجيج الحياة', 'The chargers and human ingratitude', StationType.writing, 130),
-      _JourneyGroup('s101', 101, 1, 11, 'القارعة وقرع القلوب', 'The striking hour and final balance', StationType.memorization, 140),
-      _JourneyGroup('gate3', 97, 1, 5, 'بوابة التمكين الجزء الثالث', 'Third spiritual consolidation gate', StationType.revisionGate, 150),
-      _JourneyGroup('s102', 102, 1, 8, 'التكاثر ولهو الدنيا', 'Rivalry in worldly increase', StationType.learning, 110),
-      _JourneyGroup('s103', 103, 1, 3, 'العصر والزمن الثمين', 'Time and the path of success', StationType.listening, 120),
-      _JourneyGroup('s104', 104, 1, 9, 'الهمزة وآفة الغيبة', 'The backbiter and worldly obsession', StationType.reading, 120),
-      _JourneyGroup('s105', 105, 1, 5, 'الفيل ورعاية البيت', 'The elephant and divine protection', StationType.writing, 130),
-      _JourneyGroup('s106', 106, 1, 4, 'قريش والأمن والرزق', 'Provision, security, and gratitude', StationType.memorization, 140),
-      _JourneyGroup('gate4', 102, 1, 8, 'بوابة التمكين الجزء الرابع', 'Fourth spiritual consolidation gate', StationType.revisionGate, 150),
-      _JourneyGroup('s107', 107, 1, 7, 'الماعون وأعمال الخير', 'Small kindnesses and prayers', StationType.learning, 110),
-      _JourneyGroup('s108', 108, 1, 3, 'الكوثر والعطاء الوافر', 'The abundance and sacrifice', StationType.listening, 120),
-      _JourneyGroup('s109', 109, 1, 6, 'الكافرون والتوحيد الخالص', 'Uncompromised faith and unity', StationType.reading, 120),
-      _JourneyGroup('s110', 110, 1, 3, 'النصر وتمام التنزيل', 'The help, victory, and forgiveness', StationType.writing, 130),
-      _JourneyGroup('s111', 111, 1, 5, 'المسد ومآل الكفر', 'The palm fiber rope and justice', StationType.memorization, 140),
-      _JourneyGroup('s112', 112, 1, 4, 'الإخلاص والتوحيد الصرف', 'Sincerity and oneness of Creator', StationType.learning, 110),
-      _JourneyGroup('s113', 113, 1, 5, 'الفلق والتحصين الرباني', 'Seek refuge in the Lord of Daybreak', StationType.listening, 120),
-      _JourneyGroup('s114', 114, 1, 6, 'الناس وحماية النفوس', 'Seek refuge in the Lord of Mankind', StationType.reading, 120),
-      _JourneyGroup('boss3', 112, 1, 4, 'التحدي النهائي والمحيط', 'The ultimate master boss challenge', StationType.bossChallenge, 500),
-    ];
+    // Loop through the complete global array containing 114 Arabic names!
+    for (int i = 0; i < kSurahNamesAr.length; i++) {
+      final int surahIndex = i + 1;
+      final String name = kSurahNamesAr[i];
+      
+      // Distribute station types smoothly down the path
+      final type = (surahIndex % 4 == 0) 
+          ? StationType.memorization 
+          : (surahIndex % 3 == 0) 
+              ? StationType.reading 
+              : (surahIndex % 2 == 0) 
+                  ? StationType.listening 
+                  : StationType.learning;
 
-    int sequence = 1;
-    for (final group in journeyGroups) {
       stations.add(
         GameLevel(
-          id: group.id,
-          sequence: sequence,
-          type: group.type,
-          surahId: group.surahId,
-          surahName: group.surahName,
-          ayahStart: group.ayahStart,
-          ayahEnd: group.ayahEnd,
-          title: group.title,
-          description: group.description,
-          xpReward: group.xp,
+          id: 'surah_$surahIndex',
+          sequence: surahIndex,
+          type: type,
+          surahId: surahIndex,
+          surahName: name,
+          ayahStart: 1, // Simplified mapping covering the general surah
+          ayahEnd: 0, // Indicating whole surah context
+          title: 'محطة سورة $name',
+          description: 'أكمل رحلة النور وتدبر معاني وأسرار سورة $name المباركة',
+          xpReward: 150,
           maxStars: 3,
-          isUnlocked: sequence == 1,
+          isUnlocked: surahIndex == 1, // Only Surah 1 initially unlocked
           starsEarned: 0,
           xpEarned: 0,
           completionPercentage: 0.0,
           hasAudio: true,
-          difficulty: sequence <= 10
-              ? 'Beginner'
-              : sequence <= 25
-                  ? 'Medium'
-                  : 'Hard',
-          isMystery: sequence % 8 == 0, // Mystery bonus stations placed seamlessly on the roadmap!
+          difficulty: surahIndex <= 20 ? 'Beginner' : surahIndex <= 60 ? 'Medium' : 'Hard',
+          isMystery: surahIndex % 10 == 0, // Inject surprise mystery nodes every 10 surahs!
         ),
       );
-      sequence++;
     }
 
     return stations;
