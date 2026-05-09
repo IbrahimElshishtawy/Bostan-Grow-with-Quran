@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:quranglow/features/azkar/presentation/pages/azkar_tasbih_page.dart';
 import 'package:quranglow/features/gamification/presentation/pages/gamification_home_page.dart';
 import 'package:quranglow/features/gamification/presentation/pages/modern_home_screen.dart';
@@ -18,6 +19,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _tab = 0;
+  bool _isNavVisible = true;
 
   static const _tabs = <_NavTab>[
     _NavTab(
@@ -52,18 +54,50 @@ class _HomePageState extends State<HomePage> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        extendBody: true, // Crucial for layered stacking!
         drawer: AppDrawer(
           onNavigate: (route) {
             Navigator.pop(context);
             Navigator.pushNamed(context, route);
           },
         ),
-        bottomNavigationBar: _GlassNavigationBar(
-          tabs: _tabs,
-          selectedIndex: _tab,
-          onSelect: (i) => setState(() => _tab = i),
+        body: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            final ScrollDirection direction = notification.direction;
+            if (direction == ScrollDirection.reverse) {
+              if (_isNavVisible) {
+                setState(() => _isNavVisible = false);
+              }
+            } else if (direction == ScrollDirection.forward) {
+              if (!_isNavVisible) {
+                setState(() => _isNavVisible = true);
+              }
+            }
+            return false; // allow notification to continue bubbling
+          },
+          child: Stack(
+            children: [
+              // The Content
+              Positioned.fill(
+                child: _buildTabBody(),
+              ),
+              
+              // The Animated Stacked Bottom Nav Bar
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 450),
+                curve: Curves.fastEaseInToSlowEaseOut,
+                left: 0,
+                right: 0,
+                bottom: _isNavVisible ? 0 : -120, // slide completely off screen
+                child: _GlassNavigationBar(
+                  tabs: _tabs,
+                  selectedIndex: _tab,
+                  onSelect: (i) => setState(() => _tab = i),
+                ),
+              ),
+            ],
+          ),
         ),
-        body: _buildTabBody(),
       ),
     );
   }

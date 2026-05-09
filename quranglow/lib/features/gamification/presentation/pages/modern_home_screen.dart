@@ -63,49 +63,79 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
   Widget _buildContent(GameState gameState) {
     return Stack(
       children: [
-        // 1. Base Background Layer (Precise Gradient match)
+        // 1. Premium Generated Visual Background Layer
         Positioned.fill(
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF101812), // Near Black Green Top
-                  Color(0xFF1D3527), // Deep Green Main
-                  Color(0xFF504232), // Deep Sandy Brown transition
-                  Color(0xFFD4C4AA), // Light Sandy Bottom
-                ],
-                stops: [0.0, 0.2, 0.6, 1.0],
-              ),
+          child: Image.asset('assets/images/app_bg.png', fit: BoxFit.cover),
+        ),
+
+        // 1b. Ultra-Premium Islamic Pattern Texture Tiled (Very Faint & Subtle)
+        Positioned.fill(
+          child: Opacity(
+            opacity: 0.02, // Barely visible, super elegant texture
+            child: Image.asset(
+              'assets/images/islamic_pattern.png',
+              repeat: ImageRepeat.repeat,
+              width: 200, // Scale the tile down
+              height: 200,
+              color: Colors.white, // Light overlay texture
             ),
           ),
         ),
 
         // 2. Soft glowing orb mesh background (Extreme Premium)
         Positioned(
-          top: -100,
-          right: -100,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF2E7D32).withValues(alpha: 0.15),
-            ),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 5.seconds, begin: const Offset(1,1), end: const Offset(1.3, 1.3)),
+          top: -120,
+          right: -80,
+          child:
+              Container(
+                    width: 250,
+                    height: 250,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFF2E7D32,
+                          ).withValues(alpha: 0.25),
+                          blurRadius: 100,
+                          spreadRadius: 50,
+                        ),
+                      ],
+                    ),
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(
+                    duration: 5.seconds,
+                    begin: const Offset(1, 1),
+                    end: const Offset(1.2, 1.2),
+                  ),
         ),
         Positioned(
-          top: 300,
-          left: -150,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF8B6F47).withValues(alpha: 0.1),
-            ),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 6.seconds, begin: const Offset(1,1), end: const Offset(1.2, 1.2)),
+          top: 350,
+          left: -120,
+          child:
+              Container(
+                    width: 300,
+                    height: 300,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFF8B6F47,
+                          ).withValues(alpha: 0.15),
+                          blurRadius: 120,
+                          spreadRadius: 60,
+                        ),
+                      ],
+                    ),
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(
+                    duration: 6.seconds,
+                    begin: const Offset(1, 1),
+                    end: const Offset(1.15, 1.15),
+                  ),
         ),
 
         // 3. Scrollable Content
@@ -114,8 +144,9 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 45),
+              ), // Balanced breathing room for status bar
               // 3a. Header: Top Title
               SliverToBoxAdapter(
                 child: Padding(
@@ -130,7 +161,10 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           color: Colors.white.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.menu_rounded, color: Colors.white70),
+                        child: const Icon(
+                          Icons.menu_rounded,
+                          color: Colors.white70,
+                        ),
                       ),
 
                       // 2. The Centered Titles
@@ -154,14 +188,14 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           ),
                         ],
                       ),
-                      
+
                       // 3. The balancing spacer placed last (RTL maps to physical LEFT)
-                      const SizedBox(width: 48), 
+                      const SizedBox(width: 48),
                     ],
                   ),
                 ),
               ),
-              
+
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
               // 3b. Top Stats Row (Precise layout from image)
@@ -173,7 +207,8 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                     children: [
                       // Left Item: Glowing Moon
                       _buildIconStatItem(
-                        iconPath: 'assets/images/moon.png', // Fallback to icon for now, but glow it
+                        iconPath:
+                            'assets/images/moon.png', // Fallback to icon for now, but glow it
                         isCrescent: true,
                         title: 'الأوراد المنجزة',
                         value: '15/30 أوراد',
@@ -198,9 +233,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
               // 3x. Goal Selection Injection (New Feature requested)
-              SliverToBoxAdapter(
-                child: _buildGoalSelector(),
-              ),
+              SliverToBoxAdapter(child: _buildGoalSelector()),
 
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
@@ -245,7 +278,11 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Icon(Icons.trending_up_rounded, color: Colors.white, size: 24),
+                                const Icon(
+                                  Icons.trending_up_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
                               ],
                             ),
                           ],
@@ -318,10 +355,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                         padding: const EdgeInsets.only(right: 16),
                         child: Text(
                           'المستويات التي حان وقت تثبيتها',
-                          style: TextStyle(
-                            color: Colors.white60,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white60, fontSize: 14),
                         ),
                       ),
                     ],
@@ -352,7 +386,10 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF3E4F37),
                             borderRadius: BorderRadius.circular(14),
@@ -438,10 +475,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                         padding: const EdgeInsets.only(right: 16),
                         child: Text(
                           '1 من 781 مستوى',
-                          style: TextStyle(
-                            color: Colors.white60,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white60, fontSize: 14),
                         ),
                       ),
                     ],
@@ -450,9 +484,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
               ),
 
               // 3g. The Advanced Path Map with Precise Coordinates
-              SliverToBoxAdapter(
-                child: _buildPrecisePathMap(gameState),
-              ),
+              SliverToBoxAdapter(child: _buildPrecisePathMap(gameState)),
 
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
@@ -492,15 +524,16 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                 ),
               ),
             isCrescent
-                ? const Icon(Icons.nights_stay_rounded, color: Color(0xFFFFF59D), size: 34)
+                ? const Icon(
+                    Icons.nights_stay_rounded,
+                    color: Color(0xFFFFF59D),
+                    size: 34,
+                  )
                 : Icon(iconData, color: Colors.white70, size: 32),
           ],
         ),
         const SizedBox(height: 8),
-        Text(
-          title,
-          style: TextStyle(fontSize: 11, color: Colors.white60),
-        ),
+        Text(title, style: TextStyle(fontSize: 11, color: Colors.white60)),
         Text(
           value,
           style: TextStyle(
@@ -525,13 +558,13 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     // Index 2: Level 2 (Active, Center-down)
     // Index 3: Locked with key (Far Left)
     // Index 4: Locked padlock (Far Right)
-    
+
     final offsets = [
-      Offset(centerX - 90, 120),       // Node 0 (Stretched Top Left)
-      Offset(centerX + 90, 450),      // Node 1 (Heavily Spaced Right)
-      Offset(centerX, 850),           // Node 2 (Deep Center Active)
-      Offset(centerX - 90, 1250),     // Node 3 (Way down Left)
-      Offset(centerX + 90, 1650),     // Node 4 (Bottom Right)
+      Offset(centerX - 90, 120), // Node 0 (Stretched Top Left)
+      Offset(centerX + 90, 450), // Node 1 (Heavily Spaced Right)
+      Offset(centerX, 850), // Node 2 (Deep Center Active)
+      Offset(centerX - 90, 1250), // Node 3 (Way down Left)
+      Offset(centerX + 90, 1650), // Node 4 (Bottom Right)
     ];
 
     return SizedBox(
@@ -543,36 +576,6 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           Positioned.fill(
             child: CustomPaint(
               painter: _RefinedPathPainter(offsets: offsets, activeIndex: 2),
-            ),
-          ),
-
-          // Intermediate Chest placed nicely between Node 0 and 1 visually
-          Positioned(
-            left: centerX - 35,
-            top: 285, // Placed mid-segment vertically
-            child: Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  bottom: 5,
-                  child: Container(
-                    width: 40,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Image.asset('assets/images/chest.png', width: 70, height: 70)
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .scale(duration: 2.seconds, begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
-              ],
             ),
           ),
 
@@ -621,7 +624,8 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         subTitle = 'سورة البقرة ١-١٠';
         break;
       case 3:
-        assetPath = 'assets/images/gate_unlocked.png'; // Has key in my generation
+        assetPath =
+            'assets/images/gate_unlocked.png'; // Has key in my generation
         isLocked = true;
         break;
       case 4:
@@ -637,7 +641,14 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         if (showStars)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(3, (x) => Icon(Icons.star_rounded, color: const Color(0xFFE0B566).withValues(alpha: 0.8), size: 16)),
+            children: List.generate(
+              3,
+              (x) => Icon(
+                Icons.star_rounded,
+                color: const Color(0xFFE0B566).withValues(alpha: 0.8),
+                size: 16,
+              ),
+            ),
           )
         else
           const SizedBox(height: 16),
@@ -664,28 +675,84 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                 ),
               ),
             ),
-            
+
+            // Majestic Concentric Glow Rings surrounding node
+            Container(
+                  width: isActive ? 130 : 110,
+                  height: isActive ? 130 : 110,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: (isActive ? const Color(0xFFBDE156) : Colors.white)
+                          .withValues(alpha: isActive ? 0.4 : 0.15),
+                      width: 1.5,
+                    ),
+                  ),
+                )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .scale(
+                  duration: 3.seconds,
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.08, 1.08),
+                  curve: Curves.easeInOutSine,
+                ),
+
+            if (isActive)
+              // Outer pulsating circle for active highlight
+              Container(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFBDE156).withValues(alpha: 0.15),
+                        width: 1.0,
+                      ),
+                    ),
+                  )
+                  .animate(onPlay: (c) => c.repeat())
+                  .scale(
+                    duration: 2.seconds,
+                    begin: const Offset(0.8, 0.8),
+                    end: const Offset(1.1, 1.1),
+                  )
+                  .fadeOut(duration: 2.seconds),
+
             if (isActive)
               // Backlight glow for the plant arch
               Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFE082).withValues(alpha: 0.3),
-                      blurRadius: 40,
-                      spreadRadius: 20,
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFFE082).withValues(alpha: 0.3),
+                          blurRadius: 40,
+                          spreadRadius: 20,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 1.5.seconds, begin: const Offset(0.8,0.8), end: const Offset(1.1,1.1)),
-            
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(
+                    duration: 1.5.seconds,
+                    begin: const Offset(0.8, 0.8),
+                    end: const Offset(1.1, 1.1),
+                  ),
+
             Image.asset(
               assetPath,
-              width: isActive ? 105 : isLocked ? 95 : 85,
-              height: isActive ? 105 : isLocked ? 95 : 85,
+              width: isActive
+                  ? 125
+                  : isLocked
+                  ? 115
+                  : 105,
+              height: isActive
+                  ? 125
+                  : isLocked
+                  ? 115
+                  : 105,
               fit: BoxFit.contain,
             ),
           ],
@@ -705,10 +772,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
               ),
               Text(
                 subTitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black54,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.black54),
               ),
             ],
           ),
@@ -746,23 +810,27 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      color: isActive 
-                          ? const Color(0xFF4E7440) 
+                      color: isActive
+                          ? const Color(0xFF4E7440)
                           : Colors.black.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isActive 
-                            ? Colors.white.withValues(alpha: 0.4) 
+                        color: isActive
+                            ? Colors.white.withValues(alpha: 0.4)
                             : Colors.transparent,
                         width: 1.5,
                       ),
-                      boxShadow: isActive ? [
-                        BoxShadow(
-                          color: const Color(0xFF4E7440).withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        )
-                      ] : [],
+                      boxShadow: isActive
+                          ? [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF4E7440,
+                                ).withValues(alpha: 0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
                     ),
                     child: Column(
                       children: [
@@ -834,7 +902,7 @@ class _RefinedPathPainter extends CustomPainter {
     // 4. Create ACTIVE Filled Track Path up to current node
     final fillPath = Path();
     fillPath.moveTo(offsets[0].dx, offsets[0].dy);
-    
+
     if (activeIndex >= 1) {
       fillPath.quadraticBezierTo(ctrl1X, ctrl1Y, offsets[1].dx, offsets[1].dy);
     }
@@ -849,14 +917,14 @@ class _RefinedPathPainter extends CustomPainter {
     }
 
     // 5. Drawing Logic
-    
+
     // a. Draw the Empty Base Path (The unlit track)
     final basePaint = Paint()
       ..color = const Color(0xFF2E3F33).withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawPath(fullPath, basePaint);
 
     // b. Draw GLOw under the active fill path (The neon engine)
@@ -866,20 +934,19 @@ class _RefinedPathPainter extends CustomPainter {
       ..strokeWidth = 10
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0)
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawPath(fillPath, glowPaint);
 
     // c. Draw Top highlight of fill path (The vibrant green wire)
     final vibrantPaint = Paint()
-      ..color = const Color(0xFFBDE156) 
+      ..color = const Color(0xFFBDE156)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawPath(fillPath, vibrantPaint);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
-
