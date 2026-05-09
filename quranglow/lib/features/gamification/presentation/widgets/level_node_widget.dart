@@ -275,6 +275,8 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                 children: [
                   Text(
                     widget.level.surahName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 16,
@@ -289,6 +291,8 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                     widget.level.isMystery
                         ? 'محطة المفاجآت والكنز'
                         : widget.level.type.arabicLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -311,6 +315,8 @@ class _LevelNodeWidgetState extends State<LevelNodeWidget>
                       const SizedBox(width: 4),
                       Text(
                         '${widget.level.ayahStart}-${widget.level.ayahEnd}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,

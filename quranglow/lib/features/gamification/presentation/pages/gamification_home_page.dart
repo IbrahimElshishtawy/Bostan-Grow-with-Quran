@@ -20,7 +20,7 @@ class GameificationHomePage extends ConsumerStatefulWidget {
 class _GameificationHomePageState extends ConsumerState<GameificationHomePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _pathAnimationController;
-  final double _rowHeight = 170.0;
+  final double _rowHeight = 220.0;
 
   @override
   void initState() {
