@@ -26,12 +26,13 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     super.initState();
     _scrollController = ScrollController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 1. Scroll focusing to the BASE (Level 1) at the bottom of the long track!
+      // 1. Dynamic scroll auto-focusing onto the ACTIVE CURRENT LEVEL wherever it is on path
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted && _scrollController.hasClients) {
-          // Dynamic scroll will snap perfectly to the bottom of the generated height
+          // We will find actual approximate scroll target based on standard spacing later, 
+          // but for now setting initial smooth slide to safe top region or customized offset.
           _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent, 
+            0, // Default to top for now, we can improve logic to calculate precise active level position if required
             duration: const Duration(milliseconds: 1600),
             curve: Curves.fastOutSlowIn,
           );
@@ -243,7 +244,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                         _buildIconStatItem(
                           iconData: Icons.menu_book_rounded,
                           title: 'الآيات المحفوظة',
-                          value: '1205 آية',
+                          value: '450/1205 آية',
                         ),
                         _buildIconStatItem(
                           iconData: Icons.calendar_month_rounded,
@@ -458,95 +459,127 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
   }
 
-  // Redesigned map mapping strictly into visual coordinates of reference
+  // Dynamic procedural map rendering with injected Section Breaks every 10 levels
   Widget _buildPrecisePathMap(GameState gameState) {
+    final levels = gameState.levels;
     final double width = MediaQuery.of(context).size.width;
     final double centerX = width / 2;
 
-    // DYNAMIC ARRAY GENERATION: Inverted Y calculation to render Level 1 AT BOTTOM!
-    final int totalLevels = 35;
+    final int totalLevels = levels.length;
     final double spacingY = 320.0;
-    final double mapTotalHeight = (totalLevels * spacingY) + 300.0;
+    final double headerGap = 220.0; // Extra space reserved for injected Station Headers
 
-    final offsets = List.generate(totalLevels, (index) {
-      // Alternating S-curve pattern
+    final List<Offset> offsets = [];
+    final Map<int, double> headerLocationsY = {}; // Store where headers appear
+
+    double currentY = 150.0;
+
+    for (int index = 0; index < totalLevels; index++) {
+      // Check for insertion of dynamic Section Divider every 10 levels (e.g., Level 1, 11, 21...)
+      if (index % 10 == 0) {
+        headerLocationsY[index] = currentY;
+        currentY += headerGap; // Expand map content to fit the injected visual header
+      }
+
       double dx = centerX;
       if (index % 4 == 1) {
         dx += 90;
       } else if (index % 4 == 3) {
         dx -= 90;
       }
-      
-      // Invert height so Index 0 has maximum height (the lowest visual point)
-      double dy = mapTotalHeight - 200.0 - (index * spacingY);
-      return Offset(dx, dy);
-    });
+
+      offsets.add(Offset(dx, currentY));
+      currentY += spacingY;
+    }
+
+    final double mapTotalHeight = currentY + 200.0;
+
+    int activeVisualIdx = levels.indexWhere((l) => l.isUnlocked && !l.isCompleted);
+    if (activeVisualIdx == -1) activeVisualIdx = 0;
 
     return SizedBox(
       height: mapTotalHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // The Custom Refined Path Painter (Imported Module)
+          // Path rendering painter layer
           Positioned.fill(
             child: CustomPaint(
-              painter: RefinedPathPainter(offsets: offsets, activeIndex: 2),
+              painter: RefinedPathPainter(offsets: offsets, activeIndex: activeVisualIdx),
             ),
           ),
 
-          // Rendering each Node widget with exact positioning
-          for (int i = 0; i < offsets.length; i++)
+          // Render Injected Section Headers (Station Break banners)
+          ...headerLocationsY.entries.map((entry) {
+            final stationNum = (entry.key ~/ 10) + 1;
+            return Positioned(
+              top: entry.value - 40,
+              left: 16,
+              right: 16,
+              child: _buildSectionHeader(stationNum),
+            );
+          }),
+
+          // Iterate and place individual Game Nodes
+          for (int i = 0; i < levels.length; i++)
             Positioned(
               left: offsets[i].dx - 75,
               top: offsets[i].dy - 75,
               width: 150,
-              child: _buildRefinedNode(i),
+              child: GestureDetector(
+                onTap: () {
+                  // Safeguard: Only allow clicking unlocked levels!
+                  if (levels[i].isUnlocked) {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => StationTasksSheet(level: levels[i]),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('هذا المستوى مغلق، أكمل المستويات السابقة أولاً')),
+                    );
+                  }
+                },
+                child: _buildRefinedNode(levels[i]),
+              ),
             ),
         ],
       ),
     );
   }
 
-  // Helper to generate hardcoded nodes mapping to specific indices in mockup for realism
-  Widget _buildRefinedNode(int nodeIndex) {
-    String assetPath = 'assets/images/quran_completed.png';
-    bool isCompleted = false;
-    bool isActive = false;
-    bool isLocked = false;
-    String title = '';
-    String subTitle = '';
-    bool showStars = false;
+  // Fully dynamics Node Generator tied directly to persistent GameLevel state schema
+  Widget _buildRefinedNode(GameLevel level) {
+    String assetPath = 'assets/images/gate_locked.png';
+    bool isCompleted = level.isCompleted;
+    bool isActive = level.isUnlocked && !level.isCompleted;
+    bool isLocked = !level.isUnlocked;
 
-    final displayIndex = nodeIndex + 1;
-
-    if (nodeIndex < 2) {
+    if (isCompleted) {
       assetPath = 'assets/images/quran_completed.png';
-      isCompleted = true;
-      showStars = true;
-      title = 'مستوى $displayIndex:';
-      subTitle = 'حفظ متقن';
-    } else if (nodeIndex == 2) {
+    } else if (isActive) {
       assetPath = 'assets/images/gate_active.png';
-      isActive = true;
-      title = 'مستوى $displayIndex:';
-      subTitle = 'سورة البقرة ١-١٠';
     } else {
-      isLocked = true;
-      // Dynamically toggle between alternative gate icons based on index
-      assetPath = (nodeIndex % 2 == 0) 
+      // Visual distinction for locked gates (unlocked-visual vs locked-padlock alternate)
+      assetPath = (level.sequence % 2 == 0) 
           ? 'assets/images/gate_unlocked.png' 
           : 'assets/images/gate_locked.png';
     }
+
+    final title = 'آيات ${level.ayahStart}-${level.ayahEnd}';
+    final subTitle = level.surahName;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Stars Above Completed Nodes
-        if (showStars)
+        if (isCompleted)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
-              3,
+              level.starsEarned > 0 ? level.starsEarned : 3,
               (x) => Icon(
                 Icons.star_rounded,
                 color: const Color(0xFFE0B566).withValues(alpha: 0.8),
@@ -836,6 +869,84 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  // Visual Section Header inserted every 10 levels to break progress into readable Stations
+  Widget _buildSectionHeader(int stationNumber) {
+    // Map arabic numbering or themes based on station number logic
+    final title = 'المحطة $stationNumber';
+    final subtitle = 'المرحلة القادمة من رحلة النور';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFBDE156).withValues(alpha: 0.15),
+            Colors.white.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Station Icon Box
+          Container(
+            width: 55,
+            height: 55,
+            decoration: BoxDecoration(
+              color: const Color(0xFFBDE156).withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBDE156).withValues(alpha: 0.3)),
+            ),
+            child: const Icon(
+              Icons.flag_circle_rounded,
+              color: Color(0xFFBDE156),
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 20),
+          // Text Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
