@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/components/station_tasks_sheet.dart';
@@ -104,7 +103,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                         children: [
                           Text(
                             'مسار الحفظ',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w700,
                               color: Colors.white.withValues(alpha: 0.9),
@@ -112,7 +111,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           ),
                           Text(
                             'درب التميز',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(
                               fontSize: 14,
                               color: Colors.white60,
                             ),
@@ -191,7 +190,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           children: [
                             Text(
                               '%',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -201,7 +200,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                               children: [
                                 Text(
                                   'نسبة التقدم',
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
@@ -267,7 +266,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                               const SizedBox(width: 12),
                               Text(
                                 'مراجعة اليوم',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -281,7 +280,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                         padding: const EdgeInsets.only(right: 16),
                         child: Text(
                           'المستويات التي حان وقت تثبيتها',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(
                             color: Colors.white60,
                             fontSize: 14,
                           ),
@@ -322,7 +321,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           ),
                           child: Text(
                             'ابدأ',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                               fontSize: 16,
@@ -335,7 +334,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           children: [
                             Text(
                               'تحدي السكينة',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -343,7 +342,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                             ),
                             Text(
                               'لقد أتممت مراجعة اليوم بنجاح!',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.white70,
                               ),
@@ -387,7 +386,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                               const SizedBox(width: 12),
                               Text(
                                 'مسار الحفظ',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white.withValues(alpha: 0.95),
@@ -401,7 +400,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                         padding: const EdgeInsets.only(right: 16),
                         child: Text(
                           '1 من 781 مستوى',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(
                             color: Colors.white60,
                             fontSize: 14,
                           ),
@@ -462,11 +461,11 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         const SizedBox(height: 8),
         Text(
           title,
-          style: GoogleFonts.cairo(fontSize: 11, color: Colors.white60),
+          style: TextStyle(fontSize: 11, color: Colors.white60),
         ),
         Text(
           value,
-          style: GoogleFonts.cairo(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: Colors.white.withValues(alpha: 0.9),
@@ -513,9 +512,30 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           Positioned(
             left: centerX - 35,
             top: 100,
-            child: Image.asset('assets/images/chest.png', width: 70, height: 70)
-                .animate(onPlay: (c) => c.repeat(reverse: true))
-                .scale(duration: 2.seconds, begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  bottom: 5,
+                  child: Container(
+                    width: 40,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Image.asset('assets/images/chest.png', width: 70, height: 70)
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scale(duration: 2.seconds, begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
+              ],
+            ),
           ),
 
           // Rendering each Node widget with exact positioning
@@ -589,6 +609,24 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
+            // Subtle Ground Drop Shadow
+            Positioned(
+              bottom: 10,
+              child: Container(
+                width: 60,
+                height: 15,
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
             if (isActive)
               // Backlight glow for the plant arch
               Container(
@@ -621,7 +659,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.cairo(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                   color: Colors.black87,
@@ -629,7 +667,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
               ),
               Text(
                 subTitle,
-                style: GoogleFonts.cairo(
+                style: TextStyle(
                   fontSize: 12,
                   color: Colors.black54,
                 ),
@@ -701,3 +739,4 @@ class _RefinedPathPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
