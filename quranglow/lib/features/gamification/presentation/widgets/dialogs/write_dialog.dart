@@ -51,20 +51,19 @@ class _InteractiveWriteDialogState extends State<InteractiveWriteDialog> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey[200]!),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 4,
+              runSpacing: 4,
               children: _selectedWords.map((word) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Chip(
-                    label: Text(word, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    onDeleted: () {
-                      setState(() {
-                        _selectedWords.remove(word);
-                        _shuffledWords.add(word);
-                      });
-                    },
-                  ),
+                return Chip(
+                  label: Text(word, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  onDeleted: () {
+                    setState(() {
+                      _selectedWords.remove(word);
+                      _shuffledWords.add(word);
+                    });
+                  },
                 );
               }).toList(),
             ),

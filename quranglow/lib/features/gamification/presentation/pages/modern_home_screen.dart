@@ -422,13 +422,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           ),
         ),
 
-        // 4. Custom Bottom Navigation matching image
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: _buildBottomNav(),
-        ),
+        /* Bottom Nav removed as requested to avoid collision with main navigation */
       ],
     );
   }
@@ -646,58 +640,6 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
   }
 
-  Widget _buildBottomNav() {
-    return Container(
-      height: 90,
-      decoration: const BoxDecoration(
-        color: Color(0xFF25331D),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(Icons.person_outline_rounded, 'الملف الشخصي', false),
-          _buildNavItem(Icons.bubble_chart_outlined, 'الأذكار', false),
-          _buildNavItem(Icons.volunteer_activism_outlined, 'التبرعات', false),
-          _buildNavItem(Icons.menu_book_rounded, 'المصحف', false),
-          _buildNavItem(Icons.bar_chart_rounded, 'الإحصاءات', false),
-          _buildNavItem(Icons.map_rounded, 'الرئيسية', true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: EdgeInsets.all(isActive ? 8 : 0),
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF425236) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            color: isActive ? const Color(0xFFB5CCAA) : Colors.white54,
-            size: 28,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.cairo(
-            fontSize: 10,
-            color: isActive ? const Color(0xFFB5CCAA) : Colors.white54,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _RefinedPathPainter extends CustomPainter {

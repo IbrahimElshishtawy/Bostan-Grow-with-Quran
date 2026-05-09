@@ -1,10 +1,10 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:quranglow/features/azkar/presentation/pages/azkar_tasbih_page.dart';
 import 'package:quranglow/features/gamification/presentation/pages/gamification_home_page.dart';
+import 'package:quranglow/features/gamification/presentation/pages/modern_home_screen.dart';
 import 'package:quranglow/features/home/presentation/widgets/app_drawer.dart';
-import 'package:quranglow/features/memorization/presentation/pages/level_map_home_page.dart';
 import 'package:quranglow/features/player/presentation/pages/player_page.dart';
 import 'package:quranglow/features/search/presentation/pages/search_page.dart';
 import 'package:quranglow/features/surah/presentation/pages/surah_list_page.dart';
@@ -20,11 +20,6 @@ class _HomePageState extends State<HomePage> {
   int _tab = 0;
 
   static const _tabs = <_NavTab>[
-    _NavTab(
-      label: 'الرئيسية',
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-    ),
     _NavTab(
       label: 'التعلم',
       icon: Icons.school_outlined,
@@ -76,19 +71,17 @@ class _HomePageState extends State<HomePage> {
   Widget _buildTabBody() {
     switch (_tab) {
       case 0:
-        return const _HomeSections();
+        return const ModernHomeScreen();
       case 1:
-        return const GameificationHomePage();
-      case 2:
         return const SurahListPage();
-      case 3:
+      case 2:
         return const AzkarTasbihPage();
-      case 4:
+      case 3:
         return const PlayerPage();
-      case 5:
+      case 4:
         return const SearchPage();
       default:
-        return const _HomeSections();
+        return const ModernHomeScreen();
     }
   }
 }
@@ -219,11 +212,3 @@ class _GlassNavigationBar extends StatelessWidget {
   }
 }
 
-class _HomeSections extends StatelessWidget {
-  const _HomeSections();
-
-  @override
-  Widget build(BuildContext context) {
-    return const LevelMapHomePage();
-  }
-}
