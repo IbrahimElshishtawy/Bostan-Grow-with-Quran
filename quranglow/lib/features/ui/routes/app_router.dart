@@ -32,6 +32,7 @@ import 'package:quranglow/features/tafsir/presentation/pages/tafsir_explorer_pag
 import 'package:quranglow/features/tafsir/presentation/pages/tafsir_reader_page.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_args.dart';
 import 'package:quranglow/features/gamification/presentation/pages/gamification_home_page.dart';
+import 'package:quranglow/features/gamification/presentation/pages/modern_home_screen.dart';
 import 'app_routes.dart';
 
 final quranServiceProvider = Provider<QuranService>(
@@ -82,7 +83,7 @@ Route<dynamic>? onGenerateRoute(RouteSettings s) {
   } else if (name == AppRoutes.home) {
     return _mat(const HomePage(), s);
   } else if (name == AppRoutes.gamificationHome) {
-    return _mat(const GameificationHomePage(), s);
+    return _mat(const ModernHomeScreen(), s);
   } else if (name == AppRoutes.mushaf) {
     final a = s.arguments;
     final args = a is MushafArgs ? a : const MushafArgs();
