@@ -1,8 +1,7 @@
-import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/components/station_tasks_sheet.dart';
@@ -17,7 +16,6 @@ class ModernHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
-  final double _rowHeight = 220.0;
   late final ScrollController _scrollController;
   int _dailyGoal = 10; // Default selection
 
@@ -44,13 +42,51 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         }
       });
       
-      // 2. Show the Goal Selection Dialog automatically on launch!
-      Future.delayed(const Duration(seconds: 1), () {
+      // 2. Check if it is the user's first session to show goal picker
+      _checkFirstTime();
+    });
+  }
+
+  Future<void> _checkFirstTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool hasSeenGoal = prefs.getBool('has_seen_goal_selection') ?? false;
+    
+    if (!hasSeenGoal) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) {
           _showGoalSelectorBottomSheet(context);
         }
       });
-    });
+    }
+  }
+
+  Future<void> _saveGoalAndMarkSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_seen_goal_selection', true);
+    await prefs.setInt('daily_reading_goal', _dailyGoal);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.verified_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'ما شاء الله! تم حفظ هدفك اليومي، جعلها الله بداية مباركة.',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF4E7440),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _onScrollUpdate() {
@@ -94,7 +130,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         int activeIdx = levels.indexWhere((l) => l.isUnlocked && !l.isCompleted);
         if (activeIdx == -1) activeIdx = 0;
         
-        double currentY = 150.0;
+        double currentY = 70.0; // Updated baseline to match precise map logic
         for (int i = 0; i < levels.length; i++) {
           if (i % 10 == 0) currentY += 220.0; // Match Header Gap logic!
           if (i == activeIdx) {
@@ -285,17 +321,17 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           iconPath: 'assets/images/moon.png',
                           isCrescent: true,
                           title: 'الأوراد المنجزة',
-                          value: '15/30 أوراد',
+                          value: '$completedCount/$totalLevelsCount أوراد',
                         ),
                         _buildIconStatItem(
                           iconData: Icons.menu_book_rounded,
                           title: 'الآيات المحفوظة',
-                          value: '450/1205 آية',
+                          value: '$memorizedAyahs/$totalAyahs آية',
                         ),
                         _buildIconStatItem(
                           iconData: Icons.calendar_month_rounded,
                           title: 'الالتزام اليومي',
-                          value: '25 يوم',
+                          value: '$streak يوم',
                         ),
                       ],
                     ),
@@ -326,7 +362,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '%',
+                              '${(overallProgress * 100).toStringAsFixed(0)}%',
                               style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 20,
@@ -362,7 +398,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           ),
                           alignment: Alignment.centerRight,
                           child: FractionallySizedBox(
-                            widthFactor: 0.85,
+                            widthFactor: overallProgress.clamp(0.01, 1.0),
                             child: Container(
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
@@ -383,7 +419,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
               ),
 
 
-              const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
               // 3f. Hifz Path Title inside sandy area
               SliverToBoxAdapter(
@@ -421,7 +457,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 16),
                         child: Text(
-                          '1 من 781 مستوى',
+                          '$activeLevelSeq من $totalLevelsCount مستوى',
                           style: TextStyle(color: Colors.white60, fontSize: 14),
                         ),
                       ),
@@ -531,7 +567,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     final List<Offset> offsets = [];
     final Map<int, double> headerLocationsY = {}; // Store where headers appear
 
-    double currentY = 150.0;
+    double currentY = 70.0; // Reduced starting top padding to compress vertical distance from title
 
     for (int index = 0; index < totalLevels; index++) {
       // Check for insertion of dynamic Section Divider every 10 levels (e.g., Level 1, 11, 21...)
@@ -776,7 +812,23 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
   }
 
-  Widget _buildGoalSelector() {
+  String _getMotivationalMessage(int goal) {
+    switch (goal) {
+      case 10:
+        return "بداية رائعة! 'أحبُّ الأعمال إلى الله أدومها وإن قلّ'.";
+      case 20:
+        return "همة مباركة! الاستمرار يورث النور في القلوب والتوفيق في الحياة.";
+      case 30:
+        return "ما شاء الله! همة كبار.. 'وفي ذلك فليتنافس المتنافسون'.";
+      default:
+        return "خطوة مباركة للبدء في رحلة القرآن العظيمة.";
+    }
+  }
+
+  Widget _buildGoalSelector({
+    required int currentSelected,
+    required ValueChanged<int> onSelected,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -796,10 +848,10 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
           const SizedBox(height: 12),
           Row(
             children: [10, 20, 30].map((goal) {
-              final isActive = _dailyGoal == goal;
+              final isActive = currentSelected == goal;
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => setState(() => _dailyGoal = goal),
+                  onTap: () => onSelected(goal),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOut,
@@ -819,9 +871,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                       boxShadow: isActive
                           ? [
                               BoxShadow(
-                                color: const Color(
-                                  0xFF4E7440,
-                                ).withValues(alpha: 0.4),
+                                color: const Color(0xFF4E7440).withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -859,73 +909,115 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
   }
 
-  // Beautiful modal launcher to trigger immediate user goal setup!
+  // Beautiful modal launcher with built-in interactive internal state!
   void _showGoalSelectorBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      isDismissible: false, // Force choice on first time setup
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF15251B),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'اختر وردك القرآني المفضل',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'حدد هدف المراجعة اليومية للبدء في رحلة الحفظ الممتعة',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-                const SizedBox(height: 32),
-                _buildGoalSelector(),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFBDE156),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF15251B),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      elevation: 0,
                     ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'حفظ والانطلاق',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'اختر وردك القرآني المفضل',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'حدد هدف المراجعة اليومية للبدء في رحلة الحفظ الممتعة',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 32),
+                    _buildGoalSelector(
+                      currentSelected: _dailyGoal,
+                      onSelected: (val) {
+                        setModalState(() => _dailyGoal = val);
+                        // Update external widget too just in case
+                        setState(() => _dailyGoal = val);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Injected dynamic motivational prompt banner
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Container(
+                        key: ValueKey<int>(_dailyGoal),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFBDE156).withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFBDE156).withValues(alpha: 0.15)),
+                        ),
+                        child: Text(
+                          _getMotivationalMessage(_dailyGoal),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFFC5E17A),
+                            fontStyle: FontStyle.italic,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFBDE156),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _saveGoalAndMarkSeen(); // Perform save logic and trigger Toast!
+                        },
+                        child: const Text(
+                          'حفظ والانطلاق',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:quranglow/features/azkar/presentation/pages/azkar_tasbih_page.dart';
-import 'package:quranglow/features/gamification/presentation/pages/gamification_home_page.dart';
 import 'package:quranglow/features/gamification/presentation/pages/modern_home_screen.dart';
 import 'package:quranglow/features/home/presentation/widgets/app_drawer.dart';
 import 'package:quranglow/features/player/presentation/pages/player_page.dart';

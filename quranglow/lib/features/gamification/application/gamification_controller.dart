@@ -449,26 +449,4 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
   }
 }
 
-class _JourneyGroup {
-  const _JourneyGroup(
-    this.id,
-    this.surahId,
-    this.ayahStart,
-    this.ayahEnd,
-    this.surahName,
-    this.title,
-    this.type,
-    this.xp,
-  );
 
-  final String id;
-  final int surahId;
-  final int ayahStart;
-  final int ayahEnd;
-  final String surahName;
-  final String title;
-  final StationType type;
-  final int xp;
-
-  String get description => 'أكمل المهام الخمس لتثبيت ومراجعة $surahName آيات $ayahStart-$ayahEnd';
-}
