@@ -199,15 +199,20 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         ? 0.0
         : totalRead / totalLevelsCount;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFC1B298),
+        backgroundColor: isDark ? const Color(0xFF111A14) : const Color(0xFFFDFBF7),
         body: Stack(
           children: [
             // 1. Premium Generated Visual Background Layer
             Positioned.fill(
-              child: Image.asset('assets/images/app_bg.png', fit: BoxFit.cover),
+              child: Image.asset(
+                isDark ? 'assets/images/app_bg_dark.png' : 'assets/images/app_bg_light.png',
+                fit: BoxFit.cover,
+              ),
             ),
 
             // 1b. Ultra-Premium Islamic Pattern Texture Tiled (Very Faint & Subtle)
@@ -219,7 +224,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                   repeat: ImageRepeat.repeat,
                   width: 200, // Scale the tile down
                   height: 200,
-                  color: const Color(0xFF8B6D3A).withValues(alpha: 0.1), // Light warm bronze texture
+                  color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFF8B6D3A).withValues(alpha: 0.1),
                 ),
               ),
             ),
@@ -248,15 +253,15 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.06),
+                                color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.06),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.black.withValues(alpha: 0.08),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08),
                                 ),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.menu_rounded,
-                                color: Color(0xFF1A2E21),
+                                color: isDark ? Colors.white : const Color(0xFF1A2E21),
                               ),
                             ),
                           ),
@@ -270,7 +275,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                                   fontSize:
                                       26, // Slightly scaled down for elegance
                                   fontWeight: FontWeight.w900,
-                                  color: Color(0xFF1A2E21),
+                                  color: isDark ? Colors.white : const Color(0xFF1A2E21),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -278,7 +283,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                                 'درب التميز',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.black.withValues(alpha: 0.5),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.5),
                                 ),
                               ),
                             ],
@@ -335,7 +340,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                                     style: TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1A2E21).withValues(
+                                      color: isDark ? Colors.white : const Color(0xFF1A2E21).withValues(
                                         alpha: 0.9,
                                       ),
                                     ),
@@ -349,7 +354,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                             child: Text(
                               '$activeLevelSeq من $totalLevelsCount مستوى',
                               style: TextStyle(
-                                color: Colors.black.withValues(alpha: 0.5),
+                                color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.5),
                                 fontSize: 14,
                               ),
                             ),
@@ -414,6 +419,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
 
   // Dynamic procedural map rendering with injected Section Breaks every 10 levels
   Widget _buildPrecisePathMap(GameState gameState) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final levels = gameState.levels;
     final double width = MediaQuery.of(context).size.width;
     final double centerX = width / 2;
@@ -466,6 +472,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
               painter: RefinedPathPainter(
                 offsets: offsets,
                 activeIndex: activeVisualIdx,
+                isDark: isDark,
               ),
             ),
           ),

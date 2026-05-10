@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 class RefinedPathPainter extends CustomPainter {
   final List<Offset> offsets;
   final int activeIndex;
+  final bool isDark;
 
-  RefinedPathPainter({required this.offsets, this.activeIndex = 0});
+  RefinedPathPainter({
+    required this.offsets, 
+    this.activeIndex = 0,
+    this.isDark = false,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -35,7 +40,9 @@ class RefinedPathPainter extends CustomPainter {
 
     // 2. Baseline sharp unlit track
     final basePaint = Paint()
-      ..color = const Color(0xFF1A291D).withValues(alpha: 0.6)
+      ..color = isDark 
+          ? const Color(0xFFBDE156).withValues(alpha: 0.15) 
+          : const Color(0xFF1A291D).withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
