@@ -7,6 +7,10 @@ import 'package:quranglow/features/gamification/domain/models/gamification_model
 import 'package:quranglow/features/gamification/presentation/widgets/components/station_tasks_sheet.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/refined_path_painter.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/active_level_footer.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/modern_home/expandable_dashboard_card.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/modern_home/game_level_node.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/modern_home/station_section_header.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/modern_home/goal_selector_sheet.dart';
 
 class ModernHomeScreen extends ConsumerStatefulWidget {
   const ModernHomeScreen({super.key});
@@ -22,7 +26,6 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
   // High-performance listener to toggle CTA footer visibility dynamically on scroll
   final ValueNotifier<bool> _showFooterNotifier = ValueNotifier(true);
   double _cachedActiveNodeY = -1.0;
-  bool _isStatsExpanded = false; // For dynamic toggleable dashboard expansion
 
   @override
   void initState() {
@@ -266,212 +269,17 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-              // 3b. Integrated Dashboard Tile: Stats + Click to Expand Progress Detail
+              // 3b. The Modular Dashboard Widget extracted for neatness!
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isStatsExpanded = !_isStatsExpanded;
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeInOutCubic,
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: _isStatsExpanded
-                            ? const Color(0xFF1A3022).withValues(alpha: 0.92)
-                            : Colors.black.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(26),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: _isStatsExpanded ? 0.15 : 0.08),
-                          width: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
-                          )
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          // Primary Summary Stats Row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _buildIconStatItem(
-                                iconPath: 'assets/images/moon.png',
-                                isCrescent: true,
-                                title: 'الأوراد المنجزة',
-                                value: '$completedCount/$totalLevelsCount أوراد',
-                              ),
-                              _buildIconStatItem(
-                                iconData: Icons.menu_book_rounded,
-                                title: 'الآيات المحفوظة',
-                                value: '$memorizedAyahs/$totalAyahs آية',
-                              ),
-                              _buildIconStatItem(
-                                iconData: Icons.calendar_month_rounded,
-                                title: 'الالتزام اليومي',
-                                value: '$streak يوم',
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // Fixed Animated Expanded Section utilizing full available width
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 400),
-                            curve: Curves.easeInOutCubic,
-                            alignment: Alignment.topCenter,
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: !_isStatsExpanded
-                                ? Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: Colors.white.withValues(alpha: 0.4),
-                                    size: 22,
-                                  )
-                                : Column(
-                                    key: const ValueKey('expanded_dashboard'),
-                                    children: [
-                                      const Divider(color: Colors.white10, height: 24, thickness: 1.2),
-                                      
-                                      // Custom Styled Top Row for Expanded
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const Row(
-                                                children: [
-                                                  Icon(Icons.trending_up_rounded, color: Color(0xFFBDE156), size: 18),
-                                                  SizedBox(width: 6),
-                                                  Text(
-                                                    'معدل الإنجاز الكلي',
-                                                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                '${(overallProgress * 100).toStringAsFixed(1)}%',
-                                                style: const TextStyle(
-                                                  fontSize: 30,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: Colors.white,
-                                                  letterSpacing: -0.5,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(15)),
-                                            child: const Text(
-                                              'مستوى التميز',
-                                              style: TextStyle(color: Color(0xFFBDE156), fontWeight: FontWeight.bold, fontSize: 10),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 14),
-
-                                      // Sleek Progress Bar
-                                      Stack(
-                                        children: [
-                                          Container(
-                                            height: 12,
-                                            width: double.infinity,
-                                            decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)),
-                                          ),
-                                          FractionallySizedBox(
-                                            widthFactor: overallProgress.clamp(0.02, 1.0),
-                                            child: Container(
-                                              height: 12,
-                                              decoration: BoxDecoration(
-                                                gradient: const LinearGradient(colors: [Color(0xFF89A658), Color(0xFFC5E17A), Color(0xFFE6F5BE)]),
-                                                borderRadius: BorderRadius.circular(10),
-                                                boxShadow: [
-                                                  BoxShadow(color: const Color(0xFFBDE156).withValues(alpha: 0.3), blurRadius: 6),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 20),
-
-                                      // Audio/Reading split Subprogress
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: _buildMiniProgressItem(
-                                              title: 'التقدم الصوتي',
-                                              icon: Icons.headphones_rounded,
-                                              progress: listenProgress,
-                                              accentColor: const Color(0xFF4DB6AC),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 20),
-                                          Expanded(
-                                            child: _buildMiniProgressItem(
-                                              title: 'التقدم الكتابي',
-                                              icon: Icons.edit_note_rounded,
-                                              progress: readProgress,
-                                              accentColor: const Color(0xFFFFB74D),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 18),
-
-                                      // Motivation box
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFBDE156).withValues(alpha: 0.06),
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(color: const Color(0xFFBDE156).withValues(alpha: 0.12)),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFFBDE156), size: 18),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                getMotivationalPrompt(overallProgress),
-                                                style: const TextStyle(color: Color(0xFFD4E8A1), fontSize: 12, height: 1.3),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Icon(
-                                        Icons.keyboard_arrow_up_rounded,
-                                        color: Colors.white.withValues(alpha: 0.3),
-                                        size: 20,
-                                      ),
-                                    ],
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: ExpandableDashboardCard(
+                  completedCount: completedCount,
+                  totalLevelsCount: totalLevelsCount,
+                  memorizedAyahs: memorizedAyahs,
+                  totalAyahs: totalAyahs,
+                  streak: streak,
+                  overallProgress: overallProgress,
+                  listenProgress: listenProgress,
+                  readProgress: readProgress,
                 ),
               ),
 
@@ -548,7 +356,18 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                   currentLevel: activeLevelSeq,
                   levelDetails: 'سورة $activeLevelTitle',
                   onStart: () {
-                    // Immediate shortcut handler
+                    // Fast scroll back into focus range of active level!
+                    if (_scrollController.hasClients && _cachedActiveNodeY > 0) {
+                      final double offset = (_cachedActiveNodeY - 350.0).clamp(
+                        0.0, 
+                        _scrollController.position.maxScrollExtent
+                      );
+                      _scrollController.animateTo(
+                        offset,
+                        duration: const Duration(milliseconds: 1200),
+                        curve: Curves.fastOutSlowIn,
+                      );
+                    }
                   },
                 ),
               ),
@@ -730,7 +549,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
               top: entry.value - 40,
               left: 16,
               right: 16,
-              child: _buildSectionHeader(stationNum),
+              child: StationSectionHeader(stationNumber: stationNum),
             );
           }),
 
@@ -756,7 +575,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                     );
                   }
                 },
-                child: _buildRefinedNode(levels[i]),
+                child: GameLevelNode(level: levels[i]),
               ),
             ),
         ],
