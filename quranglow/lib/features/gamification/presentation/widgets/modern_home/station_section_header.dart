@@ -10,6 +10,7 @@ class StationSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final title = 'المحطة $stationNumber';
     final subtitle = 'المرحلة القادمة من رحلة النور';
 
@@ -19,21 +20,26 @@ class StationSectionHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFBDE156).withValues(alpha: 0.15),
-            Colors.white.withValues(alpha: 0.05),
-          ],
+          colors: isDark 
+            ? [
+                const Color(0xFF1A3022).withValues(alpha: 0.9),
+                const Color(0xFF121E16).withValues(alpha: 0.95),
+              ]
+            : [
+                Colors.white.withValues(alpha: 0.98),
+                const Color(0xFFF5F8ED),
+              ],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFBDE156).withValues(alpha: 0.4),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: isDark ? Colors.black.withValues(alpha: 0.4) : const Color(0xFF1A3022).withValues(alpha: 0.15),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -43,13 +49,13 @@ class StationSectionHeader extends StatelessWidget {
             width: 55,
             height: 55,
             decoration: BoxDecoration(
-              color: const Color(0xFFBDE156).withValues(alpha: 0.2),
+              color: const Color(0xFFBDE156).withValues(alpha: isDark ? 0.2 : 0.25),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFBDE156).withValues(alpha: 0.3)),
+              border: Border.all(color: const Color(0xFFBDE156).withValues(alpha: isDark ? 0.3 : 0.5)),
             ),
             child: const Icon(
               Icons.flag_circle_rounded,
-              color: Color(0xFFBDE156),
+              color: Color(0xFF8DA740), // Stronger darker green icon always readable
               size: 32,
             ),
           ),
@@ -61,10 +67,10 @@ class StationSectionHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 22,
-                    color: Colors.white,
+                    color: isDark ? Colors.white : const Color(0xFF1A3022),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -72,7 +78,8 @@ class StationSectionHeader extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF1A3022).withValues(alpha: 0.6),
                   ),
                 ),
               ],

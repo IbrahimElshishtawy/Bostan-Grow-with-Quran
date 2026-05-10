@@ -15,25 +15,36 @@ class ActiveLevelFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFF1A3225).withValues(alpha: 0.95),
-            const Color(0xFF101D16).withValues(alpha: 0.95),
-          ],
+          colors: isDark
+              ? [
+                  const Color(0xFF1A3225).withValues(alpha: 0.95),
+                  const Color(0xFF101D16).withValues(alpha: 0.95),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.98),
+                  const Color(0xFFF9FDF4),
+                ],
         ),
         borderRadius: BorderRadius.circular(28), // Softer elegance
         border: Border.all(
-          color: const Color(0xFFBDE156).withValues(alpha: 0.3),
+          color: isDark 
+              ? const Color(0xFFBDE156).withValues(alpha: 0.3)
+              : const Color(0xFF8DA740).withValues(alpha: 0.25),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
+            color: isDark 
+                ? Colors.black.withValues(alpha: 0.35)
+                : const Color(0xFF1A3225).withValues(alpha: 0.15),
             blurRadius: 25,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -82,10 +93,10 @@ class ActiveLevelFooter extends StatelessWidget {
             children: [
               Text(
                 'مستوى $currentLevel نشط',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: isDark ? Colors.white : const Color(0xFF1A3225),
                 ),
               ),
               const SizedBox(height: 2),
@@ -93,7 +104,7 @@ class ActiveLevelFooter extends StatelessWidget {
                 levelDetails,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.75),
+                  color: isDark ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF1A3225).withValues(alpha: 0.65),
                 ),
               ),
             ],
@@ -101,9 +112,9 @@ class ActiveLevelFooter extends StatelessWidget {
           const SizedBox(width: 14),
           
           // Animated Audio/Play indicator icon
-          const Icon(
+          Icon(
             Icons.play_circle_fill_rounded,
-            color: Color(0xFFBDE156),
+            color: isDark ? const Color(0xFFBDE156) : const Color(0xFF8DA740),
             size: 44,
           ).animate(onPlay: (c) => c.repeat(reverse: true))
            .scale(duration: 1.2.seconds, begin: const Offset(0.95, 0.95), end: const Offset(1.05, 1.05)),

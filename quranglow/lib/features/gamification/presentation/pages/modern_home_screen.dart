@@ -204,13 +204,17 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF111A14) : const Color(0xFFFDFBF7),
+        backgroundColor: isDark
+            ? const Color(0xFF111A14)
+            : const Color(0xFFFDFBF7),
         body: Stack(
           children: [
             // 1. Premium Generated Visual Background Layer
             Positioned.fill(
               child: Image.asset(
-                isDark ? 'assets/images/app_bg_dark.png' : 'assets/images/app_bg_light.png',
+                isDark
+                    ? 'assets/images/app_bg_dark.png'
+                    : 'assets/images/app_bg_light.png',
                 fit: BoxFit.cover,
               ),
             ),
@@ -224,95 +228,25 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                   repeat: ImageRepeat.repeat,
                   width: 200, // Scale the tile down
                   height: 200,
-                  color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFF8B6D3A).withValues(alpha: 0.1),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : const Color(0xFF8B6D3A).withValues(alpha: 0.1),
                 ),
               ),
             ),
 
             // The soft glowing orb containers removed as requested
 
-            // 3. Scrollable Content
+            // 3. Scrollable Map Content
             Positioned.fill(
               child: CustomScrollView(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 slivers: [
+                  // Top Padding Clearance to push map significantly below the floating header
                   const SliverToBoxAdapter(
-                    child: SizedBox(height: 45),
-                  ), // Balanced breathing room for status bar
-                  // 3a. Header: Top Title
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // 1. The Drawer Button placed first (RTL will map to physical RIGHT)
-                          GestureDetector(
-                            onTap: () => Scaffold.of(context).openDrawer(),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.06),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08),
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.menu_rounded,
-                                color: isDark ? Colors.white : const Color(0xFF1A2E21),
-                              ),
-                            ),
-                          ),
-
-                          // 2. The Centered Titles
-                          Column(
-                            children: [
-                              const Text(
-                                'مسار الحفظ',
-                                style: TextStyle(
-                                  fontSize:
-                                      26, // Slightly scaled down for elegance
-                                  fontWeight: FontWeight.w900,
-                                  color: isDark ? Colors.white : const Color(0xFF1A2E21),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              Text(
-                                'درب التميز',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // 3. The balancing spacer placed last (RTL maps to physical LEFT)
-                          const SizedBox(width: 48),
-                        ],
-                      ),
-                    ),
+                    child: SizedBox(height: 330), // Increased push down
                   ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
-                  // 3b. The Modular Dashboard Widget extracted for neatness!
-                  SliverToBoxAdapter(
-                    child: ExpandableDashboardCard(
-                      completedCount: completedCount,
-                      totalLevelsCount: totalLevelsCount,
-                      memorizedAyahs: memorizedAyahs,
-                      totalAyahs: totalAyahs,
-                      streak: streak,
-                      overallProgress: overallProgress,
-                      listenProgress: listenProgress,
-                      readProgress: readProgress,
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
                   // 3f. Hifz Path Title inside sandy area
                   SliverToBoxAdapter(
@@ -334,15 +268,17 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                                       borderRadius: BorderRadius.circular(3),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 10),
                                   Text(
                                     'مسار الحفظ',
                                     style: TextStyle(
-                                      fontSize: 24,
+                                      fontSize: 20,
                                       fontWeight: FontWeight.bold,
-                                      color: isDark ? Colors.white : const Color(0xFF1A2E21).withValues(
-                                        alpha: 0.9,
-                                      ),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(
+                                              0xFF1A2E21,
+                                            ).withValues(alpha: 0.9),
                                     ),
                                   ),
                                 ],
@@ -354,7 +290,9 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                             child: Text(
                               '$activeLevelSeq من $totalLevelsCount مستوى',
                               style: TextStyle(
-                                color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.5),
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black.withValues(alpha: 0.5),
                                 fontSize: 14,
                               ),
                             ),
@@ -369,6 +307,113 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
 
                   const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
+              ),
+            ),
+            // 3b. PERSISTENT FLOATING TOP HEADER + DASHBOARD (Anchored!)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 12),
+                // Subtle protection gradient background so content is readable while map scrolls under
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      isDark
+                          ? const Color(0xFF111A14).withValues(alpha: 0.95)
+                          : Colors.white.withValues(alpha: 0.95),
+                      isDark
+                          ? const Color(0xFF111A14).withValues(alpha: 0.8)
+                          : Colors.white.withValues(alpha: 0.8),
+                      isDark
+                          ? const Color(0xFF111A14).withValues(alpha: 0.0)
+                          : Colors.white.withValues(alpha: 0.0),
+                    ],
+                    stops: const [0.0, 0.8, 1.0],
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      height: 65,
+                    ), // Lowered down from the top camera notch for safe room
+                    // Top Header Bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          GestureDetector(
+                            onTap: () => Scaffold.of(context).openDrawer(),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.black.withValues(alpha: 0.06),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.15)
+                                      : Colors.black.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.menu_rounded,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1A2E21),
+                              ),
+                            ),
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                'مسار الحفظ',
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark
+                                      ? Colors.white
+                                      : Color(0xFF1A2E21),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                'درب التميز',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.6)
+                                      : Colors.black.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 28),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 13),
+
+                    // Floating Stats Board
+                    ExpandableDashboardCard(
+                      completedCount: completedCount,
+                      totalLevelsCount: totalLevelsCount,
+                      memorizedAyahs: memorizedAyahs,
+                      totalAyahs: totalAyahs,
+                      streak: streak,
+                      overallProgress: overallProgress,
+                      listenProgress: listenProgress,
+                      readProgress: readProgress,
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -425,7 +470,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     final double centerX = width / 2;
 
     final int totalLevels = levels.length;
-    final double spacingY = 320.0;
+    final double spacingY = 250.0;
     final double headerGap =
         220.0; // Extra space reserved for injected Station Headers
 
