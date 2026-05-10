@@ -1,11 +1,10 @@
-﻿// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:quranglow/core/model/aya/aya.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_header.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_page_card.dart';
+
 import 'package:quranglow/features/mushaf/presentation/widgets/page_indicator.dart';
 import 'package:quranglow/features/mushaf/presentation/widgets/page_rich_block.dart';
 import 'package:quranglow/features/mushaf/presentation/widgets/position_store.dart';
@@ -152,26 +151,36 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
           child: SafeArea(
             child: Stack(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
-                  child: MushafPageCard(
-                    header: MushafHeader(surahName: widget.surahName),
-                    content: Expanded(
-                      child: PageRichBlock(
-                        ayat: widget.ayat,
-                        range: r,
-                        showBasmala: widget.showBasmala && pageIndex == 0,
-                        basmalaText: widget.basmalaText,
-                        currentAyahIndex: _currentAyahIdx0,
-                        onTapIndex: _onAyahTap,
-                        onLongPressIndex: _onAyahLongPress,
-                        ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
+                // 1. Ultimate Edge-to-Edge Content Area
+                Positioned.fill(
+                  child: Column(
+                    children: [
+                      // Dynamic Minimal Header Spacer for alignment
+                      const SizedBox(height: 12),
+                      
+                      // 2. The Immersive Interactive Quran Text Block
+                      Expanded(
+                        child: PageRichBlock(
+                          ayat: widget.ayat,
+                          range: r,
+                          showBasmala: widget.showBasmala && pageIndex == 0,
+                          basmalaText: widget.basmalaText,
+                          currentAyahIndex: _currentAyahIdx0,
+                          onTapIndex: _onAyahTap,
+                          onLongPressIndex: _onAyahLongPress,
+                          ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
+                        ),
                       ),
-                    ),
-                    indicator: PageIndicator(
-                      current: pageIndex + 1,
-                      total: _pages.length,
-                    ),
+
+                      // 3. Sleek, minimal Page Indicator floating at base
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: PageIndicator(
+                          current: pageIndex + 1,
+                          total: _pages.length,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 SavedPositionBanner(

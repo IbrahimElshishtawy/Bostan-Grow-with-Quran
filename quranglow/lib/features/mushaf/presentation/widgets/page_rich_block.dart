@@ -105,15 +105,7 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
     final isDark = theme.brightness == Brightness.dark;
 
     final textColor = isDark ? cs.onSurface : const Color(0xFF2E2212);
-    final paperBase = isDark
-        ? const Color(0xFF18140E)
-        : const Color(0xFFF8F1DF);
-    final paperEdge = isDark
-        ? const Color(0xFF30291D)
-        : const Color(0xFFE3D4B4);
-    final paperOverlay = isDark
-        ? Colors.white.withValues(alpha: 0.04)
-        : const Color(0xFFFFFBF2).withValues(alpha: 0.70);
+
 
     final currentTopics = mockTopics
         .where(
@@ -129,123 +121,85 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
 
     return LayoutBuilder(
       builder: (context, c) {
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [paperOverlay, paperBase],
-            ),
-            border: Border.all(color: paperEdge, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.10),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
+        return ScrollConfiguration(
+          behavior: const _NoGlowBehavior(),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 30), // Generous, wide reading margins
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: c.maxHeight,
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 10,
-                right: 12,
-                child: Opacity(
-                  opacity: 0.20,
-                  child: Icon(Icons.auto_awesome, size: 16, color: cs.primary),
-                ),
-              ),
-              Positioned(
-                bottom: 10,
-                left: 12,
-                child: Opacity(
-                  opacity: 0.20,
-                  child: Icon(Icons.auto_awesome, size: 16, color: cs.primary),
-                ),
-              ),
-              ScrollConfiguration(
-                behavior: const _NoGlowBehavior(),
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: (c.maxHeight - 10).clamp(0, double.infinity),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.showBasmala) ...[
+                    Text(
+                      widget.basmalaText,
+                      textAlign: TextAlign.center,
+                      textDirection: TextDirection.rtl,
+                      style: TextStyle(
+                        color: textColor,
+                        fontFamily: 'KFGQPC Uthmanic Script',
+                        fontFamilyFallback: const [
+                          'Hafs',
+                          'Noto Naskh Arabic',
+                          'Scheherazade',
+                        ],
+                        height: 2.0,
+                        fontSize: 30 * fontScale, // Scaled up for impact
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (widget.showBasmala) ...[
-                          Text(
-                            widget.basmalaText,
-                            textAlign: TextAlign.center,
-                            textDirection: TextDirection.rtl,
-                            style: TextStyle(
-                              color: textColor,
-                              fontFamily: 'KFGQPC Uthmanic Script',
-                              fontFamilyFallback: const [
-                                'Hafs',
-                                'Noto Naskh Arabic',
-                                'Scheherazade',
-                              ],
-                              height: 1.9,
-                              fontSize: 28 * fontScale,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
+                    const SizedBox(height: 16),
+                  ],
+                  RichText(
+                    textAlign: TextAlign.justify,
+                    textDirection: TextDirection.rtl,
+                    strutStyle: StrutStyle(
+                      fontSize: 27 * fontScale, // Bigger, grander typeface
+                      height: 2.25,
+                    ),
+                    text: TextSpan(
+                      style: TextStyle(
+                        color: textColor,
+                        fontFamily: 'KFGQPC Uthmanic Script',
+                        fontFamilyFallback: const [
+                          'Hafs',
+                          'Noto Naskh Arabic',
+                          'Scheherazade',
                         ],
-                        RichText(
-                          textAlign: TextAlign.justify,
-                          textDirection: TextDirection.rtl,
-                          strutStyle: StrutStyle(
-                            fontSize: 24 * fontScale,
-                            height: 2.15,
-                          ),
-                          text: TextSpan(
-                            style: TextStyle(
-                              color: textColor,
-                              fontFamily: 'KFGQPC Uthmanic Script',
-                              fontFamilyFallback: const [
-                                'Hafs',
-                                'Noto Naskh Arabic',
-                                'Scheherazade',
-                              ],
-                              height: 2.15,
-                              fontSize: 24 * fontScale,
-                              letterSpacing: 0.15,
-                            ),
-                            children: spans,
-                          ),
-                        ),
-                        if (currentTopics.isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: currentTopics
-                                .map(
-                                  (topic) => Chip(
-                                    label: Text(
-                                      topic.title,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                    backgroundColor: cs.secondaryContainer,
-                                    labelStyle: TextStyle(
-                                      color: cs.onSecondaryContainer,
-                                    ),
-                                  ),
-                                )
-                                .toList(growable: false),
-                          ),
-                        ],
-                      ],
+                        height: 2.25, // Breathing room vertically
+                        fontSize: 27 * fontScale, 
+                        letterSpacing: 0.2,
+                      ),
+                      children: spans,
                     ),
                   ),
-                ),
+                  if (currentTopics.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: currentTopics
+                          .map(
+                            (topic) => Chip(
+                              label: Text(
+                                topic.title,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              backgroundColor: cs.secondaryContainer.withValues(alpha: 0.6),
+                              labelStyle: TextStyle(
+                                color: cs.onSecondaryContainer,
+                              ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ],
+                ],
               ),
-            ],
+            ),
           ),
         );
       },

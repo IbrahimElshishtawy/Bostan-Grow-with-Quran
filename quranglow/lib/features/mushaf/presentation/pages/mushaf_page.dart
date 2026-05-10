@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -225,6 +225,11 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
     final cs = Theme.of(context).colorScheme;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgGradient = isDark 
+        ? const [Color(0xFF18140E), Color(0xFF0D0B08)] 
+        : const [Color(0xFFFFFDF8), Color(0xFFFDF7E8)];
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -233,11 +238,25 @@ class _MushafPageState extends ConsumerState<MushafPage> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [cs.surface, cs.surfaceContainerLowest],
+              colors: bgGradient,
             ),
           ),
           child: Stack(
             children: [
+              // 1. Subtle Subconscious Islamic Pattern Texture
+              Positioned.fill(
+                child: Opacity(
+                  opacity: isDark ? 0.05 : 0.03, // Extremely subtle as requested
+                  child: Image.asset(
+                    'assets/images/islamic_pattern.png',
+                    repeat: ImageRepeat.repeat,
+                    width: 220, // Controlled scale for elegance
+                    height: 220,
+                    color: isDark ? Colors.white : const Color(0xFF8B6D3A),
+                    colorBlendMode: BlendMode.modulate,
+                  ),
+                ),
+              ),
               asyncSurah.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
