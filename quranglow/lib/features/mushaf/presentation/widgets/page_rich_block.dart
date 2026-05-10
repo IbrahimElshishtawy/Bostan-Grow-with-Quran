@@ -25,6 +25,7 @@ class PageRichBlock extends ConsumerStatefulWidget {
     required this.currentAyahIndex,
     required this.onTapIndex,
     required this.onLongPressIndex,
+    this.onBackgroundTap,
     this.ayahNumberColor,
   });
 
@@ -35,6 +36,7 @@ class PageRichBlock extends ConsumerStatefulWidget {
   final int? currentAyahIndex;
   final void Function(int index) onTapIndex;
   final void Function(int index) onLongPressIndex;
+  final VoidCallback? onBackgroundTap;
   final Color? ayahNumberColor;
 
   @override
@@ -123,10 +125,13 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
       builder: (context, c) {
         return ScrollConfiguration(
           behavior: const _NoGlowBehavior(),
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 30), // Generous, wide reading margins
-            child: ConstrainedBox(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: widget.onBackgroundTap,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 30), // Generous, wide reading margins
+              child: ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight: c.maxHeight,
               ),
@@ -201,7 +206,8 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
               ),
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }

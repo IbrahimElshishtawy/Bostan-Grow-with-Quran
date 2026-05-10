@@ -21,6 +21,8 @@ class PagedMushaf extends StatefulWidget {
     this.initialSelectedAyah,
     required this.onAyahTap,
     required this.onAyahLongPress,
+    this.onVisiblePageChanged,
+    this.onBackgroundTap,
     this.ayahNumberColor,
   });
 
@@ -32,6 +34,8 @@ class PagedMushaf extends StatefulWidget {
   final int? initialSelectedAyah;
   final void Function(int ayahNumber, Aya aya) onAyahTap;
   final void Function(int ayahNumber, Aya aya) onAyahLongPress;
+  final void Function(int pageFirstAyahNumber)? onVisiblePageChanged;
+  final VoidCallback? onBackgroundTap;
   final Color? ayahNumberColor;
 
   @override
@@ -43,6 +47,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   final _controller = PageController(keepPage: true);
 
   int? _currentAyahIdx0;
+  int? _savedAyahIndex;
   late final List<PageRange> _pages;
   bool _justSaved = false;
 
@@ -55,6 +60,14 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   }
 
   Future<void> _restoreInitial() async {
+    // Load the permanently saved position for this surah
+    final loaded = await _pos.load(widget.surahNumber);
+    if (!mounted) return;
+    
+    setState(() {
+      _savedAyahIndex = loaded;
+    });
+
     int? idx0;
     if (widget.initialSelectedAyah != null) {
       final targetAyah = widget.initialSelectedAyah!;
@@ -65,7 +78,6 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
         idx0 = (targetAyah - 1).clamp(0, widget.ayat.length - 1);
       }
     } else {
-      final loaded = await _pos.load(widget.surahNumber);
       if (loaded is int) idx0 = loaded.clamp(0, widget.ayat.length - 1);
     }
 
@@ -99,10 +111,13 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   }
 
   void _onAyahTap(int index0) async {
-    setState(() => _currentAyahIdx0 = index0);
+    setState(() {
+      _currentAyahIdx0 = index0;
+      _savedAyahIndex = index0; // Reflect visually instantly
+      _justSaved = true;
+    });
     await _pos.save(widget.surahNumber, index0);
 
-    setState(() => _justSaved = true);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _justSaved = false);
     });
@@ -131,6 +146,13 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOutCubic,
     );
+  }
+
+  /// Allows externally triggering a UI refresh for the bookmark ribbon!
+  void forceRefreshBookmark(int? index) {
+    setState(() {
+      _savedAyahIndex = index;
+    });
   }
 
   @override
@@ -168,6 +190,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                           currentAyahIndex: _currentAyahIdx0,
                           onTapIndex: _onAyahTap,
                           onLongPressIndex: _onAyahLongPress,
+                          onBackgroundTap: widget.onBackgroundTap, // Direct pass down
                           ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
                         ),
                       ),
@@ -183,6 +206,61 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
+                // 4. Ultimate High-End Physical Floating Bookmark Ribbon!
+                if (_savedAyahIndex != null && r.contains(_savedAyahIndex!))
+                  Positioned(
+                    top: 0,
+                    right: 30,
+                    child: TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 600),
+                      tween: Tween(begin: -60.0, end: 0.0),
+                      curve: Curves.elasticOut,
+                      builder: (context, value, child) {
+                        return Transform.translate(
+                          offset: Offset(0, value),
+                          child: child,
+                        );
+                      },
+                      child: Container(
+                        height: 65,
+                        width: 32,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0xFF8DA740),
+                              Color(0xFF627A25),
+                            ],
+                          ),
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(8),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Icon(
+                                Icons.bookmark_added_rounded,
+                                size: 18,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
                 SavedPositionBanner(
                   visible: _justSaved,
                   text: _currentAyahIdx0 == null
@@ -195,6 +273,14 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
         );
       },
       onPageChanged: (newPageIndex) {
+        if (newPageIndex >= 0 && newPageIndex < _pages.length) {
+          final range = _pages[newPageIndex];
+          if (range.start >= 0 && range.start < widget.ayat.length) {
+            final firstAyahNum = widget.ayat[range.start].numberInSurah;
+            // Dynamically notify the host page what ayah is currently viewed
+            widget.onVisiblePageChanged?.call(firstAyahNum);
+          }
+        }
         _saveCurrentIfAny();
       },
     );

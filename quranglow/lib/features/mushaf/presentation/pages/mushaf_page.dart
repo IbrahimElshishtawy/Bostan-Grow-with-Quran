@@ -113,6 +113,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   Future<void> _saveCurrentPosition() async {
     final ayahIndex0 = (_lastAyahNumber ?? 1) - 1;
     await _pos.save(_chapter, ayahIndex0);
+    // Force visual UI update of the ribbon marker immediately
+    _pagedMushafKey.currentState?.forceRefreshBookmark(ayahIndex0);
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
@@ -223,7 +225,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       orElse: () => null,
     );
 
-    final cs = Theme.of(context).colorScheme;
+
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgGradient = isDark 
@@ -303,14 +305,11 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                       ayat: surah.ayat,
                     );
                   },
+                  onVisiblePageChanged: (n) => _lastAyahNumber = n,
+                  onBackgroundTap: () => setState(() => _uiVisible = !_uiVisible),
                 ),
               ),
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () => setState(() => _uiVisible = !_uiVisible),
-                ),
-              ),
+
               MushafTopBar(
                 visible: _uiVisible,
                 asyncSurah: asyncSurah,
