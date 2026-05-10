@@ -219,7 +219,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                   repeat: ImageRepeat.repeat,
                   width: 200, // Scale the tile down
                   height: 200,
-                  color: Colors.white, // Light overlay texture
+                  color: const Color(0xFF8B6D3A).withValues(alpha: 0.1), // Light warm bronze texture
                 ),
               ),
             ),
@@ -248,15 +248,15 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
+                                color: Colors.black.withValues(alpha: 0.06),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.1),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                 ),
                               ),
                               child: const Icon(
                                 Icons.menu_rounded,
-                                color: Colors.white,
+                                color: Color(0xFF1A2E21),
                               ),
                             ),
                           ),
@@ -270,7 +270,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                                   fontSize:
                                       26, // Slightly scaled down for elegance
                                   fontWeight: FontWeight.w900,
-                                  color: Colors.white,
+                                  color: Color(0xFF1A2E21),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -278,7 +278,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                                 'درب التميز',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.6),
+                                  color: Colors.black.withValues(alpha: 0.5),
                                 ),
                               ),
                             ],
@@ -335,8 +335,8 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                                     style: TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.95,
+                                      color: const Color(0xFF1A2E21).withValues(
+                                        alpha: 0.9,
                                       ),
                                     ),
                                   ),
@@ -349,7 +349,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                             child: Text(
                               '$activeLevelSeq من $totalLevelsCount مستوى',
                               style: TextStyle(
-                                color: Colors.white60,
+                                color: Colors.black.withValues(alpha: 0.5),
                                 fontSize: 14,
                               ),
                             ),

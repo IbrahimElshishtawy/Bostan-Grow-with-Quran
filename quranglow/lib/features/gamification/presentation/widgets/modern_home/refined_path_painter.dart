@@ -33,28 +33,35 @@ class RefinedPathPainter extends CustomPainter {
       }
     }
 
-    // 2. Baseline unlit track
+    // 2. Baseline sharp unlit track
     final basePaint = Paint()
-      ..color = const Color(0xFF2E3F33).withValues(alpha: 0.35)
+      ..color = const Color(0xFF1A291D).withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
+      ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
     canvas.drawPath(fullPath, basePaint);
 
-    // 3. Active glowing backlight neon track
-    final glowPaint = Paint()
-      ..color = const Color(0xFFB4D455).withValues(alpha: 0.4)
+    // Inner guiding dash or highlight line
+    final innerBasePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(fullPath, innerBasePaint);
+
+    // 3. Sharp High-Contrast Active Track
+    final activeTrackPaint = Paint()
+      ..color = const Color(0xFF8DA740) // Slightly darker green wrapper
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0)
       ..strokeCap = StrokeCap.round;
-    canvas.drawPath(fillPath, glowPaint);
+    canvas.drawPath(fillPath, activeTrackPaint);
 
-    // 4. Bright foreground neon track
+    // 4. Bright crisp foreground neon track
     final vibrantPaint = Paint()
-      ..color = const Color(0xFFBDE156)
+      ..color = const Color(0xFFD8F368) // Higher brightness 
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
+      ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
     canvas.drawPath(fillPath, vibrantPaint);
   }

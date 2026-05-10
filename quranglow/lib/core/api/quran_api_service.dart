@@ -2,6 +2,7 @@
 /// Integrates with api.alquran.cloud and Quran.com APIs
 library;
 
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:quranglow/core/models/quran_models.dart';
 
@@ -13,14 +14,24 @@ class QuranApiService {
   static const String _alquranCloudBase = 'https://api.alquran.cloud/v1';
   static const String _quranComBase = 'https://api.quran.com/api/v4';
 
+  Map<String, dynamic> _parseData(dynamic rawData) {
+    if (rawData is Map<String, dynamic>) return rawData;
+    if (rawData is String) {
+      try {
+        return jsonDecode(rawData) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+    return {}; // Fallback to avoid crashes
+  }
+
   /// Fetch all Surahs from Quran API
   Future<List<Surah>> getAllSurahs() async {
     try {
       final response = await dio.get('$_alquranCloudBase/surah');
-      final data = response.data as Map<String, dynamic>;
-      final surahs = (data['data'] as List<dynamic>)
-          .map((s) => Surah.fromJson(s as Map<String, dynamic>))
-          .toList();
+      final data = _parseData(response.data);
+      final surahs = (data['data'] as List<dynamic>?)
+          ?.map((s) => Surah.fromJson(s as Map<String, dynamic>))
+          .toList() ?? [];
       return surahs;
     } catch (e) {
       throw Exception('Failed to fetch Surahs: $e');
@@ -31,8 +42,8 @@ class QuranApiService {
   Future<Surah> getSurah(int surahNumber) async {
     try {
       final response = await dio.get('$_alquranCloudBase/surah/$surahNumber');
-      final data = response.data as Map<String, dynamic>;
-      return Surah.fromJson(data['data'] as Map<String, dynamic>);
+      final data = _parseData(response.data);
+      return Surah.fromJson((data['data'] as Map<String, dynamic>?) ?? {});
     } catch (e) {
       throw Exception('Failed to fetch Surah $surahNumber: $e');
     }
@@ -48,11 +59,11 @@ class QuranApiService {
         '$_alquranCloudBase/surah/$surahNumber',
         queryParameters: {'offset': 0, 'limit': 300},
       );
-      final data = response.data as Map<String, dynamic>;
-      final surahData = data['data'] as Map<String, dynamic>;
-      final ayahs = (surahData['ayahs'] as List<dynamic>)
-          .map((a) => Ayah.fromJson(a as Map<String, dynamic>))
-          .toList();
+      final data = _parseData(response.data);
+      final surahData = (data['data'] as Map<String, dynamic>?) ?? {};
+      final ayahs = (surahData['ayahs'] as List<dynamic>?)
+          ?.map((a) => Ayah.fromJson(a as Map<String, dynamic>))
+          .toList() ?? [];
       return ayahs;
     } catch (e) {
       throw Exception('Failed to fetch Ayahs for Surah $surahNumber: $e');
@@ -83,8 +94,8 @@ class QuranApiService {
       final response = await dio.get(
         '$_alquranCloudBase/ayah/$surahNumber:$ayahNumber/ar.muyassar',
       );
-      final data = response.data as Map<String, dynamic>;
-      final tafsirData = data['data'] as Map<String, dynamic>;
+      final data = _parseData(response.data);
+      final tafsirData = (data['data'] as Map<String, dynamic>?) ?? {};
       return tafsirData['text'] as String? ?? '';
     } catch (e) {
       throw Exception(
@@ -103,8 +114,8 @@ class QuranApiService {
       final response = await dio.get(
         '$_alquranCloudBase/ayah/$surahNumber:$ayahNumber/$translationCode',
       );
-      final data = response.data as Map<String, dynamic>;
-      final ayahData = data['data'] as Map<String, dynamic>;
+      final data = _parseData(response.data);
+      final ayahData = (data['data'] as Map<String, dynamic>?) ?? {};
       return ayahData['text'] as String? ?? '';
     } catch (e) {
       throw Exception(
@@ -117,10 +128,10 @@ class QuranApiService {
   Future<List<QuranJuz>> getAllJuz() async {
     try {
       final response = await dio.get('$_quranComBase/juzs');
-      final data = response.data as Map<String, dynamic>;
-      final juzs = (data['juzs'] as List<dynamic>)
-          .map((j) => QuranJuz.fromJson(j as Map<String, dynamic>))
-          .toList();
+      final data = _parseData(response.data);
+      final juzs = (data['juzs'] as List<dynamic>?)
+          ?.map((j) => QuranJuz.fromJson(j as Map<String, dynamic>))
+          .toList() ?? [];
       return juzs;
     } catch (e) {
       throw Exception('Failed to fetch Juz data: $e');
@@ -131,8 +142,10 @@ class QuranApiService {
   Future<List<Ayah>> searchAyahs(String keyword) async {
     try {
       final response = await dio.get('$_alquranCloudBase/search/$keyword/all');
-      final data = response.data as Map<String, dynamic>;
-      final results = (data['data']['matches'] as List<dynamic>)
+      final data = _parseData(response.data);
+      final dataNode = (data['data'] as Map<String, dynamic>?) ?? {};
+      final matches = (dataNode['matches'] as List<dynamic>?) ?? [];
+      final results = matches
           .map((m) => Ayah.fromJson(m as Map<String, dynamic>))
           .toList();
       return results;
