@@ -31,6 +31,7 @@ class AppSettings {
     this.language = 'en',
     this.notificationsEnabled = true,
     this.offlineMode = false,
+    this.preferredReciterId = 'ar.alafasy',
   });
 
   final ThemeMode themeMode;
@@ -47,6 +48,7 @@ class AppSettings {
   final String language;
   final bool notificationsEnabled;
   final bool offlineMode;
+  final String preferredReciterId;
 
   AppSettings copyWith({
     ThemeMode? themeMode,
@@ -63,6 +65,7 @@ class AppSettings {
     String? language,
     bool? notificationsEnabled,
     bool? offlineMode,
+    String? preferredReciterId,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -79,6 +82,7 @@ class AppSettings {
       language: language ?? this.language,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       offlineMode: offlineMode ?? this.offlineMode,
+      preferredReciterId: preferredReciterId ?? this.preferredReciterId,
     );
   }
 
@@ -97,6 +101,7 @@ class AppSettings {
     'language': language,
     'notificationsEnabled': notificationsEnabled,
     'offlineMode': offlineMode,
+    'preferredReciterId': preferredReciterId,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -121,6 +126,7 @@ class AppSettings {
       language: json['language'] as String? ?? 'en',
       notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
       offlineMode: json['offlineMode'] as bool? ?? false,
+      preferredReciterId: json['preferredReciterId'] as String? ?? 'ar.alafasy',
     );
   }
 }
@@ -196,6 +202,11 @@ class SettingsController extends StateNotifier<AppSettings> {
   /// Toggle offline mode
   void toggleOfflineMode() {
     state = state.copyWith(offlineMode: !state.offlineMode);
+  }
+
+  /// Update preferred reciter
+  void setPreferredReciterId(String reciterId) {
+    state = state.copyWith(preferredReciterId: reciterId);
   }
 
   /// Reset to defaults

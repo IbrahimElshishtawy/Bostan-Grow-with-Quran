@@ -5,6 +5,9 @@ import 'package:quranglow/features/gamification/data/gamification_repository.dar
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/core/data/surah_names_ar.dart';
 
+import 'package:quranglow/core/data/surah_ayah_counts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 /// Static service to trigger soft satisfying Islamic-inspired UI haptics and sounds
 class PremiumFeedbackService {
   static void lightTap() {
@@ -45,10 +48,15 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       var levels = await repository.getLevels(userId);
       final missions = await repository.getDailyMissions(userId);
 
-      // Automatically upgrade legacy small data schemas to full 114 Quran Coverage!
-      if (levels.isEmpty || levels.length < 100) {
+      // Version check for granular level upgrade (force regen once)
+      final prefs = await SharedPreferences.getInstance();
+      final int dataVersion = prefs.getInt('quran_levels_data_version') ?? 0;
+      const int currentTargetVersion = 2; // Force upgrade for the 10-ayah chunking!
+
+      if (levels.isEmpty || levels.length < 500 || dataVersion < currentTargetVersion) {
         levels = _generateSpiritualJourneyStations();
         await repository.initializeLevels(userId, levels);
+        await prefs.setInt('quran_levels_data_version', currentTargetVersion);
       }
 
       final gameState = GameState(
@@ -402,47 +410,57 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
     } catch (_) {}
   }
 
-  /// Generate default beautifully distributed stations across Surahs for the Spiritual Journey Map
-  /// Generates the comprehensive complete Quran Roadmap comprising all 114 Divine Surahs!
   List<GameLevel> _generateSpiritualJourneyStations() {
     final List<GameLevel> stations = [];
-    
-    // Loop through the complete global array containing 114 Arabic names!
-    for (int i = 0; i < kSurahNamesAr.length; i++) {
-      final int surahIndex = i + 1;
-      final String name = kSurahNamesAr[i];
-      
-      // Distribute station types smoothly down the path
-      final type = (surahIndex % 4 == 0) 
-          ? StationType.memorization 
-          : (surahIndex % 3 == 0) 
-              ? StationType.reading 
-              : (surahIndex % 2 == 0) 
-                  ? StationType.listening 
-                  : StationType.learning;
+    int globalSequence = 1;
 
-      stations.add(
-        GameLevel(
-          id: 'surah_$surahIndex',
-          sequence: surahIndex,
-          type: type,
-          surahId: surahIndex,
-          surahName: name,
-          ayahStart: 1, // Simplified mapping covering the general surah
-          ayahEnd: 0, // Indicating whole surah context
-          title: 'محطة سورة $name',
-          description: 'أكمل رحلة النور وتدبر معاني وأسرار سورة $name المباركة',
-          xpReward: 150,
-          maxStars: 3,
-          isUnlocked: surahIndex == 1, // Only Surah 1 initially unlocked
-          starsEarned: 0,
-          xpEarned: 0,
-          completionPercentage: 0.0,
-          hasAudio: true,
-          difficulty: surahIndex <= 20 ? 'Beginner' : surahIndex <= 60 ? 'Medium' : 'Hard',
-          isMystery: surahIndex % 10 == 0, // Inject surprise mystery nodes every 10 surahs!
-        ),
-      );
+    // Iterate through all 114 Surahs
+    for (int i = 0; i < kSurahNamesAr.length; i++) {
+      final int surahId = i + 1;
+      final String surahName = kSurahNamesAr[i];
+      final int totalAyahs = kSurahAyahCounts.length > i ? kSurahAyahCounts[i] : 7;
+
+      // Chunk the surah into 10-ayah increments!
+      int startAyah = 1;
+      while (startAyah <= totalAyahs) {
+        int endAyah = startAyah + 9;
+        if (endAyah > totalAyahs) endAyah = totalAyahs; // cap at the final ayah of this surah
+
+        // Rotational logic for variety along path node styles
+        final type = (globalSequence % 4 == 0) 
+            ? StationType.memorization 
+            : (globalSequence % 3 == 0) 
+                ? StationType.reading 
+                : (globalSequence % 2 == 0) 
+                    ? StationType.listening 
+                    : StationType.learning;
+
+        stations.add(
+          GameLevel(
+            id: 'lvl_$globalSequence',
+            sequence: globalSequence,
+            type: type,
+            surahId: surahId,
+            surahName: surahName,
+            ayahStart: startAyah,
+            ayahEnd: endAyah,
+            title: '$surahName ($startAyah-$endAyah)',
+            description: 'أكمل رحلة النور وتدبر الآيات المباركة من $startAyah إلى $endAyah في سورة $surahName.',
+            xpReward: 150,
+            maxStars: 3,
+            isUnlocked: globalSequence == 1, // First block of Fatiha is the ONLY one initially unlocked!
+            starsEarned: 0,
+            xpEarned: 0,
+            completionPercentage: 0.0,
+            hasAudio: true,
+            difficulty: globalSequence <= 20 ? 'Beginner' : globalSequence <= 60 ? 'Medium' : 'Hard',
+            isMystery: globalSequence % 10 == 0, // Inject surprises periodically along the massive path!
+          ),
+        );
+
+        globalSequence++;
+        startAyah += 10; // Next chunk!
+      }
     }
 
     return stations;

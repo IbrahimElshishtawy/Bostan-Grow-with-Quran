@@ -11,6 +11,8 @@ import 'package:quranglow/features/gamification/presentation/widgets/dialogs/qui
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/read_dialog.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/write_dialog.dart';
 
+import 'package:quranglow/features/gamification/presentation/pages/gameplay/level_gameplay_screen.dart';
+
 class StationTasksSheet extends ConsumerWidget {
   const StationTasksSheet({
     required this.level,
@@ -138,7 +140,7 @@ class StationTasksSheet extends ConsumerWidget {
                             ],
                           ),
                         ),
-                      ).animate().scale().scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
+                      ).animate().scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
                       const SizedBox(height: 16),
                     ],
 
@@ -200,13 +202,14 @@ class StationTasksSheet extends ConsumerWidget {
   }
 
   void _launchListenTask(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => InteractiveListenDialog(
-        level: level,
-        onComplete: () {
-          ref.read(gamificationControllerProvider.notifier).completeSubTask(level.id, 'listen');
-        },
+    // Close bottom sheet first to ensure clean transition
+    Navigator.pop(context); 
+    
+    // Navigate into custom Gameplay Screen!
+    Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: (_) => LevelGameplayScreen(level: level),
       ),
     );
   }
