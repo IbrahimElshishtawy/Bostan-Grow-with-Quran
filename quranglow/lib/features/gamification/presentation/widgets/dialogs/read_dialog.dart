@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:quranglow/core/models/quran_models.dart';
+import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
 
-class InteractiveReadDialog extends StatefulWidget {
+class InteractiveReadDialog extends ConsumerStatefulWidget {
   const InteractiveReadDialog({
     required this.level,
     required this.onComplete,
@@ -13,17 +17,40 @@ class InteractiveReadDialog extends StatefulWidget {
   final VoidCallback onComplete;
 
   @override
-  State<InteractiveReadDialog> createState() => _InteractiveReadDialogState();
+  ConsumerState<InteractiveReadDialog> createState() => _InteractiveReadDialogState();
 }
 
-class _InteractiveReadDialogState extends State<InteractiveReadDialog> {
+class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
   bool _finished = false;
+  late Future<List<Ayah>> _fetchFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFuture = ref.read(quranApiServiceProvider).getAyahRange(
+      widget.level.surahId,
+      widget.level.ayahStart,
+      widget.level.ayahEnd,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      content: Column(
+      contentPadding: const EdgeInsets.all(20),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      content: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        child: _finished ? _buildSuccessState() : _buildReadingState(),
+      ),
+    );
+  }
+
+  Widget _buildReadingState() {
+    return SizedBox(
+      width: double.maxFinite,
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.menu_book_rounded, size: 56, color: GameificationColors.goldAccent),
@@ -32,30 +59,59 @@ class _InteractiveReadDialogState extends State<InteractiveReadDialog> {
             'محطة القراءة والتحسين • ${widget.level.surahName}',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
+          const SizedBox(height: 8),
+          const Text('اقرأ الآيات الآتية بتمعن وتدبر:', style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9FBF9),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: const Text(
-              'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\nالْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ الرَّحْمَٰنِ الرَّحِيمِ مَالِكِ يَوْمِ الدِّينِ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                height: 1.8,
-                color: GameificationColors.primaryGreenDark,
+          
+          // Real Dynamic Content Fetching
+          Flexible(
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 350),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FBF9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: FutureBuilder<List<Ayah>>(
+                future: _fetchFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: GameificationColors.primaryGreen));
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('تعذر تحميل الآيات: ${snapshot.error}', style: const TextStyle(color: Colors.red, fontSize: 12)));
+                  }
+                  final ayahs = snapshot.data ?? [];
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    shrinkWrap: true,
+                    itemCount: ayahs.length,
+                    separatorBuilder: (_, __) => const Divider(height: 24),
+                    itemBuilder: (context, index) {
+                      final ayah = ayahs[index];
+                      return Text(
+                        '${ayah.text} ﴿${ayah.ayahNumber}﴾',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          height: 1.8,
+                          color: GameificationColors.primaryGreenDark,
+                          fontFamily: 'Kitab',
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ),
+          
           const SizedBox(height: 20),
-
-          if (!_finished)
-            ElevatedButton(
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
               onPressed: () {
                 setState(() => _finished = true);
                 widget.onComplete();
@@ -63,35 +119,50 @@ class _InteractiveReadDialogState extends State<InteractiveReadDialog> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: GameificationColors.goldAccent,
                 foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('أكملت القراءة والتدبر'),
-            )
-          else
-            Column(
-              children: [
-                const Text(
-                  'بارك الله فيك وتقبل منك! 🌟',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: GameificationColors.primaryGreen),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'عن ابن مسعود رضي الله عنه قال ﷺ: "من قرأ حرفاً من كتاب الله فله به حسنة والحسنة بعشر أمثالها."',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontStyle: FontStyle.italic, fontSize: 11, color: Colors.grey),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: GameificationColors.primaryGreen,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('المتابعة'),
-                ),
-              ],
+              child: const Text('أكملت القراءة والتدبر ✅', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildSuccessState() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.check_circle_rounded, size: 80, color: Colors.green)
+            .animate()
+            .scale(duration: 400.ms, curve: Curves.elasticOut),
+        const SizedBox(height: 16),
+        const Text(
+          'تم إنجاز القراءة بنجاح! ✨',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: GameificationColors.primaryGreen),
+        ).animate().fadeIn(delay: 200.ms),
+        const SizedBox(height: 12),
+        const Text(
+          'بارك الله فيك وتقبل منك! عن ابن مسعود رضي الله عنه قال ﷺ: "من قرأ حرفاً من كتاب الله فله به حسنة والحسنة بعشر أمثالها."',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey, height: 1.5),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: GameificationColors.primaryGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('استمرار'),
+          ),
+        ),
+      ],
+    );
+  }
 }
+

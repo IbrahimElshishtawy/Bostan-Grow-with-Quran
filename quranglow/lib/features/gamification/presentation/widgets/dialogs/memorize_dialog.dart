@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quranglow/core/models/quran_models.dart';
+import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
 
-class InteractiveMemorizeDialog extends StatefulWidget {
+class InteractiveMemorizeDialog extends ConsumerStatefulWidget {
   const InteractiveMemorizeDialog({
     required this.level,
     required this.onComplete,
@@ -13,106 +16,187 @@ class InteractiveMemorizeDialog extends StatefulWidget {
   final VoidCallback onComplete;
 
   @override
-  State<InteractiveMemorizeDialog> createState() => _InteractiveMemorizeDialogState();
+  ConsumerState<InteractiveMemorizeDialog> createState() => _InteractiveMemorizeDialogState();
 }
 
-class _InteractiveMemorizeDialogState extends State<InteractiveMemorizeDialog> {
-  bool _revealed = false;
+class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeDialog> {
+  late Future<List<Ayah>> _fetchFuture;
+  int _currentIndex = 0;
+  bool _isRevealed = false;
+  List<Ayah> _ayahs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFuture = ref.read(quranApiServiceProvider).getAyahRange(
+      widget.level.surahId,
+      widget.level.ayahStart,
+      widget.level.ayahEnd,
+    ).then((list) {
+      setState(() => _ayahs = list);
+      return list;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.psychology_rounded, size: 56, color: Colors.purple),
-          const SizedBox(height: 12),
-          const Text(
-            'محطة الحفظ والتمكين',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'اقرأ الآية وحاول استذكار الكلمة المخفية في المربع المظلل:',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12),
-          ),
-          const SizedBox(height: 20),
+      contentPadding: const EdgeInsets.all(20),
+      content: FutureBuilder<List<Ayah>>(
+        future: _fetchFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox(
+              height: 200,
+              child: Center(child: CircularProgressIndicator(color: Colors.purple)),
+            );
+          }
+          if (snapshot.hasError || _ayahs.isEmpty) {
+            return const SizedBox(height: 200, child: Center(child: Text('خطأ في تحميل البيانات')));
+          }
 
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFBF8FB),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.purple.withValues(alpha: 0.15)),
-            ),
+          final isDone = _currentIndex >= _ayahs.length;
+          if (isDone) return _buildFinalSuccess();
+
+          final currentAyah = _ayahs[_currentIndex];
+          final splitted = currentAyah.text.split(' ');
+          final hiddenWord = splitted.last;
+          final startPhrase = splitted.sublist(0, splitted.length - 1).join(' ');
+
+          return SizedBox(
+            width: double.maxFinite,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'الْحَمْدُ لِلَّهِ رَبِّ',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: _revealed ? Colors.transparent : Colors.purple[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _revealed ? 'الْعَالَمِينَ' : '???',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: _revealed ? GameificationColors.primaryGreen : Colors.purple[700],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          if (!_revealed)
-            ElevatedButton(
-              onPressed: () {
-                setState(() => _revealed = true);
-                widget.onComplete();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('كشف والتحقق من الحفظ'),
-            )
-          else
-            Column(
-              children: [
-                const Text(
-                  'حفظ ممتاز ومبارك! 💖',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: GameificationColors.primaryGreen),
-                ),
+                const Icon(Icons.psychology_rounded, size: 50, color: Colors.purple),
                 const SizedBox(height: 8),
-                const Text(
-                  'قال ابن مسعود: "حفظ القرآن الكريم وتثبيته في الصدور نجاة ورفعة في الدارين."',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontStyle: FontStyle.italic, fontSize: 11, color: Colors.grey),
+                Text(
+                  'تثبيت الحفظ (${_currentIndex + 1}/${_ayahs.length})',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple),
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: GameificationColors.primaryGreen,
-                    foregroundColor: Colors.white,
+                const Text(
+                  'حاول استذكار آخر كلمة في هذه الآية المظللة:',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFBF8FB),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.purple.withValues(alpha: 0.1)),
                   ),
-                  child: const Text('المتابعة'),
+                  child: Column(
+                    children: [
+                      Text(
+                        startPhrase,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Kitab', height: 1.6),
+                      ),
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: () {
+                          if (!_isRevealed) setState(() => _isRevealed = true);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 400),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _isRevealed ? Colors.purple.withValues(alpha: 0.1) : Colors.purple[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _isRevealed ? hiddenWord : 'اضغط للكشف ❓',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontFamily: 'Kitab',
+                              fontWeight: FontWeight.bold,
+                              color: _isRevealed ? Colors.purple[900] : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isRevealed ? _goToNext : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: GameificationColors.primaryGreen,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: Colors.grey[300],
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          _currentIndex < _ayahs.length - 1 ? 'الآية التالية ⬅️' : 'إنهاء التحقق 🏁',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-        ],
+          );
+        },
       ),
     );
   }
+
+  void _goToNext() {
+    if (_currentIndex < _ayahs.length - 1) {
+      setState(() {
+        _currentIndex++;
+        _isRevealed = false;
+      });
+    } else {
+      setState(() {
+        _currentIndex++; // triggers completion view
+      });
+      widget.onComplete();
+    }
+  }
+
+  Widget _buildFinalSuccess() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.stars_rounded, size: 64, color: Colors.orange),
+        const SizedBox(height: 16),
+        const Text(
+          'حفظ ممتاز ومبارك! ✨',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: GameificationColors.primaryGreen),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'قال ابن مسعود: "حفظ القرآن الكريم وتثبيته في الصدور نجاة ورفعة في الدارين."',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey, height: 1.4),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: GameificationColors.primaryGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('متابعة الرحلة'),
+          ),
+        ),
+      ],
+    );
+  }
 }
+

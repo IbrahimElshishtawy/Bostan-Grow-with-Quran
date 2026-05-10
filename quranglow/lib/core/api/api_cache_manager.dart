@@ -5,10 +5,23 @@ class ApiCacheManager {
   ApiCacheManager({required this.boxName});
 
   final String boxName;
-  late Box<String> _cache;
+
+  Future<Box<String>> _getOrOpenBox() async {
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box<String>(boxName);
+    }
+    return await Hive.openBox<String>(boxName);
+  }
+
+  Box<String>? _getBoxIfOpen() {
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box<String>(boxName);
+    }
+    return null;
+  }
 
   Future<void> init() async {
-    _cache = await Hive.openBox<String>(boxName);
+    await _getOrOpenBox();
   }
 
   /// Cache API response with TTL
@@ -17,14 +30,22 @@ class ApiCacheManager {
     String value, {
     Duration ttl = const Duration(hours: 24),
   }) async {
-    final expiryTime = DateTime.now().add(ttl).millisecondsSinceEpoch;
-    final cacheData = '$value|$expiryTime';
-    await _cache.put(key, cacheData);
+    try {
+      final box = await _getOrOpenBox();
+      final expiryTime = DateTime.now().add(ttl).millisecondsSinceEpoch;
+      final cacheData = '$value|$expiryTime';
+      await box.put(key, cacheData);
+    } catch (_) {
+      // Fail gracefully on edge case storage locking
+    }
   }
 
   /// Get cached value if not expired
   String? get(String key) {
-    final cached = _cache.get(key);
+    final box = _getBoxIfOpen();
+    if (box == null) return null; // Return null gracefully if storage not ready yet!
+
+    final cached = box.get(key);
     if (cached == null) return null;
 
     final parts = cached.split('|');
@@ -34,7 +55,7 @@ class ApiCacheManager {
     if (expiryTime == null) return null;
 
     if (DateTime.now().millisecondsSinceEpoch > expiryTime) {
-      _cache.delete(key);
+      box.delete(key);
       return null;
     }
 
@@ -45,15 +66,24 @@ class ApiCacheManager {
   bool has(String key) => get(key) != null;
 
   /// Clear specific cache entry
-  Future<void> remove(String key) => _cache.delete(key);
+  Future<void> remove(String key) async {
+    final box = await _getOrOpenBox();
+    await box.delete(key);
+  }
 
   /// Clear all cache
-  Future<void> clear() => _cache.clear();
+  Future<void> clear() async {
+    final box = await _getOrOpenBox();
+    await box.clear();
+  }
 
   /// Get cache size in bytes
   int getSize() {
+    final box = _getBoxIfOpen();
+    if (box == null) return 0;
+    
     int size = 0;
-    for (final value in _cache.values) {
+    for (final value in box.values) {
       size += value.length;
     }
     return size;
@@ -67,3 +97,4 @@ class ApiCacheManager {
     }
   }
 }
+

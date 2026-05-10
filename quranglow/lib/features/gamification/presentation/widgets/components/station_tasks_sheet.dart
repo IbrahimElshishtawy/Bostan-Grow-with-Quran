@@ -12,6 +12,7 @@ import 'package:quranglow/features/gamification/presentation/widgets/dialogs/rea
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/write_dialog.dart';
 
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/level_gameplay_screen.dart';
+import 'package:quranglow/features/gamification/presentation/pages/gameplay/write_gameplay_screen.dart';
 
 class StationTasksSheet extends ConsumerWidget {
   const StationTasksSheet({
@@ -70,13 +71,20 @@ class StationTasksSheet extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            level.surahName,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                level.surahName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              // Dynamic Heart Status indicator requested by User!
+                              _buildHeartsRow(ref),
+                            ],
                           ),
                           Text(
                             'المستوى الحالي • آيات ${level.ayahStart}-${level.ayahEnd}',
@@ -227,13 +235,11 @@ class StationTasksSheet extends ConsumerWidget {
   }
 
   void _launchWriteTask(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => InteractiveWriteDialog(
-        level: level,
-        onComplete: () {
-          ref.read(gamificationControllerProvider.notifier).completeSubTask(level.id, 'write');
-        },
+    Navigator.pop(context); // Close bottom sheet
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WriteGameplayScreen(level: level),
       ),
     );
   }
@@ -261,4 +267,41 @@ class StationTasksSheet extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildHeartsRow(WidgetRef ref) {
+    final state = ref.watch(gamificationControllerProvider);
+    final userHearts = state.userProfile.hearts; // defaults 5 max in standard profiles
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            '$userHearts',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.redAccent,
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(
+            Icons.favorite_rounded,
+            color: Colors.redAccent,
+            size: 18,
+          ).animate(onPlay: (controller) => controller.repeat(reverse: true)).scale(
+            begin: const Offset(1, 1),
+            end: const Offset(1.1, 1.1),
+            duration: const Duration(milliseconds: 1500),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

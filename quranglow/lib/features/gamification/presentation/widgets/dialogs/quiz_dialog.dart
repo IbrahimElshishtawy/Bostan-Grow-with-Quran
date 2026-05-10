@@ -18,118 +18,216 @@ class InteractiveQuizDialog extends StatefulWidget {
 }
 
 class _InteractiveQuizDialogState extends State<InteractiveQuizDialog> {
+  int _currentQuestionIndex = 0;
+  int _correctCount = 0;
   int? _selectedIndex;
-  final List<String> _options = ['الرحمة والمغفرة', 'الهداية إلى الطريق المستقيم', 'العزة والملكوت'];
-  final int _correctIndex = 1;
-  int _combo = 1;
+  bool _isEvaluated = false;
+
+  late final List<_QuizQuestion> _questions;
+
+  @override
+  void initState() {
+    super.initState();
+    _generateQuestions();
+  }
+
+  void _generateQuestions() {
+    // Simulated dynamic high quality content relevant to standard Quran contexts
+    _questions = [
+      _QuizQuestion(
+        title: 'ما هي أفضل الأوقات لتلاوة وتدبر القرآن الكريم؟',
+        options: ['وقت الفجر والليل', 'أثناء العمل', 'وقت النوم'],
+        correctIndex: 0,
+      ),
+      _QuizQuestion(
+        title: 'ما جزاء الحرف الواحد من كتاب الله؟',
+        options: ['حسنة واحدة', 'عشر حسنات', 'خمس حسنات'],
+        correctIndex: 1,
+      ),
+      _QuizQuestion(
+        title: 'قوله تعالى "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ" يدل على طلب؟',
+        options: ['الرزق', 'المال', 'الهداية'],
+        correctIndex: 2,
+      ),
+      _QuizQuestion(
+        title: 'من أسباب الخشوع في الصلاة تدبر الآيات؟',
+        options: ['صحيح', 'خاطئ'],
+        correctIndex: 0,
+      ),
+      _QuizQuestion(
+        title: 'النية الصالحة شرط أساسي لقبول القراءة؟',
+        options: ['نعم بالتأكيد', 'لا ليس شرطاً'],
+        correctIndex: 0,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isFinished = _currentQuestionIndex >= _questions.length;
+
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      content: Column(
+      content: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: isFinished ? _buildSummary() : _buildQuestionView(),
+      ),
+    );
+  }
+
+  Widget _buildQuestionView() {
+    final q = _questions[_currentQuestionIndex];
+
+    return SizedBox(
+      key: ValueKey(_currentQuestionIndex),
+      width: double.maxFinite,
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.workspace_premium_rounded, size: 56, color: Colors.orange),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('سؤال ${_currentQuestionIndex + 1}/5', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+              const Icon(Icons.workspace_premium_rounded, size: 30, color: Colors.orange),
+            ],
+          ),
           const SizedBox(height: 12),
-          const Text(
-            'مسابقة التدبر والتفسير',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'ما هو المعنى الرئيسي لقوله تعالى: "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ"؟',
+          Text(
+            q.title,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.5),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          ...List.generate(q.options.length, (idx) {
+            final isSelected = _selectedIndex == idx;
+            final isCorrect = idx == q.correctIndex;
 
-          ...List.generate(_options.length, (index) {
-            final isSelected = _selectedIndex == index;
-            final isCorrectAnswer = index == _correctIndex;
+            Color bgColor = Colors.white;
+            Color textColor = Colors.black87;
+
+            if (_isEvaluated) {
+              if (isCorrect) {
+                bgColor = Colors.green[100]!;
+                textColor = Colors.green[900]!;
+              } else if (isSelected) {
+                bgColor = Colors.red[100]!;
+                textColor = Colors.red[900]!;
+              }
+            }
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: ElevatedButton(
-                onPressed: _selectedIndex != null
-                    ? null
-                    : () {
-                        setState(() {
-                          _selectedIndex = index;
-                          if (index == _correctIndex) {
-                            _combo = 3;
-                            widget.onComplete(_combo);
-                          } else {
-                            _combo = 1;
-                          }
-                        });
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _selectedIndex != null
-                      ? isCorrectAnswer
-                          ? Colors.green
-                          : isSelected
-                              ? Colors.red
-                              : Colors.white
-                      : Colors.white,
-                  foregroundColor: _selectedIndex != null && (isCorrectAnswer || isSelected)
-                      ? Colors.white
-                      : Colors.black87,
-                  side: BorderSide(color: Colors.grey[200]!),
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: Text(
-                  _options[index],
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isEvaluated
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedIndex = idx;
+                            _isEvaluated = true;
+                            if (idx == q.correctIndex) _correctCount++;
+                          });
+                          Future.delayed(const Duration(seconds: 1), () {
+                            if (mounted) {
+                              setState(() {
+                                _currentQuestionIndex++;
+                                _selectedIndex = null;
+                                _isEvaluated = false;
+                              });
+                            }
+                          });
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: bgColor,
+                    foregroundColor: textColor,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: _isEvaluated && (isCorrect || isSelected) ? textColor : Colors.grey[300]!),
+                    ),
+                  ),
+                  child: Text(
+                    q.options[idx],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             );
           }),
-
-          if (_selectedIndex != null) ...[
-            const SizedBox(height: 16),
-            if (_selectedIndex == _correctIndex) ...[
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.bolt, color: Colors.amber, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Combo Multiplier x$_combo activated! +15 XP Bonus! ⚡',
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber),
-                    ),
-                  ],
-                ),
-              ).animate().scale(curve: Curves.elasticOut),
-              const SizedBox(height: 8),
-            ],
-            Text(
-              _selectedIndex == _correctIndex
-                  ? 'أحسنت! الإجابة صحيحة ومباركة 🎉'
-                  : 'إجابة خاطئة، حاول مجدداً لاحقاً! ❌',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: _selectedIndex == _correctIndex ? Colors.green : Colors.red,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: GameificationColors.primaryGreen,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('المتابعة والدرب'),
-            ),
-          ],
         ],
       ),
     );
   }
+
+  Widget _buildSummary() {
+    final hasPassed = _correctCount >= 2; // User logic requirement: Pass with 2
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          hasPassed ? Icons.emoji_events_rounded : Icons.sentiment_dissatisfied_rounded,
+          size: 70,
+          color: hasPassed ? Colors.amber : Colors.redAccent,
+        ).animate().scale(curve: Curves.elasticOut),
+        const SizedBox(height: 16),
+        Text(
+          hasPassed ? 'تهانينا! لقد نجحت 🏆' : 'للأسف لم تنجح 💔',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: hasPassed ? GameificationColors.primaryGreen : Colors.redAccent),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'النتيجة: $_correctCount إجابات صحيحة من 5',
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 20),
+        if (hasPassed)
+          const Text(
+            'أحسنت! تم فتح المستوى التالي بنجاح.',
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          )
+        else
+          const Text(
+            'تحتاج لـ 2 إجابات صحيحة على الأقل للفوز.',
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () {
+              if (hasPassed) {
+                widget.onComplete(_correctCount); // Finish task in global state
+                Navigator.pop(context);
+              } else {
+                // Reset quiz
+                setState(() {
+                  _currentQuestionIndex = 0;
+                  _correctCount = 0;
+                });
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: hasPassed ? GameificationColors.primaryGreen : Colors.blueGrey,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(hasPassed ? 'إكمال وفتح المستوى' : 'حاول مرة أخرى'),
+          ),
+        ),
+      ],
+    );
+  }
 }
+
+class _QuizQuestion {
+  final String title;
+  final List<String> options;
+  final int correctIndex;
+
+  _QuizQuestion({required this.title, required this.options, required this.correctIndex});
+}
+
