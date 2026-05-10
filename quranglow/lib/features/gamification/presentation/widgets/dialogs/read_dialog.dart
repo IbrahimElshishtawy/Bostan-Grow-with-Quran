@@ -86,7 +86,7 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
                     padding: const EdgeInsets.all(16),
                     shrinkWrap: true,
                     itemCount: ayahs.length,
-                    separatorBuilder: (_, __) => const Divider(height: 24),
+                    separatorBuilder: (ctx, idx) => const Divider(height: 24),
                     itemBuilder: (context, index) {
                       final ayah = ayahs[index];
                       return Text(

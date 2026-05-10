@@ -158,14 +158,6 @@ class LevelGameplayController extends StateNotifier<LevelGameplayState> {
     }
   }
 
-  String _normalizeReciterDir(String raw) {
-    // Example mapping routine
-    if (raw.toLowerCase().contains('alafasy')) return 'Alafasy';
-    if (raw.toLowerCase().contains('husary')) return 'Husary';
-    if (raw.toLowerCase().contains('abdulbaset')) return 'AbdulBaset_Murattal';
-    if (raw.toLowerCase().contains('menshawi')) return 'Minshawi_Murattal';
-    return 'Alafasy'; // Safe universal fallback
-  }
 
   void playPause() {
     if (_audioPlayer.playing) {

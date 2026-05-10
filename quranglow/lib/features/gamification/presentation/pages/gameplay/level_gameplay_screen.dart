@@ -190,7 +190,6 @@ class LevelGameplayScreen extends ConsumerWidget {
   }
 
   Widget _buildPlaybackControlBar(LevelGameplayController controller, LevelGameplayState state, WidgetRef ref, BuildContext context) {
-    final isCompleted = state.ayahs.isNotEmpty && state.currentPlayingAyahIndex == state.ayahs.length - 1;
     
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 35),

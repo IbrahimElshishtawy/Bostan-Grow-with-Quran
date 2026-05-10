@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quranglow/core/models/quran_models.dart';
 import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
+import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
 import 'dart:math' as math;
 

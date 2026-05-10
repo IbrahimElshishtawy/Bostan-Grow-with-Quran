@@ -5,11 +5,9 @@ import 'package:quranglow/features/gamification/application/providers/gamificati
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/components/task_tile.dart';
-import 'package:quranglow/features/gamification/presentation/widgets/dialogs/listen_dialog.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/memorize_dialog.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/quiz_dialog.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/read_dialog.dart';
-import 'package:quranglow/features/gamification/presentation/widgets/dialogs/write_dialog.dart';
 
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/level_gameplay_screen.dart';
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/write_gameplay_screen.dart';
@@ -269,8 +267,8 @@ class StationTasksSheet extends ConsumerWidget {
   }
 
   Widget _buildHeartsRow(WidgetRef ref) {
-    final state = ref.watch(gamificationControllerProvider);
-    final userHearts = state.userProfile.hearts; // defaults 5 max in standard profiles
+    final asyncState = ref.watch(gamificationControllerProvider);
+    final userHearts = asyncState.valueOrNull?.userProfile.hearts ?? 5; // defaults 5 max if null
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
