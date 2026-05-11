@@ -51,10 +51,12 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       // Version check for granular level upgrade (force regen once)
       final prefs = await SharedPreferences.getInstance();
       final int dataVersion = prefs.getInt('quran_levels_data_version') ?? 0;
-      const int currentTargetVersion = 2; // Force upgrade for the 10-ayah chunking!
+      const int currentTargetVersion = 3; // Force upgrade to enable dynamic chunking
+      
+      final int dailyGoal = prefs.getInt('daily_reading_goal') ?? 10;
 
-      if (levels.isEmpty || levels.length < 500 || dataVersion < currentTargetVersion) {
-        levels = _generateSpiritualJourneyStations();
+      if (levels.isEmpty || levels.length < 200 || dataVersion < currentTargetVersion) {
+        levels = _generateSpiritualJourneyStations(dailyGoal);
         await repository.initializeLevels(userId, levels);
         await prefs.setInt('quran_levels_data_version', currentTargetVersion);
       }
@@ -410,9 +412,34 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
     } catch (_) {}
   }
 
-  List<GameLevel> _generateSpiritualJourneyStations() {
+  /// Regenerates the entire roadmap structure based on a new daily goal preference (dynamic chunking).
+  Future<void> updateDailyGoalAndRegenerate(int newGoal) async {
+    try {
+      state = const AsyncValue.loading();
+
+      // 1. Persist the new goal to preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('daily_reading_goal', newGoal);
+
+      // 2. Generate the new partitioned stations list
+      final List<GameLevel> regeneratedLevels = _generateSpiritualJourneyStations(newGoal);
+      
+      // 3. Persist and update local state
+      await repository.initializeLevels(userId, regeneratedLevels);
+      
+      // Trigger reload of remaining pipeline details (profile, stats, etc)
+      await initialize();
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  List<GameLevel> _generateSpiritualJourneyStations(int chunkSize) {
     final List<GameLevel> stations = [];
     int globalSequence = 1;
+
+    // Sanitize size input just in case
+    final size = math.max(5, chunkSize);
 
     // Iterate through all 114 Surahs
     for (int i = 0; i < kSurahNamesAr.length; i++) {
@@ -420,10 +447,10 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       final String surahName = kSurahNamesAr[i];
       final int totalAyahs = kSurahAyahCounts.length > i ? kSurahAyahCounts[i] : 7;
 
-      // Chunk the surah into 10-ayah increments!
+      // Chunk the surah based on the dynamic goal increment!
       int startAyah = 1;
       while (startAyah <= totalAyahs) {
-        int endAyah = startAyah + 9;
+        int endAyah = startAyah + (size - 1);
         if (endAyah > totalAyahs) endAyah = totalAyahs; // cap at the final ayah of this surah
 
         // Rotational logic for variety along path node styles
@@ -448,18 +475,18 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
             description: 'أكمل رحلة النور وتدبر الآيات المباركة من $startAyah إلى $endAyah في سورة $surahName.',
             xpReward: 150,
             maxStars: 3,
-            isUnlocked: globalSequence == 1, // First block of Fatiha is the ONLY one initially unlocked!
+            isUnlocked: globalSequence == 1, 
             starsEarned: 0,
             xpEarned: 0,
             completionPercentage: 0.0,
             hasAudio: true,
             difficulty: globalSequence <= 20 ? 'Beginner' : globalSequence <= 60 ? 'Medium' : 'Hard',
-            isMystery: globalSequence % 10 == 0, // Inject surprises periodically along the massive path!
+            isMystery: globalSequence % 10 == 0, 
           ),
         );
 
         globalSequence++;
-        startAyah += 10; // Next chunk!
+        startAyah += size; // Advance by the dynamic step chunk
       }
     }
 

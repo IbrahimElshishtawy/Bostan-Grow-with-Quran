@@ -6,7 +6,7 @@ import 'package:quranglow/features/azkar/presentation/pages/azkar_tasbih_page.da
 import 'package:quranglow/features/gamification/presentation/pages/modern_home_screen.dart';
 import 'package:quranglow/features/home/presentation/widgets/app_drawer.dart';
 import 'package:quranglow/features/player/presentation/pages/player_page.dart';
-import 'package:quranglow/features/search/presentation/pages/search_page.dart';
+import 'package:quranglow/features/prayer/presentation/pages/prayer_qibla_screen.dart';
 import 'package:quranglow/features/surah/presentation/pages/surah_list_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -42,9 +42,9 @@ class _HomePageState extends State<HomePage> {
       activeIcon: Icons.play_circle,
     ),
     _NavTab(
-      label: 'بحث',
-      icon: Icons.search_rounded,
-      activeIcon: Icons.manage_search_rounded,
+      label: 'المصلى',
+      icon: Icons.explore_outlined,
+      activeIcon: Icons.explore,
     ),
   ];
 
@@ -112,7 +112,7 @@ class _HomePageState extends State<HomePage> {
       case 3:
         return const PlayerPage();
       case 4:
-        return const SearchPage();
+        return const PrayerQiblaScreen();
       default:
         return const ModernHomeScreen();
     }

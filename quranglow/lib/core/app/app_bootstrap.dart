@@ -29,7 +29,7 @@ class AppBootstrap {
             () => Firebase.initializeApp(
               options: DefaultFirebaseOptions.currentPlatform,
             ),
-            timeout: const Duration(seconds: 8),
+            timeout: const Duration(seconds: 20),
           )
         : false;
 
@@ -45,7 +45,7 @@ class AppBootstrap {
           _safeInit(
             'firebase-anon-signin',
             () => FirebaseSyncService().signInAnonymously(),
-            timeout: const Duration(seconds: 5),
+            timeout: const Duration(seconds: 20),
           ),
         );
       } else {
@@ -64,19 +64,19 @@ class AppBootstrap {
     await _safeInit(
       'hive',
       () => Hive.initFlutter(),
-      timeout: const Duration(seconds: 5),
+      timeout: const Duration(seconds: 20),
     );
 
     await _safeInit(
       'audio-handler',
       () => initAudioHandler(),
-      timeout: const Duration(seconds: 10),
+      timeout: const Duration(seconds: 25),
     );
 
     await _safeInit(
       'notifications',
       () => NotificationService.instance.init(),
-      timeout: const Duration(seconds: 5),
+      timeout: const Duration(seconds: 20),
     );
 
     unawaited(

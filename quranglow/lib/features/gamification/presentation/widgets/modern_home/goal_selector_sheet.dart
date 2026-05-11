@@ -48,12 +48,28 @@ class _GoalSelectorSheetState extends State<GoalSelectorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Dynamic color assignments based on system brightness
+    final sheetBgColor = isDark ? const Color(0xFF15251B) : const Color(0xFFF9FBF8);
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF1A3022);
+    final secondaryTextColor = isDark ? Colors.white70 : const Color(0xFF1A3022).withValues(alpha: 0.6);
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFF1B5E20).withValues(alpha: 0.08);
+    final handleColor = isDark ? Colors.white24 : const Color(0xFF1B5E20).withValues(alpha: 0.15);
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF15251B),
+        color: sheetBgColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -64,48 +80,59 @@ class _GoalSelectorSheetState extends State<GoalSelectorSheet> {
               width: 40,
               height: 5,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: handleColor,
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'اختر وردك القرآني المفضل',
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                color: primaryTextColor,
+                letterSpacing: -0.2,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'حدد هدف المراجعة اليومية للبدء في رحلة الحفظ الممتعة',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(
+                color: secondaryTextColor, 
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 32),
-            _buildGoalSelector(),
+            
+            // The dynamic interactive selector
+            _buildGoalSelector(
+              isDark: isDark, 
+              primaryTextColor: primaryTextColor,
+            ),
+            
             const SizedBox(height: 24),
             
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: Container(
                 key: ValueKey<int>(_dailyGoal),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFBDE156).withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFBDE156).withValues(alpha: 0.15)),
+                  color: const Color(0xFF689F38).withValues(alpha: isDark ? 0.12 : 0.06),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF689F38).withValues(alpha: 0.15)),
                 ),
                 child: Text(
                   _getMotivationalMessage(_dailyGoal),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFFC5E17A),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFFDCEDC8) : const Color(0xFF33691E),
                     fontStyle: FontStyle.italic,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -117,8 +144,8 @@ class _GoalSelectorSheetState extends State<GoalSelectorSheet> {
               height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFBDE156),
-                  foregroundColor: Colors.black,
+                  backgroundColor: const Color(0xFF689F38),
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -130,7 +157,7 @@ class _GoalSelectorSheetState extends State<GoalSelectorSheet> {
                 },
                 child: const Text(
                   'حفظ والانطلاق',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
               ),
             ),
@@ -140,9 +167,18 @@ class _GoalSelectorSheetState extends State<GoalSelectorSheet> {
     );
   }
 
-  Widget _buildGoalSelector() {
+  Widget _buildGoalSelector({
+    required bool isDark,
+    required Color primaryTextColor,
+  }) {
+    final Color inactiveBg = isDark 
+        ? Colors.black.withValues(alpha: 0.25) 
+        : const Color(0xFF1A3022).withValues(alpha: 0.04);
+        
+    final Color activeBg = const Color(0xFF689F38);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -151,9 +187,9 @@ class _GoalSelectorSheetState extends State<GoalSelectorSheet> {
             child: Text(
               'حدد هدفك اليومي للمراجعة:',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: primaryTextColor.withValues(alpha: 0.9),
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -170,26 +206,24 @@ class _GoalSelectorSheetState extends State<GoalSelectorSheet> {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    curve: Curves.easeOutQuad,
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      color: isActive
-                          ? const Color(0xFF4E7440)
-                          : Colors.black.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(16),
+                      color: isActive ? activeBg : inactiveBg,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: isActive
-                            ? Colors.white.withValues(alpha: 0.4)
-                            : Colors.transparent,
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.transparent),
                         width: 1.5,
                       ),
                       boxShadow: isActive
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF4E7440).withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                                color: activeBg.withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
                               ),
                             ]
                           : [],
@@ -199,18 +233,23 @@ class _GoalSelectorSheetState extends State<GoalSelectorSheet> {
                         Text(
                           '$goal',
                           style: TextStyle(
-                            fontSize: 18,
-                            height: 1.1,
+                            fontSize: 22,
+                            height: 1.0,
                             fontWeight: FontWeight.w900,
-                            color: isActive ? Colors.white : Colors.white70,
+                            color: isActive 
+                                ? Colors.white 
+                                : primaryTextColor.withValues(alpha: 0.8),
                           ),
                         ),
+                        const SizedBox(height: 4),
                         Text(
                           'آية / يوم',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: isActive ? Colors.white70 : Colors.white54,
+                            color: isActive 
+                                ? Colors.white.withValues(alpha: 0.8) 
+                                : primaryTextColor.withValues(alpha: 0.5),
                           ),
                         ),
                       ],

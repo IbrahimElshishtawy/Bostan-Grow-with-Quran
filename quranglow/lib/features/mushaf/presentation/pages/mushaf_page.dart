@@ -139,6 +139,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   }
 
   Future<void> _playAyahAudio(Aya aya, int ayahNumber) async {
+    if (_ayahPreviewPlayer.playing) {
+      await _ayahPreviewPlayer.stop();
+      return;
+    }
     try {
       String? url = aya.audioUrl;
       if (url == null || url.trim().isEmpty) {
@@ -320,25 +324,36 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 onSave: _saveCurrentPosition,
                 onTafsir: () => _openTafsirForAyah(_lastAyahNumber ?? 1),
               ),
-              SelectedAyahPanel(
-                visible: _lastAyahNumber != null && selectedAyahText != null,
-                ayahNumber: _lastAyahNumber,
-                ayahText: selectedAyahText,
-                onClear: () => setState(() => _lastAyahNumber = null),
-                onOpenTafsir: () => _openTafsirForAyah(_lastAyahNumber ?? 1),
-                onPlay: () {
-                  final ayahNum = _lastAyahNumber;
-                  final surah = asyncSurah.valueOrNull;
-                  if (ayahNum == null || surah == null) return;
-                  final idx = ayahNum - 1;
-                  if (idx < 0 || idx >= surah.ayat.length) return;
-                  _playAyahAudio(surah.ayat[idx], ayahNum);
-                },
-                onCopy: () {
-                  final text = selectedAyahText;
-                  final ayahNum = _lastAyahNumber;
-                  if (text == null || ayahNum == null) return;
-                  _copyAyahText(ayahNum, text);
+              StreamBuilder<bool>(
+                stream: _ayahPreviewPlayer.playingStream,
+                initialData: false,
+                builder: (context, snapshot) {
+                  final isPlaying = snapshot.data ?? false;
+                  return SelectedAyahPanel(
+                    visible: _lastAyahNumber != null && selectedAyahText != null,
+                    ayahNumber: _lastAyahNumber,
+                    ayahText: selectedAyahText,
+                    isPlaying: isPlaying,
+                    onClear: () {
+                      _ayahPreviewPlayer.stop(); // Stop if user clears panel
+                      setState(() => _lastAyahNumber = null);
+                    },
+                    onOpenTafsir: () => _openTafsirForAyah(_lastAyahNumber ?? 1),
+                    onPlay: () {
+                      final ayahNum = _lastAyahNumber;
+                      final surah = asyncSurah.valueOrNull;
+                      if (ayahNum == null || surah == null) return;
+                      final idx = ayahNum - 1;
+                      if (idx < 0 || idx >= surah.ayat.length) return;
+                      _playAyahAudio(surah.ayat[idx], ayahNum);
+                    },
+                    onCopy: () {
+                      final text = selectedAyahText;
+                      final ayahNum = _lastAyahNumber;
+                      if (text == null || ayahNum == null) return;
+                      _copyAyahText(ayahNum, text);
+                    },
+                  );
                 },
               ),
             ],

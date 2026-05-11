@@ -77,6 +77,11 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     await prefs.setBool('has_seen_goal_selection', true);
     await prefs.setInt('daily_reading_goal', selectedGoal);
 
+    // CRITICAL: Tell the gamification system to instantly dynamically regenerate the roadmap!
+    ref
+        .read(gamificationControllerProvider.notifier)
+        .updateDailyGoalAndRegenerate(selectedGoal);
+
     setState(() {
       _dailyGoal = selectedGoal;
     });

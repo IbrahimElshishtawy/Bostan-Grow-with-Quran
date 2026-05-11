@@ -38,6 +38,25 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Dynamic Theme Palettes
+    final Color cardColor = isDark
+        ? (_isStatsExpanded ? const Color(0xFF1A3022).withValues(alpha: 0.92) : Colors.black.withValues(alpha: 0.2))
+        : (_isStatsExpanded ? Colors.white.withValues(alpha: 0.98) : Colors.white.withValues(alpha: 0.88));
+
+    final Color borderColor = isDark
+        ? Colors.white.withValues(alpha: _isStatsExpanded ? 0.15 : 0.08)
+        : const Color(0xFF1B5E20).withValues(alpha: _isStatsExpanded ? 0.15 : 0.10);
+
+    final Color shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.25)
+        : const Color(0xFF1A3022).withValues(alpha: 0.15);
+
+    final Color primaryText = isDark ? Colors.white : const Color(0xFF1A3022);
+    final Color secondaryText = isDark ? Colors.white70 : const Color(0xFF1A3022).withValues(alpha: 0.65);
+    final Color iconColor = isDark ? Colors.white70 : const Color(0xFF1B5E20).withValues(alpha: 0.8);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: GestureDetector(
@@ -51,19 +70,17 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
           curve: Curves.easeInOutCubic,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: _isStatsExpanded
-                ? const Color(0xFF1A3022).withValues(alpha: 0.92)
-                : Colors.black.withValues(alpha: 0.2),
+            color: cardColor,
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
-              color: Colors.white.withValues(alpha: _isStatsExpanded ? 0.15 : 0.08),
+              color: borderColor,
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
+                color: shadowColor,
+                blurRadius: 22,
+                offset: const Offset(0, 8),
               )
             ],
           ),
@@ -78,16 +95,28 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                     isCrescent: true,
                     title: 'الأوراد المنجزة',
                     value: '${widget.completedCount}/${widget.totalLevelsCount} أوراد',
+                    isDark: isDark,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    iconColor: iconColor,
                   ),
                   _buildIconStatItem(
                     iconData: Icons.menu_book_rounded,
                     title: 'الآيات المحفوظة',
                     value: '${widget.memorizedAyahs}/${widget.totalAyahs} آية',
+                    isDark: isDark,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    iconColor: iconColor,
                   ),
                   _buildIconStatItem(
                     iconData: Icons.calendar_month_rounded,
                     title: 'الالتزام اليومي',
                     value: '${widget.streak} يوم',
+                    isDark: isDark,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    iconColor: iconColor,
                   ),
                 ],
               ),
@@ -104,13 +133,17 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                   child: !_isStatsExpanded
                       ? Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: secondaryText.withValues(alpha: 0.5),
                           size: 22,
                         )
                       : Column(
                           key: const ValueKey('expanded_dashboard'),
                           children: [
-                            const Divider(color: Colors.white10, height: 24, thickness: 1.2),
+                            Divider(
+                              color: isDark ? Colors.white10 : const Color(0xFF1B5E20).withValues(alpha: 0.08), 
+                              height: 24, 
+                              thickness: 1.2
+                            ),
                             
                             // Custom Styled Top Row for Expanded
                             Row(
@@ -120,23 +153,23 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Row(
+                                    Row(
                                       children: [
-                                        Icon(Icons.trending_up_rounded, color: Color(0xFFBDE156), size: 18),
-                                        SizedBox(width: 6),
+                                        const Icon(Icons.trending_up_rounded, color: Color(0xFF689F38), size: 18),
+                                        const SizedBox(width: 6),
                                         Text(
                                           'معدل الإنجاز الكلي',
-                                          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                                          style: TextStyle(color: secondaryText, fontSize: 12, fontWeight: FontWeight.w500),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       '${(widget.overallProgress * 100).toStringAsFixed(1)}%',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 30,
                                         fontWeight: FontWeight.w900,
-                                        color: Colors.white,
+                                        color: primaryText,
                                         letterSpacing: -0.5,
                                       ),
                                     ),
@@ -144,10 +177,13 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(15)),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF689F38).withValues(alpha: 0.12), 
+                                    borderRadius: BorderRadius.circular(15)
+                                  ),
                                   child: const Text(
                                     'مستوى التميز',
-                                    style: TextStyle(color: Color(0xFFBDE156), fontWeight: FontWeight.bold, fontSize: 10),
+                                    style: TextStyle(color: Color(0xFF33691E), fontWeight: FontWeight.w900, fontSize: 10),
                                   ),
                                 ),
                               ],
@@ -161,17 +197,20 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                                 Container(
                                   height: 12,
                                   width: double.infinity,
-                                  decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.black26 : const Color(0xFF1B5E20).withValues(alpha: 0.05), 
+                                    borderRadius: BorderRadius.circular(10)
+                                  ),
                                 ),
                                 FractionallySizedBox(
                                   widthFactor: widget.overallProgress.clamp(0.02, 1.0),
                                   child: Container(
                                     height: 12,
                                     decoration: BoxDecoration(
-                                      gradient: const LinearGradient(colors: [Color(0xFF89A658), Color(0xFFC5E17A), Color(0xFFE6F5BE)]),
+                                      gradient: const LinearGradient(colors: [Color(0xFF689F38), Color(0xFF8BC34A), Color(0xFFDCEDC8)]),
                                       borderRadius: BorderRadius.circular(10),
                                       boxShadow: [
-                                        BoxShadow(color: const Color(0xFFBDE156).withValues(alpha: 0.3), blurRadius: 6),
+                                        BoxShadow(color: const Color(0xFF8BC34A).withValues(alpha: 0.3), blurRadius: 6),
                                       ],
                                     ),
                                   ),
@@ -189,7 +228,9 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                                     title: 'التقدم الصوتي',
                                     icon: Icons.headphones_rounded,
                                     progress: widget.listenProgress,
-                                    accentColor: const Color(0xFF4DB6AC),
+                                    accentColor: const Color(0xFF00796B),
+                                    isDark: isDark,
+                                    secondaryText: secondaryText,
                                   ),
                                 ),
                                 const SizedBox(width: 20),
@@ -198,7 +239,9 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                                     title: 'التقدم الكتابي',
                                     icon: Icons.edit_note_rounded,
                                     progress: widget.readProgress,
-                                    accentColor: const Color(0xFFFFB74D),
+                                    accentColor: const Color(0xFFE65100),
+                                    isDark: isDark,
+                                    secondaryText: secondaryText,
                                   ),
                                 ),
                               ],
@@ -211,18 +254,23 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFBDE156).withValues(alpha: 0.06),
+                                color: const Color(0xFF689F38).withValues(alpha: isDark ? 0.12 : 0.08),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0xFFBDE156).withValues(alpha: 0.12)),
+                                border: Border.all(color: const Color(0xFF689F38).withValues(alpha: 0.18)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFFBDE156), size: 18),
+                                  const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF689F38), size: 18),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
                                       getMotivationalPrompt(widget.overallProgress),
-                                      style: const TextStyle(color: Color(0xFFD4E8A1), fontSize: 12, height: 1.3),
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFFDCEDC8) : const Color(0xFF33691E), 
+                                        fontSize: 12, 
+                                        height: 1.3,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -231,7 +279,7 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                             const SizedBox(height: 8),
                             Icon(
                               Icons.keyboard_arrow_up_rounded,
-                              color: Colors.white.withValues(alpha: 0.3),
+                              color: secondaryText.withValues(alpha: 0.5),
                               size: 20,
                             ),
                           ],
@@ -251,6 +299,10 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
     required String title,
     required String value,
     bool isCrescent = false,
+    required bool isDark,
+    required Color primaryText,
+    required Color secondaryText,
+    required Color iconColor,
   }) {
     return Column(
       children: [
@@ -265,7 +317,7 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFFD54F).withValues(alpha: 0.3),
+                      color: const Color(0xFFFFD54F).withValues(alpha: isDark ? 0.3 : 0.15),
                       blurRadius: 20,
                       spreadRadius: 10,
                     ),
@@ -275,20 +327,20 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
             isCrescent
                 ? const Icon(
                     Icons.nights_stay_rounded,
-                    color: Color(0xFFFFF59D),
+                    color: Color(0xFFFFC107),
                     size: 34,
                   )
-                : Icon(iconData, color: Colors.white70, size: 32),
+                : Icon(iconData, color: iconColor, size: 32),
           ],
         ),
         const SizedBox(height: 8),
-        Text(title, style: const TextStyle(fontSize: 11, color: Colors.white60)),
+        Text(title, style: TextStyle(fontSize: 11, color: secondaryText, fontWeight: FontWeight.w500)),
         Text(
           value,
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.white.withValues(alpha: 0.9),
+            fontWeight: FontWeight.w900,
+            color: primaryText,
           ),
         ),
       ],
@@ -300,18 +352,20 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
     required IconData icon,
     required double progress,
     required Color accentColor,
+    required bool isDark,
+    required Color secondaryText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, size: 15, color: Colors.white60),
+            Icon(icon, size: 15, color: secondaryText),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 11, color: Colors.white70),
+                style: TextStyle(fontSize: 11, color: secondaryText, fontWeight: FontWeight.w500),
               ),
             ),
             Text(
@@ -331,7 +385,7 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
               height: 6,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFF1B5E20).withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -344,7 +398,7 @@ class _ExpandableDashboardCardState extends State<ExpandableDashboardCard> {
                   borderRadius: BorderRadius.circular(4),
                   boxShadow: [
                     BoxShadow(
-                      color: accentColor.withValues(alpha: 0.3),
+                      color: accentColor.withValues(alpha: 0.2),
                       blurRadius: 4,
                     ),
                   ],

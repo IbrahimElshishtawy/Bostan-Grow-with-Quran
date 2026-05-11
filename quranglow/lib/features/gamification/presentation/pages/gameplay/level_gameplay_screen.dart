@@ -16,25 +16,37 @@ class LevelGameplayScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(levelGameplayControllerProvider(level));
     final controller = ref.read(levelGameplayControllerProvider(level).notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Dynamic Theme Attributes
+    final bgColor = isDark ? const Color(0xFF0B1A13) : const Color(0xFFF8FAFA);
+    final textColor = isDark ? Colors.white : const Color(0xFF1B3227);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF1B3227).withValues(alpha: 0.65);
+    final appBarColor = Colors.transparent;
+    final gradientTop = isDark ? const Color(0xFF153524) : const Color(0xFFEBF3E8);
+    final gradientBottom = isDark ? const Color(0xFF0B1A13) : const Color(0xFFF8FAFA);
+    final ayahCardBase = isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white;
+    final ayahBorderBase = isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFF1B3227).withValues(alpha: 0.08);
+    final ayahAccent = const Color(0xFF689F38); // Consistent energetic actionable green
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0B1A13),
+        backgroundColor: bgColor,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: appBarColor,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: textColor),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 level.surahName,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                style: TextStyle(color: textColor, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: -0.2),
               ),
               Text(
                 'آيات ${level.ayahStart} - ${level.ayahEnd}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: subTextColor, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -46,22 +58,24 @@ class LevelGameplayScreen extends ConsumerWidget {
           ],
         ),
         body: state.isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFFBDE156)))
+            ? Center(child: CircularProgressIndicator(color: ayahAccent))
             : state.error != null
-                ? Center(child: Text('خطأ: ${state.error}', style: const TextStyle(color: Colors.redAccent)))
+                ? Center(
+                    child: Text(
+                      'خطأ: ${state.error}',
+                      style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    ),
+                  )
                 : Stack(
                     children: [
-                      // Background Ambient Glow Layer
+                      // Background Ambient Gradient Layer
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: RadialGradient(
                               center: Alignment.topCenter,
-                              radius: 1.2,
-                              colors: [
-                                const Color(0xFF153524),
-                                const Color(0xFF0B1A13),
-                              ],
+                              radius: 1.4,
+                              colors: [gradientTop, gradientBottom],
                             ),
                           ),
                         ),
@@ -69,13 +83,13 @@ class LevelGameplayScreen extends ConsumerWidget {
 
                       Column(
                         children: [
-                          // 1. Top Level Progress Header
+                          // 1. Dynamic Status Bar
                           Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: _buildStatusBar(state),
+                            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                            child: _buildStatusBar(state, subTextColor, ayahAccent, isDark),
                           ),
 
-                          // 2. Scrolling Interactive Text View
+                          // 2. Main Scrolling Engine
                           Expanded(
                             child: ListView.separated(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -84,22 +98,33 @@ class LevelGameplayScreen extends ConsumerWidget {
                               itemBuilder: (context, index) {
                                 final ayah = state.ayahs[index];
                                 final isActive = state.currentPlayingAyahIndex == index;
+                                
+                                final cardBg = isActive
+                                    ? ayahAccent.withValues(alpha: isDark ? 0.15 : 0.08)
+                                    : ayahCardBase;
+                                final cardBorder = isActive
+                                    ? ayahAccent.withValues(alpha: 0.4)
+                                    : ayahBorderBase;
 
                                 return GestureDetector(
                                   onTap: () => controller.seekToAyah(index),
                                   child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    padding: const EdgeInsets.all(16),
+                                    duration: const Duration(milliseconds: 350),
+                                    curve: Curves.easeOutExpo,
+                                    padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
-                                      color: isActive
-                                          ? const Color(0xFFBDE156).withValues(alpha: 0.15)
-                                          : Colors.white.withValues(alpha: 0.03),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: isActive
-                                            ? const Color(0xFFBDE156).withValues(alpha: 0.4)
-                                            : Colors.white.withValues(alpha: 0.05),
-                                      ),
+                                      color: cardBg,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: cardBorder, width: isActive ? 1.5 : 1.0),
+                                      boxShadow: !isDark && !isActive 
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.03),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              )
+                                            ]
+                                          : null,
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -110,36 +135,41 @@ class LevelGameplayScreen extends ConsumerWidget {
                                               width: 28,
                                               height: 28,
                                               decoration: BoxDecoration(
-                                                color: isActive ? const Color(0xFFBDE156) : Colors.white12,
+                                                color: isActive ? ayahAccent : (isDark ? Colors.white12 : const Color(0xFF1B3227).withValues(alpha: 0.08)),
                                                 shape: BoxShape.circle,
                                               ),
                                               alignment: Alignment.center,
                                               child: Text(
                                                 '${ayah.ayahNumber}',
                                                 style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isActive ? Colors.black : Colors.white70,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: isActive ? Colors.white : subTextColor,
                                                 ),
                                               ),
                                             ),
                                             const SizedBox(width: 12),
                                             if (isActive)
-                                              const Text(
+                                              Text(
                                                 'قيد الاستماع...',
-                                                style: TextStyle(color: Color(0xFFBDE156), fontSize: 12, fontWeight: FontWeight.bold),
+                                                style: TextStyle(
+                                                  color: ayahAccent,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
                                               ),
                                           ],
                                         ),
-                                        const SizedBox(height: 12),
+                                        const SizedBox(height: 16),
                                         Text(
                                           ayah.text,
                                           style: TextStyle(
-                                            fontSize: 26,
+                                            fontSize: 27,
                                             height: 1.8,
                                             fontWeight: FontWeight.bold,
-                                            fontFamily: 'Kitab', // Standard local font fallback
-                                            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.6),
+                                            fontFamily: 'Kitab',
+                                            color: isActive ? textColor : subTextColor,
+                                            letterSpacing: -0.1,
                                           ),
                                           textAlign: TextAlign.right,
                                         ),
@@ -151,8 +181,8 @@ class LevelGameplayScreen extends ConsumerWidget {
                             ),
                           ),
 
-                          // 3. Premium Playback Footer Controls
-                          _buildPlaybackControlBar(controller, state, ref, context),
+                          // 3. Premium Controls Footplate
+                          _buildPlaybackControlBar(controller, state, ref, context, isDark, ayahAccent, textColor),
                         ],
                       ),
                     ],
@@ -161,17 +191,20 @@ class LevelGameplayScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusBar(LevelGameplayState state) {
+  Widget _buildStatusBar(LevelGameplayState state, Color subTextColor, Color accent, bool isDark) {
     final double progress = state.ayahs.isEmpty ? 0 : (state.currentPlayingAyahIndex + 1) / state.ayahs.length;
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('معدل استماع الآيات', style: TextStyle(color: Colors.white60, fontSize: 12)),
+            Text(
+              'معدل استماع الآيات',
+              style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+            ),
             Text(
               '${(progress * 100).toInt()}%',
-              style: const TextStyle(color: Color(0xFFBDE156), fontWeight: FontWeight.bold),
+              style: TextStyle(color: accent, fontWeight: FontWeight.w900, fontSize: 14),
             ),
           ],
         ),
@@ -180,29 +213,41 @@ class LevelGameplayScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(10),
           child: LinearProgressIndicator(
             value: progress,
-            minHeight: 6,
-            backgroundColor: Colors.white10,
-            color: const Color(0xFFBDE156),
+            minHeight: 7,
+            backgroundColor: isDark ? Colors.white10 : const Color(0xFF1B3227).withValues(alpha: 0.05),
+            color: accent,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPlaybackControlBar(LevelGameplayController controller, LevelGameplayState state, WidgetRef ref, BuildContext context) {
-    
+  Widget _buildPlaybackControlBar(
+    LevelGameplayController controller,
+    LevelGameplayState state,
+    WidgetRef ref,
+    BuildContext context,
+    bool isDark,
+    Color accent,
+    Color textColor,
+  ) {
+    final containerColor = isDark ? const Color(0xFF102419) : Colors.white;
+    final shadowColor = Colors.black.withValues(alpha: isDark ? 0.4 : 0.08);
+    final iconTint = isDark ? Colors.white70 : const Color(0xFF1B3227).withValues(alpha: 0.7);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 35),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 36),
       decoration: BoxDecoration(
-        color: const Color(0xFF102419),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        color: containerColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            color: shadowColor,
+            blurRadius: 24,
+            offset: const Offset(0, -4),
           ),
         ],
+        border: isDark ? null : Border(top: BorderSide(color: const Color(0xFF1B3227).withValues(alpha: 0.05))),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -211,62 +256,77 @@ class LevelGameplayScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                iconSize: 32,
-                icon: const Icon(Icons.skip_next_rounded, color: Colors.white70),
+                iconSize: 34,
+                icon: Icon(Icons.skip_next_rounded, color: iconTint),
                 onPressed: () => controller.seekToAyah(state.currentPlayingAyahIndex - 1),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               GestureDetector(
                 onTap: controller.playPause,
-                child: Container(
-                  width: 68,
-                  height: 68,
-                  decoration: const BoxDecoration(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
-                      colors: [Color(0xFFBDE156), Color(0xFF9DBB48)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [accent, accent.withValues(alpha: 0.85)],
                     ),
                     boxShadow: [
-                      BoxShadow(color: Color(0x40BDE156), blurRadius: 15, spreadRadius: 5),
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        spreadRadius: 4,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
                   child: Icon(
                     state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    size: 38,
-                    color: Colors.black,
+                    size: 40,
+                    color: Colors.white,
                   ),
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               IconButton(
-                iconSize: 32,
-                icon: const Icon(Icons.skip_previous_rounded, color: Colors.white70),
+                iconSize: 34,
+                icon: Icon(Icons.skip_previous_rounded, color: iconTint),
                 onPressed: () => controller.seekToAyah(state.currentPlayingAyahIndex + 1),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          // "Done" Button to finish mission
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 55,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                foregroundColor: Colors.white,
+                backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFF1B3227).withValues(alpha: 0.05),
+                foregroundColor: textColor,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.transparent),
                 ),
               ),
               onPressed: () async {
-                // Log subtask completion natively!
                 await ref.read(gamificationControllerProvider.notifier).completeSubTask(level.id, 'listen');
                 if (context.mounted) {
-                  Navigator.pop(context); // Exit screen back to map
+                  Navigator.pop(context);
                 }
               },
-              child: const Text('تمت القراءة والإنصات بنجاح', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                'تمت القراءة والإنصات بنجاح',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                  letterSpacing: 0.2,
+                  color: isDark ? Colors.white : const Color(0xFF1B3227),
+                ),
+              ),
             ),
           ),
         ],

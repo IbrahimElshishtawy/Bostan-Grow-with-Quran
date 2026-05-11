@@ -10,6 +10,7 @@ class SelectedAyahPanel extends StatelessWidget {
     required this.onOpenTafsir,
     required this.onPlay,
     required this.onCopy,
+    this.isPlaying = false,
   });
 
   final bool visible;
@@ -19,6 +20,7 @@ class SelectedAyahPanel extends StatelessWidget {
   final VoidCallback onOpenTafsir;
   final VoidCallback onPlay;
   final VoidCallback onCopy;
+  final bool isPlaying;
 
   TextStyle _ayahPreviewTextStyle(BuildContext context, Color color) =>
       DefaultTextStyle.of(context).style.copyWith(
@@ -94,8 +96,18 @@ class SelectedAyahPanel extends StatelessWidget {
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: onPlay,
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('تشغيل'),
+                          style: isPlaying
+                              ? FilledButton.styleFrom(
+                                  backgroundColor: Colors.red.shade800,
+                                  foregroundColor: Colors.white,
+                                )
+                              : null,
+                          icon: Icon(
+                            isPlaying
+                                ? Icons.stop_circle_rounded
+                                : Icons.play_arrow_rounded,
+                          ),
+                          label: Text(isPlaying ? 'إيقاف' : 'تشغيل'),
                         ),
                       ),
                       const SizedBox(width: 8),
