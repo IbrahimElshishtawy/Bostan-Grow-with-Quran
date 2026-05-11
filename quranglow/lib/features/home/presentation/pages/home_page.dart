@@ -33,8 +33,9 @@ class _HomePageState extends State<HomePage> {
     ),
     _NavTab(
       label: 'الأذكار',
-      icon: Icons.favorite_border,
-      activeIcon: Icons.favorite,
+      icon: Icons.favorite_border, // Fallback
+      activeIcon: Icons.favorite, // Fallback
+      assetPath: 'assets/images/subha_icon.png',
     ),
     _NavTab(
       label: 'المشغل',
@@ -124,11 +125,13 @@ class _NavTab {
     required this.label,
     required this.icon,
     required this.activeIcon,
+    this.assetPath,
   });
 
   final String label;
   final IconData icon;
   final IconData activeIcon;
+  final String? assetPath;
 }
 
 class _GlassNavigationBar extends StatelessWidget {
@@ -205,13 +208,22 @@ class _GlassNavigationBar extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            active ? tab.activeIcon : tab.icon,
-                            size: active ? 24 : 22,
-                            color: active
-                                ? cs.primary
-                                : cs.onSurfaceVariant.withValues(alpha: 0.90),
-                          ),
+                          tab.assetPath != null
+                              ? ImageIcon(
+                                  AssetImage(tab.assetPath!),
+                                  size: active ? 24 : 22,
+                                  color: active
+                                      ? cs.primary
+                                      : cs.onSurfaceVariant.withValues(alpha: 0.90),
+                                )
+                              : Icon(
+                                  active ? tab.activeIcon : tab.icon,
+                                  size: active ? 24 : 22,
+                                  color: active
+                                      ? cs.primary
+                                      : cs.onSurfaceVariant
+                                          .withValues(alpha: 0.90),
+                                ),
                           const SizedBox(height: 2),
                           AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 200),
