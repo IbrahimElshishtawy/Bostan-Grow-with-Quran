@@ -225,9 +225,9 @@ class _SurahListPageState extends State<SurahListPage> {
                   final isDark =
                       Theme.of(context).brightness == Brightness.dark;
 
-                  // ✨ Ultra-Premium GOLD Palette and Theme Adaptive Variables
-                  final Color goldMain = const Color(0xFFD4AF37);
-                  final Color goldAccent = const Color(0xFFC5A028);
+                  // ✨ Ultra-Premium GREEN Palette and Theme Adaptive Variables
+                  final Color greenMain = cs.primary;
+                  final Color greenAccent = cs.primary.withValues(alpha: 0.85);
                   final Color surfaceColor = isDark
                       ? const Color(0xFF1C1C1E)
                       : Colors.white;
@@ -250,7 +250,7 @@ class _SurahListPageState extends State<SurahListPage> {
                         BoxShadow(
                           color: isDark
                               ? Colors.black.withValues(alpha: 0.3)
-                              : goldMain.withValues(alpha: 0.08),
+                              : greenMain.withValues(alpha: 0.08),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -260,9 +260,9 @@ class _SurahListPageState extends State<SurahListPage> {
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         decoration: BoxDecoration(
-                          // 🎨 Premium Gold Gradient Border Injection
+                          // 🎨 Premium Green Gradient Border Injection
                           border: Border.all(
-                            color: goldMain.withValues(alpha: 0.25),
+                            color: greenMain.withValues(alpha: 0.25),
                             width: 1.2,
                           ),
                           gradient: LinearGradient(
@@ -279,7 +279,7 @@ class _SurahListPageState extends State<SurahListPage> {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            splashColor: goldMain.withValues(alpha: 0.1),
+                            splashColor: greenMain.withValues(alpha: 0.1),
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -298,7 +298,7 @@ class _SurahListPageState extends State<SurahListPage> {
                                   child: Icon(
                                     Icons.mosque_rounded,
                                     size: 100,
-                                    color: goldMain.withValues(
+                                    color: greenMain.withValues(
                                       alpha: isDark ? 0.03 : 0.04,
                                     ),
                                   ),
@@ -321,13 +321,13 @@ class _SurahListPageState extends State<SurahListPage> {
                                               width: 40,
                                               height: 40,
                                               decoration: BoxDecoration(
-                                                color: goldMain.withValues(
+                                                color: greenMain.withValues(
                                                   alpha: 0.1,
                                                 ),
                                                 borderRadius:
                                                     BorderRadius.circular(10),
                                                 border: Border.all(
-                                                  color: goldAccent,
+                                                  color: greenAccent,
                                                   width: 1.5,
                                                 ),
                                               ),
@@ -337,8 +337,8 @@ class _SurahListPageState extends State<SurahListPage> {
                                             _toArabicDigits(surahNumber),
                                             style: TextStyle(
                                               color: isDark
-                                                  ? goldMain
-                                                  : const Color(0xFF8E7224),
+                                                  ? greenMain
+                                                  : cs.primary,
                                               fontWeight: FontWeight.w900,
                                               fontSize: 15,
                                             ),
@@ -369,7 +369,7 @@ class _SurahListPageState extends State<SurahListPage> {
                                                 Icon(
                                                   Icons.auto_awesome,
                                                   size: 12,
-                                                  color: goldMain.withValues(
+                                                  color: greenMain.withValues(
                                                     alpha: 0.8,
                                                   ),
                                                 ),
@@ -392,7 +392,7 @@ class _SurahListPageState extends State<SurahListPage> {
                                         Icons
                                             .arrow_back_ios_new_rounded, // Inverted for RTL naturally? Handled automatically by directionality
                                         size: 16,
-                                        color: goldMain.withValues(alpha: 0.6),
+                                        color: greenMain.withValues(alpha: 0.6),
                                       ),
                                     ],
                                   ),

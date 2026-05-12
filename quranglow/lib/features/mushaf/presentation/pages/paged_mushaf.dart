@@ -23,6 +23,9 @@ class PagedMushaf extends StatefulWidget {
     this.onVisiblePageChanged,
     this.onBackgroundTap,
     this.ayahNumberColor,
+    this.isHifzMode = false,
+    this.revealedWords = const {},
+    this.mistakenWords = const {},
   });
 
   final List<Aya> ayat;
@@ -36,6 +39,9 @@ class PagedMushaf extends StatefulWidget {
   final void Function(int pageFirstAyahNumber)? onVisiblePageChanged;
   final VoidCallback? onBackgroundTap;
   final Color? ayahNumberColor;
+  final bool isHifzMode;
+  final Map<int, Set<int>> revealedWords;
+  final Map<int, Set<int>> mistakenWords;
 
   @override
   State<PagedMushaf> createState() => PagedMushafState();
@@ -90,6 +96,15 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
         if (mounted) _controller.jumpToPage(p);
       });
     }
+  }
+
+  PageRange? getCurrentPageRange() {
+    if (!mounted || !_controller.hasClients) return null;
+    final pageIdx = _controller.page?.round() ?? 0;
+    if (pageIdx >= 0 && pageIdx < _pages.length) {
+      return _pages[pageIdx];
+    }
+    return null;
   }
 
   @override
@@ -189,6 +204,9 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                               widget.onBackgroundTap, // Direct pass down
                           ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
                           surahName: pageIndex == 0 ? widget.surahName : null,
+                          isHifzMode: widget.isHifzMode,
+                          revealedWords: widget.revealedWords,
+                          mistakenWords: widget.mistakenWords,
                         ),
                       ),
 
