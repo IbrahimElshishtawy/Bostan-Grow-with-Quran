@@ -246,10 +246,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                 ),
                 const SizedBox(height: 14),
                 ctrl.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: PremiumSkeletonCard(),
-                  ),
+                  loading: () => const PlayerSkeleton(),
                   error: (e, st) => Card(
                     color: cs.errorContainer,
                     shape: RoundedRectangleBorder(

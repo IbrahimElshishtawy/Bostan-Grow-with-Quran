@@ -285,12 +285,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 ),
               ),
               asyncSurah.when(
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: PremiumSkeletonCard(),
-                  ),
-                ),
+                loading: () => const MushafSkeleton(),
                 error: (e, _) => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),

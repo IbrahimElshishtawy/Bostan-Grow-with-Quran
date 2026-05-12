@@ -1,6 +1,5 @@
 // ignore_for_file: library_private_types_in_public_api
 
-
 import 'package:flutter/material.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:quranglow/core/model/aya/aya.dart';
@@ -63,7 +62,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
     // Load the permanently saved position for this surah
     final loaded = await _pos.load(widget.surahNumber);
     if (!mounted) return;
-    
+
     setState(() {
       _savedAyahIndex = loaded;
     });
@@ -71,7 +70,9 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
     int? idx0;
     if (widget.initialSelectedAyah != null) {
       final targetAyah = widget.initialSelectedAyah!;
-      final found = widget.ayat.indexWhere((a) => a.numberInSurah == targetAyah);
+      final found = widget.ayat.indexWhere(
+        (a) => a.numberInSurah == targetAyah,
+      );
       if (found != -1) {
         idx0 = found;
       } else {
@@ -119,8 +120,6 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
       widget.onAyahTap(aya.numberInSurah, aya);
     }
   }
-
-
 
   void _onAyahLongPress(int index0) {
     if (index0 < 0 || index0 >= widget.ayat.length) return;
@@ -171,26 +170,30 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                   child: Column(
                     children: [
                       // Dynamic Minimal Header Spacer for alignment
-                      const SizedBox(height: 12),
-                      
+                      const SizedBox(height: 1),
+
                       // 2. The Immersive Interactive Quran Text Block
                       Expanded(
                         child: PageRichBlock(
                           ayat: widget.ayat,
                           range: r,
-                          showBasmala: widget.showBasmala && pageIndex == 0 && widget.surahNumber > 1,
+                          showBasmala:
+                              widget.showBasmala &&
+                              pageIndex == 0 &&
+                              widget.surahNumber > 1,
                           basmalaText: widget.basmalaText,
                           currentAyahIndex: _currentAyahIdx0,
                           onTapIndex: _onAyahTap,
                           onLongPressIndex: _onAyahLongPress,
-                          onBackgroundTap: widget.onBackgroundTap, // Direct pass down
+                          onBackgroundTap:
+                              widget.onBackgroundTap, // Direct pass down
                           ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
                         ),
                       ),
 
                       // 3. Sleek, minimal Page Indicator floating at base
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
                         child: PageIndicator(
                           current: pageIndex + 1,
                           total: _pages.length,
@@ -221,10 +224,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                           gradient: const LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0xFF8DA740),
-                              Color(0xFF627A25),
-                            ],
+                            colors: [Color(0xFF8DA740), Color(0xFF627A25)],
                           ),
                           borderRadius: const BorderRadius.vertical(
                             bottom: Radius.circular(8),
@@ -319,4 +319,3 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
     return buf.toString();
   }
 }
-

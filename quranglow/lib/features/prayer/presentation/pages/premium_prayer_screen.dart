@@ -89,10 +89,7 @@ class PremiumPrayerScreen extends ConsumerWidget {
             );
           },
           error: (error, stackTrace) => _buildLocationError(context),
-          loading: () => const Padding(
-            padding: EdgeInsets.only(top: 100),
-            child: PremiumSkeletonCard(),
-          ),
+          loading: () => const PrayerPageSkeleton(),
         ),
       ),
     );

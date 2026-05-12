@@ -21,7 +21,7 @@ class _SurahListPageState extends State<SurahListPage> {
     super.initState();
     // Initialize with all indices
     _filteredIndices = List.generate(kSurahNamesAr.length, (i) => i);
-    
+
     // Artificial delay so user sees the gorgeous skeleton loader requested
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) {
@@ -43,7 +43,8 @@ class _SurahListPageState extends State<SurahListPage> {
           final surahName = _normalizeArabic(kSurahNamesAr[i]);
           // Match by name or match by explicit Surah number string input
           final surahNumStr = (i + 1).toString();
-          if (surahName.contains(cleanQuery) || surahNumStr.contains(query.trim())) {
+          if (surahName.contains(cleanQuery) ||
+              surahNumStr.contains(query.trim())) {
             _filteredIndices.add(i);
           }
         }
@@ -78,7 +79,7 @@ class _SurahListPageState extends State<SurahListPage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: 94,
+          toolbarHeight: 80,
           elevation: 0,
           scrolledUnderElevation: 0,
           backgroundColor: Colors.transparent,
@@ -112,7 +113,9 @@ class _SurahListPageState extends State<SurahListPage> {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                     decoration: InputDecoration(
                       hintText: 'ابحث عن اسم السورة...',
-                      hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+                      hintStyle: TextStyle(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
                       prefixIcon: Icon(Icons.search_rounded, color: cs.primary),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.close_rounded),
@@ -120,7 +123,10 @@ class _SurahListPageState extends State<SurahListPage> {
                           setState(() {
                             _isSearching = false;
                             _searchController.clear();
-                            _filteredIndices = List.generate(kSurahNamesAr.length, (i) => i);
+                            _filteredIndices = List.generate(
+                              kSurahNamesAr.length,
+                              (i) => i,
+                            );
                           });
                         },
                       ),
@@ -186,16 +192,17 @@ class _SurahListPageState extends State<SurahListPage> {
           ],
         ),
         body: _isLoading
-            ? ListView.builder(
-                itemCount: 4,
-                itemBuilder: (_, __) => const PremiumSkeletonCard(),
-              )
+            ? const SurahListSkeleton()
             : _filteredIndices.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.search_off_rounded, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                    Icon(
+                      Icons.search_off_rounded,
+                      size: 64,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'لم يتم العثور على نتائج',
@@ -215,23 +222,35 @@ class _SurahListPageState extends State<SurahListPage> {
                 itemBuilder: (context, listIndex) {
                   final originalIndex = _filteredIndices[listIndex];
                   final surahNumber = originalIndex + 1;
-                  final isDark = Theme.of(context).brightness == Brightness.dark;
-                  
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+
                   // ✨ Ultra-Premium GOLD Palette and Theme Adaptive Variables
-                  final Color goldMain = const Color(0xFFD4AF37); 
+                  final Color goldMain = const Color(0xFFD4AF37);
                   final Color goldAccent = const Color(0xFFC5A028);
-                  final Color surfaceColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-                  final Color textColorMain = isDark ? Colors.grey[200]! : const Color(0xFF2D3436);
-                  final Color textColorSub = isDark ? Colors.grey[500]! : const Color(0xFF636E72);
+                  final Color surfaceColor = isDark
+                      ? const Color(0xFF1C1C1E)
+                      : Colors.white;
+                  final Color textColorMain = isDark
+                      ? Colors.grey[200]!
+                      : const Color(0xFF2D3436);
+                  final Color textColorSub = isDark
+                      ? Colors.grey[500]!
+                      : const Color(0xFF636E72);
 
                   return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: surfaceColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: isDark ? Colors.black.withValues(alpha: 0.3) : goldMain.withValues(alpha: 0.08),
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.3)
+                              : goldMain.withValues(alpha: 0.08),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -249,9 +268,12 @@ class _SurahListPageState extends State<SurahListPage> {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: isDark 
-                                ? [surfaceColor, const Color(0xFF252528)] 
-                                : [surfaceColor, const Color(0xFFFEFDF8)], // Pearl light variant
+                            colors: isDark
+                                ? [surfaceColor, const Color(0xFF252528)]
+                                : [
+                                    surfaceColor,
+                                    const Color(0xFFFEFDF8),
+                                  ], // Pearl light variant
                           ),
                         ),
                         child: Material(
@@ -262,7 +284,8 @@ class _SurahListPageState extends State<SurahListPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => MushafPage(chapter: surahNumber),
+                                  builder: (_) =>
+                                      MushafPage(chapter: surahNumber),
                                 ),
                               );
                             },
@@ -275,7 +298,9 @@ class _SurahListPageState extends State<SurahListPage> {
                                   child: Icon(
                                     Icons.mosque_rounded,
                                     size: 100,
-                                    color: goldMain.withValues(alpha: isDark ? 0.03 : 0.04),
+                                    color: goldMain.withValues(
+                                      alpha: isDark ? 0.03 : 0.04,
+                                    ),
                                   ),
                                 ),
                                 Padding(
@@ -290,21 +315,30 @@ class _SurahListPageState extends State<SurahListPage> {
                                         alignment: Alignment.center,
                                         children: [
                                           Transform.rotate(
-                                            angle: 0.785, // 45 degrees rotate for star look
+                                            angle:
+                                                0.785, // 45 degrees rotate for star look
                                             child: Container(
                                               width: 40,
                                               height: 40,
                                               decoration: BoxDecoration(
-                                                color: goldMain.withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(10),
-                                                border: Border.all(color: goldAccent, width: 1.5),
+                                                color: goldMain.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                border: Border.all(
+                                                  color: goldAccent,
+                                                  width: 1.5,
+                                                ),
                                               ),
                                             ),
                                           ),
                                           Text(
                                             _toArabicDigits(surahNumber),
                                             style: TextStyle(
-                                              color: isDark ? goldMain : const Color(0xFF8E7224),
+                                              color: isDark
+                                                  ? goldMain
+                                                  : const Color(0xFF8E7224),
                                               fontWeight: FontWeight.w900,
                                               fontSize: 15,
                                             ),
@@ -315,7 +349,8 @@ class _SurahListPageState extends State<SurahListPage> {
                                       // 2. Dynamic text details
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               kSurahNamesAr[originalIndex],
@@ -323,14 +358,21 @@ class _SurahListPageState extends State<SurahListPage> {
                                                 fontSize: 19,
                                                 fontWeight: FontWeight.w800,
                                                 color: textColorMain,
-                                                fontFamily: 'KFGQPC Uthmanic Script', // Try to force arabic font
+                                                fontFamily:
+                                                    'KFGQPC Uthmanic Script', // Try to force arabic font
                                                 letterSpacing: 0.2,
                                               ),
                                             ),
                                             const SizedBox(height: 3),
                                             Row(
                                               children: [
-                                                Icon(Icons.auto_awesome, size: 12, color: goldMain.withValues(alpha: 0.8)),
+                                                Icon(
+                                                  Icons.auto_awesome,
+                                                  size: 12,
+                                                  color: goldMain.withValues(
+                                                    alpha: 0.8,
+                                                  ),
+                                                ),
                                                 const SizedBox(width: 4),
                                                 Text(
                                                   'سورة ${_toArabicDigits(surahNumber)}',
@@ -347,7 +389,8 @@ class _SurahListPageState extends State<SurahListPage> {
                                       ),
                                       // 3. Premium Gold Tail Icon
                                       Icon(
-                                        Icons.arrow_back_ios_new_rounded, // Inverted for RTL naturally? Handled automatically by directionality
+                                        Icons
+                                            .arrow_back_ios_new_rounded, // Inverted for RTL naturally? Handled automatically by directionality
                                         size: 16,
                                         color: goldMain.withValues(alpha: 0.6),
                                       ),
