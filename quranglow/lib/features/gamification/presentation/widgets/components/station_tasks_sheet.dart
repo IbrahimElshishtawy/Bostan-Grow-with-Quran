@@ -13,6 +13,7 @@ import 'package:quranglow/features/gamification/presentation/widgets/dialogs/rea
 
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/level_gameplay_screen.dart';
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/write_gameplay_screen.dart';
+import 'package:quranglow/features/gamification/presentation/pages/gameplay/voice_gameplay_screen.dart';
 
 import 'package:quranglow/core/di/providers.dart'; // For alQuranProvider & settings
 
@@ -262,9 +263,9 @@ class _StationTasksSheetState extends ConsumerState<StationTasksSheet> {
                     ),
                     TaskTile(
                       index: 5,
-                      title: 'المسابقة السريعة',
-                      subtitle: 'أجب عن أسئلة التدبر والتفسير التفاعلية',
-                      icon: Icons.workspace_premium_rounded,
+                      title: 'القراءة الصوتية',
+                      subtitle: 'اقرأ الآيات بصوتك وتأكد من النطق السليم',
+                      icon: Icons.mic_rounded,
                       isCompleted: liveLevel.isQuizCompleted,
                       onTap: () => _launchQuizTask(context, ref, liveLevel),
                     ),
@@ -344,15 +345,11 @@ class _StationTasksSheetState extends ConsumerState<StationTasksSheet> {
     WidgetRef ref,
     GameLevel liveLevel,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) => InteractiveQuizDialog(
-        level: liveLevel,
-        onComplete: (combo) {
-          ref
-              .read(gamificationControllerProvider.notifier)
-              .completeSubTask(liveLevel.id, 'quiz', quizCombo: combo);
-        },
+    Navigator.pop(context); // Close sheet
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VoiceGameplayScreen(level: liveLevel),
       ),
     );
   }
