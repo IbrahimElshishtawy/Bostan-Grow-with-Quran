@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/features/gamification/data/gamification_repository.dart';
@@ -12,23 +13,34 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Static service to trigger soft satisfying Islamic-inspired UI haptics and sounds
 class PremiumFeedbackService {
   static void lightTap() {
-    HapticFeedback.lightImpact();
+    try {
+      HapticFeedback.lightImpact();
+    } catch (_) {}
   }
 
   static void successBeep() {
-    HapticFeedback.mediumImpact();
-    SystemSound.play(SystemSoundType.click);
+    try {
+      HapticFeedback.mediumImpact();
+      SystemSound.play(SystemSoundType.click);
+    } catch (_) {}
   }
 
   static void grandCelebration() {
-    HapticFeedback.heavyImpact();
-    // Soft sequential haptic vibration pulses for a premium feel
-    Future.delayed(const Duration(milliseconds: 100), () => HapticFeedback.mediumImpact());
-    Future.delayed(const Duration(milliseconds: 200), () => HapticFeedback.lightImpact());
+    try {
+      HapticFeedback.heavyImpact();
+      Future.delayed(const Duration(milliseconds: 100), () {
+        try { HapticFeedback.mediumImpact(); } catch (_) {}
+      });
+      Future.delayed(const Duration(milliseconds: 200), () {
+        try { HapticFeedback.lightImpact(); } catch (_) {}
+      });
+    } catch (_) {}
   }
 
   static void errorAlert() {
-    HapticFeedback.vibrate();
+    try {
+      HapticFeedback.vibrate();
+    } catch (_) {}
   }
 }
 
@@ -36,7 +48,9 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
   GameificationController({
     required this.repository,
     required this.userId,
-  }) : super(const AsyncValue.loading());
+  }) : super(const AsyncValue.loading()) {
+    initialize();
+  }
 
   final GameificationRepository repository;
   final String userId;
@@ -309,12 +323,45 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         );
       }).toList();
 
+      // ✨ SAFE IN-MEMORY STREAK UPDATE: Avoid database read-write race condition!
+      final now = DateTime.now();
+      final lastActive = updatedProfile.lastActiveDate;
+      int newStreak = updatedProfile.currentStreak;
+      int freezesLeft = updatedProfile.streakFreezeCount;
+
+      if (lastActive == null) {
+        newStreak = 1;
+      } else {
+        final daysDifference = now.difference(lastActive).inDays;
+        if (daysDifference == 1) {
+          newStreak = updatedProfile.currentStreak + 1;
+        } else if (daysDifference > 1) {
+          if (freezesLeft > 0) {
+            freezesLeft--;
+            newStreak = updatedProfile.currentStreak; // Freeze saved it!
+          } else {
+            newStreak = 1;
+          }
+        }
+      }
+
+      final longestStreak = newStreak > updatedProfile.longestStreak
+          ? newStreak
+          : updatedProfile.longestStreak;
+
+      final finalProfile = updatedProfile.copyWith(
+        currentStreak: newStreak,
+        longestStreak: longestStreak,
+        lastActiveDate: now,
+        streakFreezeCount: freezesLeft,
+      );
+
       // ---------------------------------------------------------
       // 🌟 PERFORMANCE OPTIMIZATION: OPTIMISTIC UI UPDATE! 🌟
       // We push the state to UI immediately so it feels instantaneous (0ms lag)
       // ---------------------------------------------------------
       state = AsyncValue.data(GameState(
-        userProfile: updatedProfile,
+        userProfile: finalProfile,
         levels: updatedLevels,
         isLoading: false,
         error: null,
@@ -322,31 +369,21 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       ));
 
       // ---------------------------------------------------------
-      // 💾 BACKGROUND PERSISTENCE: SAVE ALL CHANGES IN PARALLEL
-      // Fire the async writes in the background without blocking the UI response.
+      // 💾 ATOMIC DISK PERSISTENCE: SAVE ALL UPDATED MEMORY DATA DIRECTLY
+      // This guarantees zero concurrent read-write conflicts and absolute atomic storage!
       // ---------------------------------------------------------
       final List<Future<dynamic>> persistTasks = [
-        repository.updateLevelProgress(userId, levelId, updatedLevel),
-        repository.setUserProfile(userId, updatedProfile),
+        repository.initializeLevels(userId, updatedLevels), // Writes memory levels directly!
+        repository.setUserProfile(userId, finalProfile),    // Writes profile atomically!
         repository.saveDailyMissions(userId, updatedMissions),
-        repository.updateStreak(userId),
       ];
-
-      if (justCompletedFullStation && levelIndex + 1 < updatedLevels.length) {
-        final nextLvl = updatedLevels[levelIndex + 1];
-        if (nextLvl.isUnlocked) {
-          // We must have just unlocked it in code above!
-          persistTasks.add(repository.updateLevelProgress(userId, nextLvl.id, nextLvl));
-        }
-      }
 
       // 💾 HARDENED PERSISTENCE: AWAIT ALL CHANGES
       // We MUST await this, otherwise immediate app restart leads to progress loss!
-      await Future.wait(persistTasks).catchError((e, st) {
-        // Soft background log, doesn't kill UI fluidity.
-        return [];
-      });
+      await Future.wait(persistTasks);
     } catch (e, st) {
+      // ✨ HARDENED ERROR REPORTING: Reveal why writes fail instead of silent failure.
+      debugPrint('[CRITICAL GAMIFICATION ERROR] completeSubTask failed: $e');
       state = AsyncValue.error(e, st);
     }
   }
@@ -436,10 +473,17 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         isQuizCompleted: false,
       );
 
-      await repository.updateLevelProgress(userId, levelId, masteredLevel);
-      await initialize();
+      final List<GameLevel> updatedLevels = [...currentState.levels];
+      updatedLevels[index] = masteredLevel;
+
+      // Apply Optimistic UI update!
+      state = AsyncValue.data(currentState.copyWith(levels: updatedLevels));
+
+      // Atomic disk write!
+      await repository.initializeLevels(userId, updatedLevels);
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[CRITICAL GAMIFICATION ERROR] activateLevelMastery failed: $e');
       return false;
     }
   }

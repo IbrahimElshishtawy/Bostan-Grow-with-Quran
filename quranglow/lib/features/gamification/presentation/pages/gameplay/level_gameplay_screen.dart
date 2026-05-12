@@ -327,11 +327,22 @@ class _LevelGameplayScreenState extends ConsumerState<LevelGameplayScreen> {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    size: 40,
-                    color: Colors.white,
-                  ),
+                  child: state.isAudioLoading
+                      ? const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          size: 40,
+                          color: Colors.white,
+                        ),
                 ),
               ),
               const SizedBox(width: 24),

@@ -215,6 +215,7 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
   Future<void> _finishLevel() async {
     await ref.read(gamificationControllerProvider.notifier)
         .completeSubTask(widget.level.id, 'quiz'); // Mapping it to existing quiz tracker logically
+    if (!mounted) return;
     
     showDialog(
       context: context,

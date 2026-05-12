@@ -38,18 +38,6 @@ class MushafTopBar extends StatelessWidget {
     final titleColor = fg.withOpacity(isDark ? 0.95 : 0.90);
     final iconEnabled = fg.withOpacity(isDark ? 0.95 : 0.90);
     final iconDisabled = fg.withOpacity(0.30);
-    final bg = isDark
-        ? Colors.black.withOpacity(0.35)
-        : cs.surface.withOpacity(0.75);
-    final border = isDark
-        ? Colors.white.withOpacity(0.06)
-        : cs.outlineVariant.withOpacity(0.5);
-    final gradStart = isDark
-        ? Colors.white.withOpacity(0.06)
-        : Colors.white.withOpacity(0.20);
-    final gradEnd = isDark
-        ? Colors.black.withOpacity(0.20)
-        : Colors.black.withOpacity(0.05);
 
     return Positioned(
       top: 0,
