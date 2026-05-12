@@ -36,18 +36,20 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       contentPadding: const EdgeInsets.all(20),
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       content: AnimatedSwitcher(
         duration: const Duration(milliseconds: 400),
-        child: _finished ? _buildSuccessState() : _buildReadingState(),
+        child: _finished ? _buildSuccessState(cs) : _buildReadingState(cs),
       ),
     );
   }
 
-  Widget _buildReadingState() {
+  Widget _buildReadingState(ColorScheme cs) {
     return SizedBox(
       width: double.maxFinite,
       child: Column(
@@ -57,10 +59,10 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
           const SizedBox(height: 12),
           Text(
             'محطة القراءة والتحسين • ${widget.level.surahName}',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cs.onSurface),
           ),
           const SizedBox(height: 8),
-          const Text('اقرأ الآيات الآتية بتمعن وتدبر:', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          Text('اقرأ الآيات الآتية بتمعن وتدبر:', style: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.7), fontSize: 12)),
           const SizedBox(height: 16),
           
           // Real Dynamic Content Fetching
@@ -68,9 +70,9 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
             child: Container(
               constraints: const BoxConstraints(maxHeight: 350),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9FBF9),
+                color: cs.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
               ),
               child: FutureBuilder<List<Ayah>>(
                 future: _fetchFuture,
@@ -129,7 +131,7 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
     );
   }
 
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState(ColorScheme cs) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -142,10 +144,10 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: GameificationColors.primaryGreen),
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'بارك الله فيك وتقبل منك! عن ابن مسعود رضي الله عنه قال ﷺ: "من قرأ حرفاً من كتاب الله فله به حسنة والحسنة بعشر أمثالها."',
           textAlign: TextAlign.center,
-          style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey, height: 1.5),
+          style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: cs.onSurfaceVariant, height: 1.5),
         ),
         const SizedBox(height: 24),
         SizedBox(

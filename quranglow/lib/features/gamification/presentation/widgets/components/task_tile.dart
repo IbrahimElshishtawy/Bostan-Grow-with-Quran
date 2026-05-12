@@ -21,15 +21,36 @@ class TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final backgroundColor = isCompleted
+        ? (isDark ? cs.primary.withValues(alpha: 0.1) : const Color(0xFFF1F8F5))
+        : cs.surfaceContainerLow;
+    
+    final borderColor = isCompleted
+        ? GameificationColors.primaryGreen.withValues(alpha: 0.3)
+        : cs.outlineVariant.withValues(alpha: 0.4);
+
+    final iconBg = isCompleted
+        ? GameificationColors.primaryGreen
+        : cs.surfaceContainerHighest;
+
+    final iconColor = isCompleted
+        ? Colors.white
+        : cs.onSurfaceVariant;
+
+    final titleColor = isCompleted
+        ? (isDark ? GameificationColors.primaryGreenLight : GameificationColors.primaryGreenDark)
+        : cs.onSurface;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isCompleted ? const Color(0xFFF1F8F5) : Colors.white,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isCompleted
-              ? GameificationColors.primaryGreen.withValues(alpha: 0.3)
-              : Colors.grey[200]!,
+          color: borderColor,
           width: 1.5,
         ),
       ),
@@ -40,11 +61,11 @@ class TaskTile extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isCompleted ? GameificationColors.primaryGreen : Colors.grey[100],
+            color: iconBg,
           ),
           child: Icon(
             isCompleted ? Icons.check_rounded : icon,
-            color: isCompleted ? Colors.white : Colors.grey[600],
+            color: iconColor,
             size: 20,
           ),
         ),
@@ -53,17 +74,21 @@ class TaskTile extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: isCompleted ? GameificationColors.primaryGreenDark : Colors.black87,
+            color: titleColor,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 11, 
+            color: cs.onSurfaceVariant.withValues(alpha: 0.7), 
+            fontWeight: FontWeight.bold
+          ),
         ),
         trailing: Icon(
           Icons.arrow_forward_ios_rounded,
           size: 14,
-          color: isCompleted ? GameificationColors.primaryGreen : Colors.grey,
+          color: isCompleted ? GameificationColors.primaryGreen : cs.onSurfaceVariant.withValues(alpha: 0.4),
         ),
       ),
     );

@@ -159,16 +159,19 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
   Widget build(BuildContext context) {
     final isDone = _currentAyahIndex >= _ayahs.length && _ayahs.isNotEmpty;
 
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFFAFAFA),
+        backgroundColor: cs.surface,
         appBar: AppBar(
-          title: const Text('تحدي بناء وتركيب الآيات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black)),
+          title: Text('تحدي بناء وتركيب الآيات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cs.onSurface)),
           centerTitle: true,
-          backgroundColor: Colors.white,
-          elevation: 1,
-          iconTheme: const IconThemeData(color: Colors.black87),
+          backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+          elevation: 0,
+          iconTheme: IconThemeData(color: cs.onSurface),
           actions: [
             // HEARTS ROW!
             Container(
@@ -205,7 +208,7 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
         // Progress Bar
         LinearProgressIndicator(
           value: _currentAyahIndex / _ayahs.length,
-          backgroundColor: Colors.grey[200],
+          backgroundColor: cs.surfaceContainerHighest,
           color: GameificationColors.primaryGreen,
           minHeight: 6,
         ),
@@ -214,7 +217,7 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Text(
             'الآية ${_currentAyahIndex + 1} من ${_ayahs.length}',
-            style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.bold),
           ),
         ),
 
@@ -226,10 +229,11 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cs.surfaceContainer,
               borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, spreadRadius: 2),
+                BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04), blurRadius: 10, spreadRadius: 2),
               ],
             ),
             child: Center(
@@ -254,11 +258,11 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
                       width: 60,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
+                        color: cs.surfaceContainerLow,
+                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4), style: BorderStyle.solid),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.add, color: Colors.grey, size: 16),
+                      child: Icon(Icons.add, color: cs.onSurfaceVariant.withValues(alpha: 0.5), size: 16),
                     ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(begin: 0.5, end: 1.0),
                 ],
               ),
@@ -275,10 +279,11 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2))),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5)),
+                BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05), blurRadius: 20, offset: const Offset(0, -5)),
               ],
             ),
             child: SingleChildScrollView(
@@ -292,19 +297,19 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey[300]!),
+                        color: cs.surface,
+                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 5, offset: const Offset(0, 2)),
+                          BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03), blurRadius: 5, offset: const Offset(0, 2)),
                         ],
                       ),
                       child: Text(
                         word,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: cs.onSurface,
                           fontFamily: 'Kitab',
                         ),
                       ),

@@ -33,9 +33,8 @@ class _HomePageState extends State<HomePage> {
     ),
     _NavTab(
       label: 'الأذكار',
-      icon: Icons.favorite_border, // Fallback
-      activeIcon: Icons.favorite, // Fallback
-      assetPath: 'assets/images/subha_icon.png',
+      icon: Icons.spa_outlined,
+      activeIcon: Icons.spa,
     ),
     _NavTab(
       label: 'المشغل',

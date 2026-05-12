@@ -27,13 +27,17 @@ class StationTasksSheet extends ConsumerWidget {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (context, scrollController) {
+        final cs = Theme.of(context).colorScheme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(32),
               topRight: Radius.circular(32),
             ),
+            border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
           ),
           child: Column(
             children: [
@@ -43,7 +47,7 @@ class StationTasksSheet extends ConsumerWidget {
                 height: 4,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: cs.outlineVariant.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -74,10 +78,10 @@ class StationTasksSheet extends ConsumerWidget {
                             children: [
                               Text(
                                 level.surahName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                                  color: cs.onSurface,
                                 ),
                               ),
                               // Dynamic Heart Status indicator requested by User!
@@ -88,7 +92,7 @@ class StationTasksSheet extends ConsumerWidget {
                             'المستوى الحالي • آيات ${level.ayahStart}-${level.ayahEnd}',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey[600],
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.8),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -150,9 +154,13 @@ class StationTasksSheet extends ConsumerWidget {
                       const SizedBox(height: 16),
                     ],
 
-                    const Text(
+                    Text(
                       'أكمل المهام الخمس لتثبيت المستوى وحصد النجوم والجوائز الكبرى:',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 13, 
+                        fontWeight: FontWeight.bold, 
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.7)
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),

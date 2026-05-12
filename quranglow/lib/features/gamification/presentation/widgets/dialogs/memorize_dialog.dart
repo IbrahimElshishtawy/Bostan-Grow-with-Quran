@@ -40,6 +40,9 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       contentPadding: const EdgeInsets.all(20),
@@ -47,9 +50,9 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
         future: _fetchFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SizedBox(
+            return SizedBox(
               height: 200,
-              child: Center(child: CircularProgressIndicator(color: Colors.purple)),
+              child: Center(child: CircularProgressIndicator(color: cs.primary)),
             );
           }
           if (snapshot.hasError || _ayahs.isEmpty) {
@@ -57,7 +60,7 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
           }
 
           final isDone = _currentIndex >= _ayahs.length;
-          if (isDone) return _buildFinalSuccess();
+          if (isDone) return _buildFinalSuccess(cs);
 
           final currentAyah = _ayahs[_currentIndex];
           final splitted = currentAyah.text.split(' ');
@@ -73,12 +76,12 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                 const SizedBox(height: 8),
                 Text(
                   'تثبيت الحفظ (${_currentIndex + 1}/${_ayahs.length})',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'حاول استذكار آخر كلمة في هذه الآية المظللة:',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.8)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -86,16 +89,16 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFBF8FB),
+                    color: cs.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.purple.withValues(alpha: 0.1)),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
                   ),
                   child: Column(
                     children: [
                       Text(
                         startPhrase,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Kitab', height: 1.6),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Kitab', height: 1.6, color: cs.onSurface),
                       ),
                       const SizedBox(height: 10),
                       GestureDetector(
@@ -106,7 +109,7 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                           duration: const Duration(milliseconds: 400),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
-                            color: _isRevealed ? Colors.purple.withValues(alpha: 0.1) : Colors.purple[200],
+                            color: _isRevealed ? cs.primary.withValues(alpha: 0.15) : cs.primaryContainer,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -115,7 +118,7 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                               fontSize: 20,
                               fontFamily: 'Kitab',
                               fontWeight: FontWeight.bold,
-                              color: _isRevealed ? Colors.purple[900] : Colors.white,
+                              color: _isRevealed ? cs.primary : cs.onPrimaryContainer,
                             ),
                           ),
                         ),
@@ -165,7 +168,7 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
     }
   }
 
-  Widget _buildFinalSuccess() {
+  Widget _buildFinalSuccess(ColorScheme cs) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -176,10 +179,10 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: GameificationColors.primaryGreen),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'قال ابن مسعود: "حفظ القرآن الكريم وتثبيته في الصدور نجاة ورفعة في الدارين."',
           textAlign: TextAlign.center,
-          style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey, height: 1.4),
+          style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: cs.onSurfaceVariant, height: 1.4),
         ),
         const SizedBox(height: 24),
         SizedBox(
