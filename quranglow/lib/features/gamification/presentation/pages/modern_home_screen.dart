@@ -475,9 +475,9 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     final double centerX = width / 2;
 
     final int totalLevels = levels.length;
-    final double spacingY = 250.0;
+    final double spacingY = 260.0;
     final double headerGap =
-        220.0; // Extra space reserved for injected Station Headers
+        140.0; // Extra space reserved for injected Station Headers
 
     final List<Offset> offsets = [];
     final Map<int, double> headerLocationsY = {}; // Store where headers appear

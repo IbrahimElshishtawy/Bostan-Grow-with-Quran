@@ -60,9 +60,6 @@ class PrayerTimesService {
     final normalizedNow = _normalizeDate(DateTime.now());
     final requestedDays = days < 1 ? 1 : days;
     final cachedBundle = await _readCacheBundle();
-    final currentPosition = await locationService.getCurrentOnce();
-    final cachedPosition = _positionFromCache(cachedBundle);
-    final effectivePosition = currentPosition ?? cachedPosition;
 
     if (preferCache) {
       final cachedDays = _collectCachedDays(
@@ -86,6 +83,10 @@ class PrayerTimesService {
       }
       throw Exception('لا توجد مواقيت محفوظة كافية للتشغيل الأوفلاين.');
     }
+
+    final currentPosition = await locationService.getCurrentOnce();
+    final cachedPosition = _positionFromCache(cachedBundle);
+    final effectivePosition = currentPosition ?? cachedPosition;
 
     if (effectivePosition == null) {
       throw Exception(
