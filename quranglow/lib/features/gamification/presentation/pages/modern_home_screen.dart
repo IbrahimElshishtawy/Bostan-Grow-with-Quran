@@ -178,7 +178,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         final activeLevel = levels[activeIdx];
         final activeLevelTitle = activeLevel.surahName;
 
-        return _buildContent(gameState, activeLevelTitle, activeIdx + 1);
+        return _buildContent(gameState, activeLevelTitle, activeIdx + 1, activeLevel);
       },
     );
   }
@@ -187,6 +187,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     GameState gameState,
     String activeLevelTitle,
     int activeLevelSeq,
+    GameLevel activeLevel,
   ) {
     final levels = gameState.levels;
     final int totalLevelsCount = levels.length;
@@ -447,7 +448,15 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                       currentLevel: activeLevelSeq,
                       levelDetails: 'سورة $activeLevelTitle',
                       onStart: () {
-                        // Fast scroll back into focus range of active level!
+                        // 1. Immediate action: Open the Level Sheet so the user can start instantly!
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => StationTasksSheet(level: activeLevel),
+                        );
+
+                        // 2. Background aesthetic: Fast scroll back into focus range!
                         if (_scrollController.hasClients &&
                             _cachedActiveNodeY > 0) {
                           final double offset = (_cachedActiveNodeY - 350.0)

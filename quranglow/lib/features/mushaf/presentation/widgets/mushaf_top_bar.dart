@@ -126,50 +126,68 @@ class MushafTopBar extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.star_outline_rounded, size: 14, color: cs.primary.withValues(alpha: 0.6)),
-                                  const SizedBox(width: 8),
+                                  _buildAuthenticStar(isDark),
+                                  const SizedBox(width: 12),
                                   Flexible(
-                                    child: Text(
-                                      s.name,
-                                      key: ValueKey('title-${s.name}'),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: titleColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'KFGQPC Uthmanic Script',
-                                        fontSize: 20,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        s.name,
+                                        key: ValueKey('title-${s.name}'),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        style: TextStyle(
+                                          color: const Color(0xFFF1D486),
+                                          fontWeight: FontWeight.w900,
+                                          fontFamily: 'KFGQPC Uthmanic Script',
+                                          fontSize: 24,
+                                          shadows: [
+                                            Shadow(
+                                              offset: const Offset(0, 1),
+                                              blurRadius: 2,
+                                              color: Colors.black.withValues(alpha: 0.2),
+                                            )
+                                          ]
+                                        ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Icon(Icons.star_outline_rounded, size: 14, color: cs.primary.withValues(alpha: 0.6)),
+                                  const SizedBox(width: 12),
+                                  _buildAuthenticStar(isDark),
                                 ],
                               ),
                               orElse: () => Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.star_outline_rounded, size: 14, color: cs.primary.withValues(alpha: 0.6)),
-                                  const SizedBox(width: 8),
+                                  _buildAuthenticStar(isDark),
+                                  const SizedBox(width: 12),
                                   Flexible(
-                                    child: Text(
-                                      'سورة $chapter',
-                                      key: ValueKey('title-$chapter'),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: titleColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'KFGQPC Uthmanic Script',
-                                        fontSize: 20,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        'سورة $chapter',
+                                        key: ValueKey('title-$chapter'),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        style: TextStyle(
+                                          color: const Color(0xFFF1D486),
+                                          fontWeight: FontWeight.w900,
+                                          fontFamily: 'KFGQPC Uthmanic Script',
+                                          fontSize: 24,
+                                          shadows: [
+                                            Shadow(
+                                              offset: const Offset(0, 1),
+                                              blurRadius: 2,
+                                              color: Colors.black.withValues(alpha: 0.2),
+                                            )
+                                          ]
+                                        ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Icon(Icons.star_outline_rounded, size: 14, color: cs.primary.withValues(alpha: 0.6)),
+                                  const SizedBox(width: 12),
+                                  _buildAuthenticStar(isDark),
                                 ],
                               ),
                             ),
@@ -281,6 +299,23 @@ class MushafTopBar extends StatelessWidget {
           shape: const CircleBorder(),
         ),
       ),
+    );
+  }
+  Widget _buildAuthenticStar(bool isDark) {
+    const color = Color(0xFFF1D486);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        const Icon(Icons.star_border, color: color, size: 20),
+        Container(
+          width: 4,
+          height: 4,
+          decoration: const BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ],
     );
   }
 }

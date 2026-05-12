@@ -207,13 +207,13 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('voice_prog_${widget.level.id}', _currentAyahIndex);
       } else {
-        _finishLevel();
+        await _finishLevel();
       }
     });
   }
 
-  void _finishLevel() {
-    ref.read(gamificationControllerProvider.notifier)
+  Future<void> _finishLevel() async {
+    await ref.read(gamificationControllerProvider.notifier)
         .completeSubTask(widget.level.id, 'quiz'); // Mapping it to existing quiz tracker logically
     
     showDialog(

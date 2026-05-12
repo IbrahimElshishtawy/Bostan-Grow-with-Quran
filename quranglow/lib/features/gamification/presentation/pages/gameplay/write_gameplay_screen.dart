@@ -257,7 +257,7 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
           _currentAyahIndex++; // flag complete
         });
       }
-      ref.read(gamificationControllerProvider.notifier).completeSubTask(widget.level.id, 'write');
+      await ref.read(gamificationControllerProvider.notifier).completeSubTask(widget.level.id, 'write');
     }
   }
 

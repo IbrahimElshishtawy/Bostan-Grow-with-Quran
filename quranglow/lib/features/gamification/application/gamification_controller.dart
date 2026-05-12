@@ -340,8 +340,9 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         }
       }
 
-      // Execute all saved operations concurrently behind the scenes
-      Future.wait(persistTasks).catchError((e, st) {
+      // 💾 HARDENED PERSISTENCE: AWAIT ALL CHANGES
+      // We MUST await this, otherwise immediate app restart leads to progress loss!
+      await Future.wait(persistTasks).catchError((e, st) {
         // Soft background log, doesn't kill UI fluidity.
         return [];
       });
@@ -374,8 +375,8 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         userProfile: updatedProfile,
       ));
 
-      // Fire and forget background persist
-      repository.setUserProfile(userId, updatedProfile).catchError((_) {});
+      // HARDENED PERSISTENCE: Safely await write completion!
+      await repository.setUserProfile(userId, updatedProfile).catchError((_) {});
       
       return true;
     } catch (_) {
@@ -473,8 +474,8 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         userProfile: updatedProfile,
       ));
 
-      // Background save
-      repository.setUserProfile(userId, updatedProfile).catchError((_) {});
+      // HARDENED PERSISTENCE: Safely await write completion!
+      await repository.setUserProfile(userId, updatedProfile).catchError((_) {});
       
       return true;
     } catch (e) {
@@ -509,8 +510,8 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         userProfile: updatedProfile,
       ));
 
-      // Silently persist without freezing visual feedback loop
-      repository.setUserProfile(userId, updatedProfile).catchError((_) {});
+      // HARDENED PERSISTENCE: Safely await write completion!
+      await repository.setUserProfile(userId, updatedProfile).catchError((_) {});
     } catch (_) {}
   }
 

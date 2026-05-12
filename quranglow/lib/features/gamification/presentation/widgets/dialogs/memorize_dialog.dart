@@ -561,7 +561,7 @@ class _InteractiveMemorizeDialogState
     int earnedStars = 3;
     String praiseTitle = 'إنجاز مثالي! 🌟';
     String praiseDesc = 'لم ترتكب أي خطأ، حفظك كالنقش على الحجر!';
-    
+
     if (_mistakes > 2) {
       earnedStars = 1;
       praiseTitle = 'عمل رائع، استمر! 💪';
@@ -582,24 +582,29 @@ class _InteractiveMemorizeDialogState
             final bool isEarned = index < earnedStars;
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Icon(
-                index == 1 ? Icons.star_rounded : Icons.star_rounded, // could scale middle larger
-                size: index == 1 ? 65 : 50,
-                color: isEarned ? Colors.amber : Colors.grey.withValues(alpha: 0.3),
-              )
-              .animate(target: isEarned ? 1 : 0)
-              .scale(
-                duration: 500.ms, 
-                delay: (200 * index).ms, 
-                curve: Curves.elasticOut
-              )
-              .then()
-              .shimmer(duration: 2.seconds, color: Colors.white54),
+              child:
+                  Icon(
+                        index == 1
+                            ? Icons.star_rounded
+                            : Icons.star_rounded, // could scale middle larger
+                        size: index == 1 ? 65 : 50,
+                        color: isEarned
+                            ? Colors.amber
+                            : Colors.grey.withValues(alpha: 0.3),
+                      )
+                      .animate(target: isEarned ? 1 : 0)
+                      .scale(
+                        duration: 500.ms,
+                        delay: (200 * index).ms,
+                        curve: Curves.elasticOut,
+                      )
+                      .then()
+                      .shimmer(duration: 2.seconds, color: Colors.white54),
             );
           }),
         ),
         const SizedBox(height: 24),
-        
+
         // 🏆 TITLE WITH GLOW
         Text(
           praiseTitle,
@@ -610,9 +615,9 @@ class _InteractiveMemorizeDialogState
             letterSpacing: 0.5,
           ),
         ).animate().fade().slideY(begin: 0.3, end: 0),
-        
+
         const SizedBox(height: 12),
-        
+
         // 📝 DESCRIPTIVE FEEDBACK
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -620,15 +625,15 @@ class _InteractiveMemorizeDialogState
             praiseDesc,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 15, 
+              fontSize: 15,
               color: cs.onSurfaceVariant,
-              height: 1.4
+              height: 1.4,
             ),
           ),
         ).animate().fade(delay: 300.ms),
-        
+
         const SizedBox(height: 32),
-        
+
         // 🚀 CALL TO ACTION
         Container(
           width: double.infinity,
@@ -639,8 +644,8 @@ class _InteractiveMemorizeDialogState
                 blurRadius: 20,
                 spreadRadius: -5,
                 offset: const Offset(0, 10),
-              )
-            ]
+              ),
+            ],
           ),
           child: FilledButton(
             onPressed: () => Navigator.pop(context),
@@ -658,7 +663,11 @@ class _InteractiveMemorizeDialogState
               style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
             ),
           ),
-        ).animate().scale(delay: 600.ms, duration: 400.ms, curve: Curves.easeOutBack),
+        ).animate().scale(
+          delay: 600.ms,
+          duration: 400.ms,
+          curve: Curves.easeOutBack,
+        ),
       ],
     );
   }

@@ -300,8 +300,8 @@ class _StationTasksSheetState extends ConsumerState<StationTasksSheet> {
       context: context,
       builder: (context) => InteractiveReadDialog(
         level: liveLevel,
-        onComplete: () {
-          ref
+        onComplete: () async {
+          await ref
               .read(gamificationControllerProvider.notifier)
               .completeSubTask(liveLevel.id, 'read');
         },
@@ -330,8 +330,8 @@ class _StationTasksSheetState extends ConsumerState<StationTasksSheet> {
       context: context,
       builder: (context) => InteractiveMemorizeDialog(
         level: liveLevel,
-        onComplete: () {
-          ref
+        onComplete: () async {
+          await ref
               .read(gamificationControllerProvider.notifier)
               .completeSubTask(liveLevel.id, 'memorize');
         },

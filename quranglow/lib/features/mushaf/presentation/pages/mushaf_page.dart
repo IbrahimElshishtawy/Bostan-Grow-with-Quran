@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,6 +45,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   int? _lastAyahNumber;
   bool _trackingSessionStarted = false;
   late final dynamic _trackingService;
+  DateTime? _listeningStartedAt;
+  StreamSubscription? _ayahPlayerSub;
 
   final _pos = PositionStore();
   final _ayahPreviewPlayer = AudioPlayer();
@@ -56,6 +59,12 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     _trackingService = ref.read(trackingServiceProvider);
     _chapter = widget.chapter.clamp(1, 114);
     _lastAyahNumber = widget.initialAyah;
+
+    // Track listening time for Mushaf preview audio
+    _ayahPlayerSub = _ayahPreviewPlayer.playingStream.listen((playing) {
+      _trackListeningState(playing);
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -72,14 +81,34 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   @override
   void dispose() {
+    _flushListeningTime();
     if (_trackingSessionStarted) {
       _trackingService.endSession();
     }
+    _ayahPlayerSub?.cancel();
     _ayahPreviewPlayer.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     WakelockPlus.disable();
     super.dispose();
+  }
+
+  void _trackListeningState(bool isPlaying) {
+    if (isPlaying) {
+      _listeningStartedAt ??= DateTime.now();
+      return;
+    }
+    _flushListeningTime();
+  }
+
+  void _flushListeningTime() {
+    final startedAt = _listeningStartedAt;
+    if (startedAt == null) return;
+    final seconds = DateTime.now().difference(startedAt).inSeconds;
+    _listeningStartedAt = null;
+    if (seconds > 0) {
+      _trackingService.addListeningTime(seconds);
+    }
   }
 
   String _audioEditionId() {
