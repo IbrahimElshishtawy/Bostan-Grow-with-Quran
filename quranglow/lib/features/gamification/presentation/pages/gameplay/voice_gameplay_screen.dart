@@ -64,6 +64,14 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
   }
 
   Future<void> _loadLevelData() async {
+    // Pre-check: Ensure user has hearts to begin!
+    final initialHearts = ref.read(gamificationControllerProvider).valueOrNull?.userProfile.hearts ?? 0;
+    if (initialHearts <= 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+         _showRefillPrompt();
+      });
+      return;
+    }
     if (mounted) setState(() => _isLoading = true);
     try {
       final fetched = await ref.read(quranApiServiceProvider).getAyahRange(
@@ -181,13 +189,8 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
         }
         _onAyahCompleted();
       } else {
-        // Failure: Keep them highlighted red, clear current stream buffer and prompt retry.
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('توجد بعض الأخطاء في القراءة، حاول مرة أخرى لتصحيح الكلمات الحمراء'),
-            backgroundColor: Colors.orangeAccent,
-          ),
-        );
+        // Failure: Deduct heart and alert user.
+        _deductHeart();
       }
     });
   }
@@ -473,6 +476,85 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
         fontSize: 14,
       ),
     );
+  }
+
+  // ❤️ HEARTS MANAGEMENT
+  Future<void> _deductHeart() async {
+    final controller = ref.read(gamificationControllerProvider.notifier);
+    await controller.loseHeart();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('توجد أخطاء في القراءة! تم خصم محاولة 💔', textAlign: TextAlign.center),
+          backgroundColor: Colors.redAccent,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      final liveHearts = ref.read(gamificationControllerProvider).valueOrNull?.userProfile.hearts ?? 0;
+      if (liveHearts <= 0) {
+        _showRefillPrompt();
+      }
+    }
+  }
+
+  void _showRefillPrompt() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('نفذت المحاولات! 💔', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('يمكنك الانتظار لإعادة الشحن، أو مشاهدة فيديو لاستعادة المحاولات فوراً والاستمرار!'),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(onPressed: () { Navigator.pop(context); Navigator.pop(context); }, child: const Text('خروج')),
+          ElevatedButton.icon(
+            onPressed: () => _simulateWatchAd(c),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[600], foregroundColor: Colors.white),
+            icon: const Icon(Icons.play_circle_fill_rounded),
+            label: const Text('مشاهدة إعلان 🎁'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _simulateWatchAd(BuildContext dialogContext) async {
+    Navigator.pop(dialogContext);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: Dialog.fullscreen(
+          backgroundColor: Colors.black87,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                CircularProgressIndicator(color: Colors.white),
+                SizedBox(height: 24),
+                Icon(Icons.movie_creation_rounded, size: 50, color: Colors.blueAccent),
+                SizedBox(height: 16),
+                Text('جاري تشغيل الإعلان...', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await Future.delayed(const Duration(milliseconds: 2500));
+    if (mounted) {
+      Navigator.pop(context);
+      final success = await ref.read(gamificationControllerProvider.notifier).grantRewardAdHearts();
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت استعادة المحاولات! 🎉'), backgroundColor: Colors.green));
+        if (_ayahs.isEmpty) _loadLevelData();
+      }
+    }
   }
 }
 

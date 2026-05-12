@@ -6,7 +6,7 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:quranglow/core/models/quran_models.dart';
 import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
-import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
+import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 
 class InteractiveMemorizeDialog extends ConsumerStatefulWidget {
   const InteractiveMemorizeDialog({
@@ -19,17 +19,21 @@ class InteractiveMemorizeDialog extends ConsumerStatefulWidget {
   final VoidCallback onComplete;
 
   @override
-  ConsumerState<InteractiveMemorizeDialog> createState() => _InteractiveMemorizeDialogState();
+  ConsumerState<InteractiveMemorizeDialog> createState() =>
+      _InteractiveMemorizeDialogState();
 }
 
-class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeDialog> {
+class _InteractiveMemorizeDialogState
+    extends ConsumerState<InteractiveMemorizeDialog> {
   late Future<List<Ayah>> _fetchFuture;
   int _currentIndex = 0;
   bool _isRevealed = false;
   bool _isSuccessSound = false;
   List<Ayah> _ayahs = [];
+  int _mistakes = 0;
 
   final SpeechToText _speechToText = SpeechToText();
+  final TextEditingController _textController = TextEditingController();
   bool _speechEnabled = false;
   bool _isListening = false;
   String _speechInput = "";
@@ -37,15 +41,39 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
   @override
   void initState() {
     super.initState();
-    _initSpeech();
-    _fetchFuture = ref.read(quranApiServiceProvider).getAyahRange(
-      widget.level.surahId,
-      widget.level.ayahStart,
-      widget.level.ayahEnd,
-    ).then((list) {
-      setState(() => _ayahs = list);
-      return list;
+
+    // Ensure immediate check for existing heart balance before startup!
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final initialHearts =
+          ref
+              .read(gamificationControllerProvider)
+              .valueOrNull
+              ?.userProfile
+              .hearts ??
+          0;
+      if (initialHearts <= 0) {
+        _showRefillPrompt();
+      }
     });
+
+    _initSpeech();
+    _fetchFuture = ref
+        .read(quranApiServiceProvider)
+        .getAyahRange(
+          widget.level.surahId,
+          widget.level.ayahStart,
+          widget.level.ayahEnd,
+        )
+        .then((list) {
+          if (mounted) setState(() => _ayahs = list);
+          return list;
+        });
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
   }
 
   Future<void> _initSpeech() async {
@@ -65,7 +93,9 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
   Future<void> _toggleListening(String targetWord) async {
     if (!_speechEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('جاري تفعيل الميكروفون، يرجى المحاولة مجدداً.')),
+        const SnackBar(
+          content: Text('جاري تفعيل الميكروفون، يرجى المحاولة مجدداً.'),
+        ),
       );
       _initSpeech();
       return;
@@ -73,7 +103,7 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
 
     if (_isListening) {
       await _speechToText.stop();
-      setState(() => _isListening = false);
+      if (mounted) setState(() => _isListening = false);
     } else {
       setState(() {
         _isListening = true;
@@ -90,6 +120,7 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
   }
 
   void _handleResult(SpeechRecognitionResult result, String targetWord) {
+    if (!mounted) return;
     setState(() {
       _speechInput = result.recognizedWords;
     });
@@ -100,10 +131,14 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
 
     for (var w in words) {
       if (w.isEmpty) continue;
-      
+
       // Ultra-Fuzzy Relaxed Check:
-      bool match = (w == target || target.contains(w) || w.contains(target) || _calculateCharacterOverlap(w, target) >= 0.6);
-      
+      bool match =
+          (w == target ||
+          target.contains(w) ||
+          w.contains(target) ||
+          _calculateCharacterOverlap(w, target) >= 0.6);
+
       if (match) {
         _speechToText.stop();
         setState(() {
@@ -120,13 +155,38 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
     }
   }
 
+  void _checkManualAnswer(String targetWord) {
+    final input = _textController.text.trim();
+    if (input.isEmpty) return;
+    final normInput = _normalizeArabic(input);
+    final target = _normalizeArabic(targetWord);
+    bool match =
+        (normInput == target ||
+        target.contains(normInput) ||
+        normInput.contains(target) ||
+        _calculateCharacterOverlap(normInput, target) >= 0.6);
+
+    if (match) {
+      FocusScope.of(context).unfocus();
+      setState(() {
+        _isRevealed = true;
+        _isSuccessSound = true;
+      });
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) setState(() => _isSuccessSound = false);
+      });
+    } else {
+      _deductHeart();
+    }
+  }
+
   String _normalizeArabic(String input) {
     return input
-        .replaceAll(RegExp(r'[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED]'), '') 
+        .replaceAll(RegExp(r'[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED]'), '')
         .replaceAll(RegExp(r'[إأآ]'), 'ا')
         .replaceAll('ى', 'ي')
         .replaceAll('ة', 'ه')
-        .replaceAll(RegExp(r'[^\u0621-\u064A\s]'), '') 
+        .replaceAll(RegExp(r'[^\u0621-\u064A\s]'), '')
         .trim()
         .replaceAll(RegExp(r'\s+'), ' ')
         .toLowerCase();
@@ -140,7 +200,8 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
     List<String> pool = List.from(c2);
     for (var c in c1) {
       if (pool.contains(c)) {
-        match++; pool.remove(c);
+        match++;
+        pool.remove(c);
       }
     }
     final min = c1.length < c2.length ? c1.length : c2.length;
@@ -161,12 +222,17 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const SizedBox(
               height: 200,
-              child: Center(child: CircularProgressIndicator(color: Colors.deepPurple)),
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.deepPurple),
+              ),
             );
           }
-          
+
           if (snapshot.hasError || _ayahs.isEmpty) {
-            return const SizedBox(height: 200, child: Center(child: Text('خطأ في تحميل بيانات التثبيت')));
+            return const SizedBox(
+              height: 200,
+              child: Center(child: Text('خطأ في تحميل بيانات التثبيت')),
+            );
           }
 
           final bool done = _currentIndex >= _ayahs.length;
@@ -182,7 +248,10 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.purple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -190,11 +259,18 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.psychology, color: Colors.purple, size: 20),
+                      const Icon(
+                        Icons.psychology,
+                        color: Colors.purple,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'تثبيت الحفظ (${_currentIndex + 1}/${_ayahs.length})',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple,
+                        ),
                       ),
                     ],
                   ),
@@ -206,7 +282,7 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                
+
                 // The Card showing the text and the blank spot
                 Container(
                   width: double.infinity,
@@ -215,13 +291,19 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                     color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: _isSuccessSound ? Colors.green : cs.outlineVariant.withValues(alpha: 0.5),
+                      color: _isSuccessSound
+                          ? Colors.green
+                          : cs.outlineVariant.withValues(alpha: 0.5),
                       width: _isSuccessSound ? 2 : 1,
                     ),
                     boxShadow: [
                       if (_isSuccessSound)
-                        BoxShadow(color: Colors.green.withValues(alpha: 0.3), blurRadius: 15, spreadRadius: 2)
-                    ]
+                        BoxShadow(
+                          color: Colors.green.withValues(alpha: 0.3),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                        ),
+                    ],
                   ),
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -239,35 +321,47 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                           color: cs.onSurface,
                         ),
                       ),
-                      
+
                       // The Secret Hidden Word UI
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 500),
-                        transitionBuilder: (c, a) => ScaleTransition(scale: a, child: FadeTransition(opacity: a, child: c)),
+                        transitionBuilder: (c, a) => ScaleTransition(
+                          scale: a,
+                          child: FadeTransition(opacity: a, child: c),
+                        ),
                         child: _isRevealed
-                          ? Text(
-                              hiddenWord,
-                              key: const ValueKey('revealed'),
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontFamily: 'KFGQPC Uthmanic Script',
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold,
+                            ? Text(
+                                hiddenWord,
+                                key: const ValueKey('revealed'),
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontFamily: 'KFGQPC Uthmanic Script',
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : Container(
+                                key: const ValueKey('hidden'),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.1),
+                                  border: Border.all(
+                                    color: Colors.blue.withValues(alpha: 0.4),
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  '.....',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
                               ),
-                            )
-                          : Container(
-                              key: const ValueKey('hidden'),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withValues(alpha: 0.1),
-                                border: Border.all(color: Colors.blue.withValues(alpha: 0.4)),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                '.....',
-                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue),
-                              ),
-                            ),
                       ),
                     ],
                   ),
@@ -278,8 +372,15 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                 if (!_isRevealed) ...[
                   // Voice Control Area
                   Text(
-                    _isListening ? "استمع الآن..." : (_speechInput.isNotEmpty ? "حاولت قول: $_speechInput" : "اضغط للبدء"),
-                    style: TextStyle(fontSize: 12, color: _isListening ? Colors.green : Colors.grey),
+                    _isListening
+                        ? "استمع الآن..."
+                        : (_speechInput.isNotEmpty
+                              ? "حاولت قول: $_speechInput"
+                              : "اضغط للبدء"),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _isListening ? Colors.green : Colors.grey,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   GestureDetector(
@@ -289,26 +390,39 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                       children: [
                         if (_isListening)
                           const SizedBox(
-                            height: 75,
-                            width: 75,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blue),
-                          ).animate(onPlay: (c) => c.repeat()).rotate(duration: 2.seconds),
+                                height: 75,
+                                width: 75,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.blue,
+                                ),
+                              )
+                              .animate(onPlay: (c) => c.repeat())
+                              .rotate(duration: 2.seconds),
                         Container(
                           height: 60,
                           width: 60,
                           decoration: BoxDecoration(
-                            color: _isListening ? Colors.redAccent : Colors.blue,
+                            color: _isListening
+                                ? Colors.redAccent
+                                : Colors.blue,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: (_isListening ? Colors.redAccent : Colors.blue).withValues(alpha: 0.3),
+                                color:
+                                    (_isListening
+                                            ? Colors.redAccent
+                                            : Colors.blue)
+                                        .withValues(alpha: 0.3),
                                 blurRadius: 15,
                                 offset: const Offset(0, 4),
-                              )
+                              ),
                             ],
                           ),
                           child: Icon(
-                            _isListening ? Icons.stop_rounded : Icons.mic_rounded,
+                            _isListening
+                                ? Icons.stop_rounded
+                                : Icons.mic_rounded,
                             color: Colors.white,
                             size: 32,
                           ),
@@ -316,34 +430,106 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
                       ],
                     ),
                   ),
-                  
-                  // Manual Reveal Fallback (Small button at bottom)
+
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'أو أكتب الإجابة',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextField(
+                    controller: _textController,
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      hintText: 'أكتب الكلمة هنا...',
+                      hintStyle: const TextStyle(fontSize: 13),
+                      filled: true,
+                      fillColor: cs.surfaceContainerHighest.withValues(
+                        alpha: 0.5,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      suffixIcon: Container(
+                        margin: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.check_rounded,
+                            color: Colors.green,
+                            size: 20,
+                          ),
+                          onPressed: () => _checkManualAnswer(hiddenWord),
+                        ),
+                      ),
+                    ),
+                    onSubmitted: (_) => _checkManualAnswer(hiddenWord),
+                  ),
+                  const SizedBox(height: 8),
                   TextButton(
                     onPressed: () => setState(() => _isRevealed = true),
                     child: Text(
-                      "كشف الإجابة يدوياً",
-                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+                      'لا أتذكرها، كشف الكلمة',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+                      ),
                     ),
                   ),
                 ] else ...[
                   // Success State actions
-                  const Icon(Icons.check_circle_rounded, color: Colors.green, size: 40)
-                    .animate().scale(duration: 300.ms, curve: Curves.bounceOut),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                    size: 40,
+                  ).animate().scale(duration: 300.ms, curve: Curves.bounceOut),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
                       onPressed: _goToNext,
-                      icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                      ),
                       label: Text(
-                         _currentIndex < _ayahs.length - 1 ? 'الآية التالية' : 'إنهاء المهمة',
-                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                        _currentIndex < _ayahs.length - 1
+                            ? 'الآية التالية'
+                            : 'إنهاء المهمة',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     ),
                   ),
@@ -362,6 +548,7 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
         _currentIndex++;
         _isRevealed = false;
         _speechInput = "";
+        _textController.clear(); // Clear the controller for new word!
       });
     } else {
       setState(() => _currentIndex++);
@@ -370,34 +557,227 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
   }
 
   Widget _buildFinalSuccess(ColorScheme cs) {
+    // ✨ Smart Star Calculation System! ✨
+    int earnedStars = 3;
+    String praiseTitle = 'إنجاز مثالي! 🌟';
+    String praiseDesc = 'لم ترتكب أي خطأ، حفظك كالنقش على الحجر!';
+    
+    if (_mistakes > 2) {
+      earnedStars = 1;
+      praiseTitle = 'عمل رائع، استمر! 💪';
+      praiseDesc = 'أكملت المهمة بنجاح، تدرب أكثر للحصول على العلامة الكاملة!';
+    } else if (_mistakes > 0) {
+      earnedStars = 2;
+      praiseTitle = 'حفظ قوي! ✨';
+      praiseDesc = 'أداء رائع جداً، أوشكت على بلوغ الإتقان التام!';
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.workspace_premium_rounded, size: 70, color: Colors.amber),
-        const SizedBox(height: 16),
-        const Text(
-          'حفظ ممتاز وراسخ! 👑',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.amber),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'تم تثبيت هذا الحفظ صوتياً بنجاح، أكمل مسيرتك!',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14),
+        // 🌟 THE PREMIUM STAR DISPLAY ROW!
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (index) {
+            final bool isEarned = index < earnedStars;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Icon(
+                index == 1 ? Icons.star_rounded : Icons.star_rounded, // could scale middle larger
+                size: index == 1 ? 65 : 50,
+                color: isEarned ? Colors.amber : Colors.grey.withValues(alpha: 0.3),
+              )
+              .animate(target: isEarned ? 1 : 0)
+              .scale(
+                duration: 500.ms, 
+                delay: (200 * index).ms, 
+                curve: Curves.elasticOut
+              )
+              .then()
+              .shimmer(duration: 2.seconds, color: Colors.white54),
+            );
+          }),
         ),
         const SizedBox(height: 24),
-        SizedBox(
+        
+        // 🏆 TITLE WITH GLOW
+        Text(
+          praiseTitle,
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 24,
+            color: cs.primary,
+            letterSpacing: 0.5,
+          ),
+        ).animate().fade().slideY(begin: 0.3, end: 0),
+        
+        const SizedBox(height: 12),
+        
+        // 📝 DESCRIPTIVE FEEDBACK
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            praiseDesc,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15, 
+              color: cs.onSurfaceVariant,
+              height: 1.4
+            ),
+          ),
+        ).animate().fade(delay: 300.ms),
+        
+        const SizedBox(height: 32),
+        
+        // 🚀 CALL TO ACTION
+        Container(
           width: double.infinity,
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: cs.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: -5,
+                offset: const Offset(0, 10),
+              )
+            ]
+          ),
           child: FilledButton(
             onPressed: () => Navigator.pop(context),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.amber.shade700,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
             ),
-            child: const Text('متابعة الرحلة 🏆', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'متابعة الرحلة 🚀',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+            ),
           ),
-        ),
+        ).animate().scale(delay: 600.ms, duration: 400.ms, curve: Curves.easeOutBack),
       ],
     );
+  }
+
+  // ❤️ HEARTS SYSTEM
+  Future<void> _deductHeart() async {
+    final controller = ref.read(gamificationControllerProvider.notifier);
+    await controller.loseHeart();
+    if (mounted) setState(() => _mistakes++);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('خطأ! تم خصم محاولة 💔', textAlign: TextAlign.center),
+          backgroundColor: Colors.redAccent,
+          duration: Duration(seconds: 1),
+        ),
+      );
+
+      final liveHearts =
+          ref
+              .read(gamificationControllerProvider)
+              .valueOrNull
+              ?.userProfile
+              .hearts ??
+          0;
+      if (liveHearts <= 0) {
+        _showRefillPrompt();
+      }
+    }
+  }
+
+  void _showRefillPrompt() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'نفذت المحاولات! 💔',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'يمكنك الانتظار لإعادة الشحن، أو مشاهدة فيديو لاستعادة المحاولات والاستمرار!',
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('خروج'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => _simulateWatchAd(c),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[600],
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.play_circle_fill_rounded),
+            label: const Text('مشاهدة إعلان 🎁'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _simulateWatchAd(BuildContext dialogContext) async {
+    Navigator.pop(dialogContext);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: Dialog.fullscreen(
+          backgroundColor: Colors.black87,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                CircularProgressIndicator(color: Colors.white),
+                SizedBox(height: 24),
+                Icon(
+                  Icons.movie_creation_rounded,
+                  size: 50,
+                  color: Colors.blueAccent,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'جاري تشغيل الإعلان...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await Future.delayed(const Duration(milliseconds: 2500));
+    if (mounted) {
+      Navigator.pop(context);
+      final success = await ref
+          .read(gamificationControllerProvider.notifier)
+          .grantRewardAdHearts();
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تمت استعادة المحاولات! 🎉'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
   }
 }
