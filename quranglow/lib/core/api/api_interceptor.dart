@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:quranglow/core/api/api_cache_manager.dart';
 
@@ -29,13 +30,20 @@ class ApiInterceptor extends Interceptor {
       final cachedResponse = cacheManager.get(cacheKey);
 
       if (cachedResponse != null) {
-        return handler.resolve(
-          Response(
-            requestOptions: options,
-            data: cachedResponse,
-            statusCode: 200,
-          ),
-        );
+        try {
+          // Verify the cache is actually valid JSON before delivering it
+          final decoded = jsonDecode(cachedResponse);
+          return handler.resolve(
+            Response(
+              requestOptions: options,
+              data: decoded,
+              statusCode: 200,
+            ),
+          );
+        } catch (e) {
+          // Corrupted cache! Remove it and let request flow through to network!
+          cacheManager.remove(cacheKey);
+        }
       }
     }
 
@@ -53,7 +61,7 @@ class ApiInterceptor extends Interceptor {
       final cacheKey = _getCacheKey(response.requestOptions);
       await cacheManager.set(
         cacheKey,
-        response.data.toString(),
+        jsonEncode(response.data),
         ttl: const Duration(hours: 24),
       );
     }

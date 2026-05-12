@@ -112,7 +112,7 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
                     ],
                   ),
                   child: Text(
-                    '${currentAyah.text} ﴿${currentAyah.ayahNumber}﴾',
+                    currentAyah.text,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
@@ -157,7 +157,7 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: Text(
-                        isLast ? 'أكملت القراءة والتدبر ✅' : 'الآية التالية ⬅️',
+                        isLast ? 'أكملت القراءة والتدبر ✅' : 'الآية التالية',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         textAlign: TextAlign.center,
                       ),

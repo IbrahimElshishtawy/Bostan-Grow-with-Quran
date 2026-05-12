@@ -205,22 +205,14 @@ class _GlassNavigationBar extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          tab.assetPath != null
-                              ? ImageIcon(
-                                  AssetImage(tab.assetPath!),
-                                  size: active ? 24 : 22,
-                                  color: active
-                                      ? cs.primary
-                                      : cs.onSurfaceVariant.withValues(alpha: 0.90),
-                                )
-                              : Icon(
-                                  active ? tab.activeIcon : tab.icon,
-                                  size: active ? 24 : 22,
-                                  color: active
-                                      ? cs.primary
-                                      : cs.onSurfaceVariant
-                                          .withValues(alpha: 0.90),
-                                ),
+                          Icon(
+                            active ? tab.activeIcon : tab.icon,
+                            size: active ? 24 : 22,
+                            color: active
+                                ? cs.primary
+                                : cs.onSurfaceVariant
+                                    .withValues(alpha: 0.90),
+                          ),
                           const SizedBox(height: 2),
                           AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 200),

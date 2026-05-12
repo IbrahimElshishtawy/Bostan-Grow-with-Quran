@@ -8,6 +8,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:quranglow/core/api/api_cache_manager.dart';
+import 'package:quranglow/core/api/api_interceptor.dart';
 import 'package:quranglow/core/api/alquran_cloud_source.dart';
 import 'package:quranglow/core/api/fawaz_cdn_source.dart';
 import 'package:quranglow/core/data/surah_names_ar.dart';
@@ -41,7 +43,7 @@ import 'package:quranglow/features/player/presentation/widgets/CombinedPositionD
 final httpClientProvider = Provider<http.Client>((ref) => http.Client());
 
 final dioProvider = Provider<Dio>((ref) {
-  return Dio(
+  final dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
@@ -49,6 +51,12 @@ final dioProvider = Provider<Dio>((ref) {
       validateStatus: (s) => s != null && s < 500,
     ),
   );
+  
+  // Add the universal caching interceptor for instant speed!
+  final cacheManager = ApiCacheManager(boxName: 'api_cache');
+  dio.interceptors.add(ApiInterceptor(cacheManager: cacheManager));
+  
+  return dio;
 });
 
 final storageProvider = Provider<LocalStorage>((ref) => HiveStorageImpl());

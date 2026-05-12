@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
@@ -12,16 +13,59 @@ import 'package:quranglow/features/gamification/presentation/widgets/dialogs/rea
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/level_gameplay_screen.dart';
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/write_gameplay_screen.dart';
 
-class StationTasksSheet extends ConsumerWidget {
-  const StationTasksSheet({
-    required this.level,
-    super.key,
-  });
+import 'package:quranglow/core/di/providers.dart'; // For alQuranProvider & settings
+
+class StationTasksSheet extends ConsumerStatefulWidget {
+  const StationTasksSheet({required this.level, super.key});
 
   final GameLevel level;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StationTasksSheet> createState() => _StationTasksSheetState();
+}
+
+class _StationTasksSheetState extends ConsumerState<StationTasksSheet> {
+  @override
+  void initState() {
+    super.initState();
+    // 🚀 INTELLIGENT PRE-CACHING: Fires instantly in background when the user expands the sheet!
+    // By the time they click "Listening" or "Reading", the data will already be cached and load instantly.
+    Future.microtask(() => _prefetchData());
+  }
+
+  Future<void> _prefetchData() async {
+    try {
+      final level = widget.level;
+
+      // 1. Prefetch textual data for Reading and Quiz tasks (shared cached endpoint)
+      ref
+          .read(quranApiServiceProvider)
+          .getAyahRange(level.surahId, level.ayahStart, level.ayahEnd);
+
+      // 2. Prefetch Audio metadata for the Listening task pipeline
+      final settings = ref.read(settingsControllerProvider);
+      final reciterId = settings.preferredReciterId.isNotEmpty
+          ? settings.preferredReciterId
+          : 'ar.alafasy';
+
+      ref.read(alQuranProvider).getSurahAudio(reciterId, level.surahId);
+    } catch (_) {
+      // Background prefetch is completely safe to ignore errors silently
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncState = ref.watch(gamificationControllerProvider);
+
+    // Derive the current live level object from global state to ensure real-time reactivity!
+    final liveLevel =
+        asyncState.valueOrNull?.levels.firstWhere(
+          (l) => l.id == widget.level.id,
+          orElse: () => widget.level,
+        ) ??
+        widget.level;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
       minChildSize: 0.5,
@@ -36,7 +80,9 @@ class StationTasksSheet extends ConsumerWidget {
               topLeft: Radius.circular(32),
               topRight: Radius.circular(32),
             ),
-            border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
+            border: Border(
+              top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+            ),
           ),
           child: Column(
             children: [
@@ -65,7 +111,11 @@ class StationTasksSheet extends ConsumerWidget {
                         shape: BoxShape.circle,
                         gradient: GameificationColors.primaryGradient,
                       ),
-                      child: const Icon(Icons.auto_stories, color: Colors.white, size: 28),
+                      child: const Icon(
+                        Icons.auto_stories,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -76,7 +126,7 @@ class StationTasksSheet extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                level.surahName,
+                                liveLevel.surahName,
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -88,7 +138,7 @@ class StationTasksSheet extends ConsumerWidget {
                             ],
                           ),
                           Text(
-                            'المستوى الحالي • آيات ${level.ayahStart}-${level.ayahEnd}',
+                            'المستوى الحالي • آيات ${liveLevel.ayahStart}-${liveLevel.ayahEnd}',
                             style: TextStyle(
                               fontSize: 13,
                               color: cs.onSurfaceVariant.withValues(alpha: 0.8),
@@ -111,17 +161,20 @@ class StationTasksSheet extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                   children: [
                     // level mastery trigger option
-                    if (level.isCompleted && level.masteryLevel == 0) ...[
+                    if (liveLevel.isCompleted &&
+                        liveLevel.masteryLevel == 0) ...[
                       GestureDetector(
                         onTap: () async {
                           final ok = await ref
                               .read(gamificationControllerProvider.notifier)
-                              .activateLevelMastery(level.id);
+                              .activateLevelMastery(liveLevel.id);
                           if (context.mounted && ok) {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('تهانينا! تم تفعيل مستوى التاج الذهبي للتحدي المضاعف! 👑🏆'),
+                                content: Text(
+                                  'تهانينا! تم تفعيل مستوى التاج الذهبي للتحدي المضاعف! 👑🏆',
+                                ),
                                 backgroundColor: GameificationColors.goldAccent,
                               ),
                             );
@@ -130,13 +183,19 @@ class StationTasksSheet extends ConsumerWidget {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Colors.orange, Colors.amber]),
+                            gradient: const LinearGradient(
+                              colors: [Colors.orange, Colors.amber],
+                            ),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 22),
+                              Icon(
+                                Icons.workspace_premium_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 'الترقية لمستوى التاج الذهبي (جوائز x2)! 👑',
@@ -149,16 +208,19 @@ class StationTasksSheet extends ConsumerWidget {
                             ],
                           ),
                         ),
-                      ).animate().scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
+                      ).animate().scale(
+                        begin: const Offset(1, 1),
+                        end: const Offset(1.05, 1.05),
+                      ),
                       const SizedBox(height: 16),
                     ],
 
                     Text(
                       'أكمل المهام الخمس لتثبيت المستوى وحصد النجوم والجوائز الكبرى:',
                       style: TextStyle(
-                        fontSize: 13, 
-                        fontWeight: FontWeight.bold, 
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.7)
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -169,40 +231,41 @@ class StationTasksSheet extends ConsumerWidget {
                       title: 'الاستماع والترتيل',
                       subtitle: 'استمع بخشوع لآيات المستوى',
                       icon: Icons.headphones_rounded,
-                      isCompleted: level.isListenCompleted,
-                      onTap: () => _launchListenTask(context, ref),
+                      isCompleted: liveLevel.isListenCompleted,
+                      onTap: () => _launchListenTask(context, ref, liveLevel),
                     ),
                     TaskTile(
                       index: 2,
                       title: 'القراءة والتحسين',
                       subtitle: 'اقرأ الآيات بتركيز مع الترجمة والتفسير',
                       icon: Icons.menu_book_rounded,
-                      isCompleted: level.isReadCompleted,
-                      onTap: () => _launchReadTask(context, ref),
+                      isCompleted: liveLevel.isReadCompleted,
+                      onTap: () => _launchReadTask(context, ref, liveLevel),
                     ),
                     TaskTile(
                       index: 3,
                       title: 'الكتابة والتركيب',
-                      subtitle: 'أعد بناء الآيات عن طريق ترتيب الكلمات المبعثرة',
+                      subtitle:
+                          'أعد بناء الآيات عن طريق ترتيب الكلمات المبعثرة',
                       icon: Icons.edit_note_rounded,
-                      isCompleted: level.isWriteCompleted,
-                      onTap: () => _launchWriteTask(context, ref),
+                      isCompleted: liveLevel.isWriteCompleted,
+                      onTap: () => _launchWriteTask(context, ref, liveLevel),
                     ),
                     TaskTile(
                       index: 4,
                       title: 'الحفظ والتمكين',
                       subtitle: 'اختبر ذاكرتك بإخفاء الكلمات المظللة وتثبيتها',
                       icon: Icons.psychology_rounded,
-                      isCompleted: level.isMemorizeCompleted,
-                      onTap: () => _launchMemorizeTask(context, ref),
+                      isCompleted: liveLevel.isMemorizeCompleted,
+                      onTap: () => _launchMemorizeTask(context, ref, liveLevel),
                     ),
                     TaskTile(
                       index: 5,
                       title: 'المسابقة السريعة',
                       subtitle: 'أجب عن أسئلة التدبر والتفسير التفاعلية',
                       icon: Icons.workspace_premium_rounded,
-                      isCompleted: level.isQuizCompleted,
-                      onTap: () => _launchQuizTask(context, ref),
+                      isCompleted: liveLevel.isQuizCompleted,
+                      onTap: () => _launchQuizTask(context, ref, liveLevel),
                     ),
                   ],
                 ),
@@ -214,60 +277,80 @@ class StationTasksSheet extends ConsumerWidget {
     );
   }
 
-  void _launchListenTask(BuildContext context, WidgetRef ref) {
-    // Close bottom sheet first to ensure clean transition
-    Navigator.pop(context); 
-    
-    // Navigate into custom Gameplay Screen!
+  // Updated helpers to explicitly accept GameLevel to avoid capturing stale widget instance fields
+  void _launchListenTask(
+    BuildContext context,
+    WidgetRef ref,
+    GameLevel liveLevel,
+  ) {
+    Navigator.pop(context);
     Navigator.push(
-      context, 
-      MaterialPageRoute(
-        builder: (_) => LevelGameplayScreen(level: level),
-      ),
+      context,
+      MaterialPageRoute(builder: (_) => LevelGameplayScreen(level: liveLevel)),
     );
   }
 
-  void _launchReadTask(BuildContext context, WidgetRef ref) {
+  void _launchReadTask(
+    BuildContext context,
+    WidgetRef ref,
+    GameLevel liveLevel,
+  ) {
     showDialog(
       context: context,
       builder: (context) => InteractiveReadDialog(
-        level: level,
+        level: liveLevel,
         onComplete: () {
-          ref.read(gamificationControllerProvider.notifier).completeSubTask(level.id, 'read');
+          ref
+              .read(gamificationControllerProvider.notifier)
+              .completeSubTask(liveLevel.id, 'read');
         },
       ),
     );
   }
 
-  void _launchWriteTask(BuildContext context, WidgetRef ref) {
-    Navigator.pop(context); // Close bottom sheet
+  void _launchWriteTask(
+    BuildContext context,
+    WidgetRef ref,
+    GameLevel liveLevel,
+  ) {
+    Navigator.pop(context);
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => WriteGameplayScreen(level: level),
-      ),
+      MaterialPageRoute(builder: (_) => WriteGameplayScreen(level: liveLevel)),
     );
   }
 
-  void _launchMemorizeTask(BuildContext context, WidgetRef ref) {
+  void _launchMemorizeTask(
+    BuildContext context,
+    WidgetRef ref,
+    GameLevel liveLevel,
+  ) {
     showDialog(
       context: context,
       builder: (context) => InteractiveMemorizeDialog(
-        level: level,
+        level: liveLevel,
         onComplete: () {
-          ref.read(gamificationControllerProvider.notifier).completeSubTask(level.id, 'memorize');
+          ref
+              .read(gamificationControllerProvider.notifier)
+              .completeSubTask(liveLevel.id, 'memorize');
         },
       ),
     );
   }
 
-  void _launchQuizTask(BuildContext context, WidgetRef ref) {
+  void _launchQuizTask(
+    BuildContext context,
+    WidgetRef ref,
+    GameLevel liveLevel,
+  ) {
     showDialog(
       context: context,
       builder: (context) => InteractiveQuizDialog(
-        level: level,
+        level: liveLevel,
         onComplete: (combo) {
-          ref.read(gamificationControllerProvider.notifier).completeSubTask(level.id, 'quiz', quizCombo: combo);
+          ref
+              .read(gamificationControllerProvider.notifier)
+              .completeSubTask(liveLevel.id, 'quiz', quizCombo: combo);
         },
       ),
     );
@@ -275,8 +358,10 @@ class StationTasksSheet extends ConsumerWidget {
 
   Widget _buildHeartsRow(WidgetRef ref) {
     final asyncState = ref.watch(gamificationControllerProvider);
-    final userHearts = asyncState.valueOrNull?.userProfile.hearts ?? 5; // defaults 5 max if null
-    
+    final userHearts =
+        asyncState.valueOrNull?.userProfile.hearts ??
+        5; // defaults 5 max if null
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -295,18 +380,15 @@ class StationTasksSheet extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 4),
-          const Icon(
-            Icons.favorite_rounded,
-            color: Colors.redAccent,
-            size: 18,
-          ).animate(onPlay: (controller) => controller.repeat(reverse: true)).scale(
-            begin: const Offset(1, 1),
-            end: const Offset(1.1, 1.1),
-            duration: const Duration(milliseconds: 1500),
-          ),
+          const Icon(Icons.favorite_rounded, color: Colors.redAccent, size: 18)
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .scale(
+                begin: const Offset(1, 1),
+                end: const Offset(1.1, 1.1),
+                duration: const Duration(milliseconds: 1500),
+              ),
         ],
       ),
     );
   }
 }
-
