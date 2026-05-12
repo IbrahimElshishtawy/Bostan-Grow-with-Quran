@@ -353,6 +353,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                       if (text == null || ayahNum == null) return;
                       _copyAyahText(ayahNum, text);
                     },
+                    onSave: _saveCurrentPosition,
                   );
                 },
               ),

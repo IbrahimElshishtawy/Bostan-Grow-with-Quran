@@ -106,32 +106,21 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   }
 
   void _saveCurrentIfAny() {
-    final i = _currentAyahIdx0;
-    if (i != null) _pos.save(widget.surahNumber, i);
+    // Auto-saving explicitly disabled by user request to only save manually.
   }
 
-  void _onAyahTap(int index0) async {
+  void _onAyahTap(int index0) {
     setState(() {
       _currentAyahIdx0 = index0;
-      _savedAyahIndex = index0; // Reflect visually instantly
-      _justSaved = true;
-    });
-    await _pos.save(widget.surahNumber, index0);
-
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _justSaved = false);
     });
 
     if (index0 >= 0 && index0 < widget.ayat.length) {
       final aya = widget.ayat[index0];
       widget.onAyahTap(aya.numberInSurah, aya);
     }
-
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('saved ${widget.surahNumber}:${widget.ayat[index0].numberInSurah}');
-    }
   }
+
+
 
   void _onAyahLongPress(int index0) {
     if (index0 < 0 || index0 >= widget.ayat.length) return;
@@ -152,6 +141,10 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   void forceRefreshBookmark(int? index) {
     setState(() {
       _savedAyahIndex = index;
+      _justSaved = true;
+    });
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _justSaved = false);
     });
   }
 
