@@ -178,7 +178,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                         child: PageRichBlock(
                           ayat: widget.ayat,
                           range: r,
-                          showBasmala: widget.showBasmala && pageIndex == 0,
+                          showBasmala: widget.showBasmala && pageIndex == 0 && widget.surahNumber > 1,
                           basmalaText: widget.basmalaText,
                           currentAyahIndex: _currentAyahIdx0,
                           onTapIndex: _onAyahTap,

@@ -74,11 +74,25 @@ class Ayah {
   final String audioUrl;
 
   factory Ayah.fromJson(Map<String, dynamic> json) {
+    String text = json['text'] as String? ?? '';
+    final int surahNum = json['surah']?['number'] as int? ?? 0;
+    final int ayahNum = json['numberInSurah'] as int? ?? 0;
+
+    // 🌟 INTELLIGENT BISMILLAH STRIPPER 🌟
+    // Only strip if it's the first ayah, NOT in Surah Al-Fatihah (1),
+    // and actually contains the prefix.
+    if (surahNum > 1 && ayahNum == 1) {
+      const String bismillahPrefix = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ";
+      if (text.startsWith(bismillahPrefix)) {
+        text = text.replaceFirst(bismillahPrefix, '').trim();
+      }
+    }
+
     return Ayah(
       number: json['number'] as int? ?? 0,
-      text: json['text'] as String? ?? '',
-      surahNumber: json['surah']?['number'] as int? ?? 0,
-      ayahNumber: json['numberInSurah'] as int? ?? 0,
+      text: text,
+      surahNumber: surahNum,
+      ayahNumber: ayahNum,
       translation: json['translation']?['text'] as String? ?? '',
       tafsir: json['tafsir']?['text'] as String? ?? '',
       audioUrl: json['audio'] as String? ?? '',

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:quranglow/features/gamification/application/gamification_controller.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
@@ -21,7 +20,7 @@ class GameificationHeader extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Helper to simulate video ad inside the header context
-    Future<void> _watchAdForRefill() async {
+    Future<void> watchAdForRefill() async {
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -35,11 +34,19 @@ class GameificationHeader extends ConsumerWidget {
                 children: [
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 24),
-                  const Icon(Icons.video_stable_rounded, size: 50, color: Colors.blueAccent),
+                  const Icon(
+                    Icons.video_stable_rounded,
+                    size: 50,
+                    color: Colors.blueAccent,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'مشاهدة فيديو لاستعادة القلوب...',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -58,7 +65,9 @@ class GameificationHeader extends ConsumerWidget {
 
       if (context.mounted) {
         Navigator.pop(context); // Close overlay
-        final ok = await ref.read(gamificationControllerProvider.notifier).grantRewardAdHearts();
+        final ok = await ref
+            .read(gamificationControllerProvider.notifier)
+            .grantRewardAdHearts();
         if (ok && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -107,21 +116,26 @@ class GameificationHeader extends ConsumerWidget {
                           color: Colors.white,
                           size: 24,
                         ),
-                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
+                      ).animate().scale(
+                        duration: 300.ms,
+                        curve: Curves.easeOutBack,
+                      ),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Level ${userProfile.currentLevel}',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: GameificationColors.primaryGreenDark,
                                 ),
                           ),
                           Text(
                             '${userProfile.totalXp} XP',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
                                   color: GameificationColors.goldDark,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -136,7 +150,10 @@ class GameificationHeader extends ConsumerWidget {
                     children: [
                       // Coins Display
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
@@ -144,7 +161,11 @@ class GameificationHeader extends ConsumerWidget {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.monetization_on, color: Colors.amber, size: 18),
+                            const Icon(
+                              Icons.monetization_on,
+                              color: Colors.amber,
+                              size: 18,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               '${userProfile.coins}',
@@ -163,18 +184,23 @@ class GameificationHeader extends ConsumerWidget {
                       GestureDetector(
                         onTap: () async {
                           if (userProfile.hearts < 5) {
-                            _watchAdForRefill();
+                            watchAdForRefill();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('القلوب ممتلئة بالفعل! لا داعي لمشاهدة الإعلان 💖'),
+                                content: Text(
+                                  'القلوب ممتلئة بالفعل! لا داعي لمشاهدة الإعلان 💖',
+                                ),
                                 backgroundColor: Colors.grey,
                               ),
                             );
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(16),
@@ -183,10 +209,19 @@ class GameificationHeader extends ConsumerWidget {
                           child: Row(
                             children: [
                               Icon(
-                                userProfile.hearts > 0 ? Icons.favorite : Icons.favorite_border,
-                                color: Colors.red,
-                                size: 18,
-                              ).animate(target: userProfile.hearts < 3 ? 1 : 0).scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1)),
+                                    userProfile.hearts > 0
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: Colors.red,
+                                    size: 18,
+                                  )
+                                  .animate(
+                                    target: userProfile.hearts < 3 ? 1 : 0,
+                                  )
+                                  .scale(
+                                    begin: const Offset(1, 1),
+                                    end: const Offset(1.1, 1.1),
+                                  ),
                               const SizedBox(width: 4),
                               Text(
                                 '${userProfile.hearts}',
@@ -198,8 +233,12 @@ class GameificationHeader extends ConsumerWidget {
                               ),
                               if (userProfile.hearts < 5) ...[
                                 const SizedBox(width: 4),
-                                const Icon(Icons.add_circle, color: Colors.red, size: 14),
-                              ]
+                                const Icon(
+                                  Icons.add_circle,
+                                  color: Colors.red,
+                                  size: 14,
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -220,16 +259,16 @@ class GameificationHeader extends ConsumerWidget {
                       Text(
                         'Progress to Level ${userProfile.currentLevel + 1}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[600],
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
                       ),
                       Text(
                         '${(userProfile.levelProgress * 100).toStringAsFixed(0)}%',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: GameificationColors.goldAccent,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: GameificationColors.goldAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -273,7 +312,9 @@ class GameificationHeader extends ConsumerWidget {
                           if (context.mounted && ok) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('تم شراء درع حماية الحماس بنجاح! 🛡️'),
+                                content: Text(
+                                  'تم شراء درع حماية الحماس بنجاح! 🛡️',
+                                ),
                                 backgroundColor: Colors.teal,
                               ),
                             );
@@ -281,7 +322,9 @@ class GameificationHeader extends ConsumerWidget {
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('لا تملك قطع نقدية كافية (تحتاج 150)! 🪙'),
+                              content: Text(
+                                'لا تملك قطع نقدية كافية (تحتاج 150)! 🪙',
+                              ),
                               backgroundColor: Colors.redAccent,
                             ),
                           );
@@ -312,12 +355,21 @@ class GameificationHeader extends ConsumerWidget {
 
               // 4. Motivational quote
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: GameificationColors.primaryGreen.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(GameificationColors.radiusMedium),
+                  color: GameificationColors.primaryGreen.withValues(
+                    alpha: 0.08,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    GameificationColors.radiusMedium,
+                  ),
                   border: Border.all(
-                    color: GameificationColors.primaryGreen.withValues(alpha: 0.2),
+                    color: GameificationColors.primaryGreen.withValues(
+                      alpha: 0.2,
+                    ),
                   ),
                 ),
                 child: Row(
@@ -332,10 +384,10 @@ class GameificationHeader extends ConsumerWidget {
                       child: Text(
                         _getMotivationalQuote(),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: GameificationColors.primaryGreen,
-                              fontStyle: FontStyle.italic,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: GameificationColors.primaryGreen,
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.bold,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -393,11 +445,9 @@ class _StatCard extends StatelessWidget {
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 6,
             offset: const Offset(0, 3),
-          )
+          ),
         ],
-        border: Border.all(
-          color: Colors.grey[100]!,
-        ),
+        border: Border.all(color: Colors.grey[100]!),
       ),
       child: Column(
         children: [
