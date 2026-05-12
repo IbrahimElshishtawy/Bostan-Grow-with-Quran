@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quranglow/features/gamification/application/gamification_controller.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
@@ -18,6 +19,56 @@ class GameificationHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Helper to simulate video ad inside the header context
+    Future<void> _watchAdForRefill() async {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog.fullscreen(
+            backgroundColor: Colors.black87,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 24),
+                  const Icon(Icons.video_stable_rounded, size: 50, color: Colors.blueAccent),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'مشاهدة فيديو لاستعادة القلوب...',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'سيتم منح المكافأة فور اكتمال المشاهدة',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Fake play delay
+      await Future.delayed(const Duration(milliseconds: 2500));
+
+      if (context.mounted) {
+        Navigator.pop(context); // Close overlay
+        final ok = await ref.read(gamificationControllerProvider.notifier).grantRewardAdHearts();
+        if (ok && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم منحك قلوب مجانية بمشاهدة الإعلان! 💖🎉'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -112,26 +163,14 @@ class GameificationHeader extends ConsumerWidget {
                       GestureDetector(
                         onTap: () async {
                           if (userProfile.hearts < 5) {
-                            if (userProfile.coins >= 50) {
-                              final success = await ref
-                                  .read(gamificationControllerProvider.notifier)
-                                  .buyHeart();
-                              if (context.mounted && success) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('تمت استعادة قلب جديد بنجاح! 💖'),
-                                    backgroundColor: GameificationColors.primaryGreen,
-                                  ),
-                                );
-                              }
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('لا توجد قطع نقدية كافية (تحتاج 50 قطعة)! 🪙'),
-                                  backgroundColor: Colors.redAccent,
-                                ),
-                              );
-                            }
+                            _watchAdForRefill();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('القلوب ممتلئة بالفعل! لا داعي لمشاهدة الإعلان 💖'),
+                                backgroundColor: Colors.grey,
+                              ),
+                            );
                           }
                         },
                         child: Container(

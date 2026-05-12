@@ -175,15 +175,35 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
       await _ayahPreviewPlayer.setUrl(url);
       await _ayahPreviewPlayer.play();
+      
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('يتم تشغيل الآية $ayahNumber')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('يتم تشغيل الآية $ayahNumber'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } on PlayerInterruptedException {
+      // 🤫 User tapped another Ayah before the previous one finished loading!
+      // This is perfectly expected, so we stay completely silent.
+      debugPrint('Audio loading was interrupted by user action (swapping tracks).');
+    } on PlayerException catch (e) {
+      // A real just_audio error (network fail, source not found etc.)
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('حدث خطأ في مشغل الصوت: ${e.message}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('تعذر تشغيل الآية: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذر تشغيل الآية: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 

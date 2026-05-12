@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,6 +40,12 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
 
   final GameificationRepository repository;
   final String userId;
+  
+  Timer? _heartRegenTicker;
+
+  // Heart settings!
+  static const int _maxHearts = 5;
+  static const Duration _regenInterval = Duration(minutes: 15); // User gets a heart every 15 minutes!
 
   Future<void> initialize() async {
     try {
@@ -70,9 +77,77 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       );
 
       state = AsyncValue.data(gameState);
+      
+      // Catch up and start heartbeat ticker
+      await _processHeartsRegeneration();
+      _startHeartsTicker();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
+  }
+
+  void _startHeartsTicker() {
+    _heartRegenTicker?.cancel();
+    _heartRegenTicker = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _processHeartsRegeneration();
+    });
+  }
+
+  Future<void> _processHeartsRegeneration() async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    final profile = currentState.userProfile;
+    
+    // Case 1: Already capped? Clear timer reference if lingering.
+    if (profile.hearts >= _maxHearts) {
+      if (profile.nextHeartRegenTime != null) {
+        final updated = profile.copyWith(nextHeartRegenTime: null);
+        await repository.setUserProfile(userId, updated);
+        state = AsyncValue.data(currentState.copyWith(userProfile: updated));
+      }
+      return;
+    }
+
+    // Case 2: Under cap but no timer anchor? Initialize it immediately!
+    if (profile.nextHeartRegenTime == null) {
+      final updated = profile.copyWith(
+        nextHeartRegenTime: DateTime.now().add(_regenInterval),
+      );
+      await repository.setUserProfile(userId, updated);
+      state = AsyncValue.data(currentState.copyWith(userProfile: updated));
+      return;
+    }
+
+    // Case 3: Evaluate elapsed time against anchor.
+    final now = DateTime.now();
+    if (now.isAfter(profile.nextHeartRegenTime!)) {
+      // Time crossed threshold! Calculate total accumulated hearts while away
+      int heartsRecovered = 1;
+      DateTime newRegenTarget = profile.nextHeartRegenTime!.add(_regenInterval);
+      
+      while (now.isAfter(newRegenTarget) && (profile.hearts + heartsRecovered) < _maxHearts) {
+        heartsRecovered++;
+        newRegenTarget = newRegenTarget.add(_regenInterval);
+      }
+      
+      final finalHearts = math.min(_maxHearts, profile.hearts + heartsRecovered);
+      final finalTime = finalHearts >= _maxHearts ? null : newRegenTarget;
+      
+      final updated = profile.copyWith(
+        hearts: finalHearts,
+        nextHeartRegenTime: finalTime,
+      );
+      
+      await repository.setUserProfile(userId, updated);
+      state = AsyncValue.data(currentState.copyWith(userProfile: updated));
+    }
+  }
+
+  @override
+  void dispose() {
+    _heartRegenTicker?.cancel();
+    super.dispose();
   }
 
   Future<void> reload() async {
@@ -166,9 +241,6 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         PremiumFeedbackService.grandCelebration();
       }
 
-      // Update level progress locally
-      await repository.updateLevelProgress(userId, levelId, updatedLevel);
-
       // Update player profile
       var updatedProfile = currentState.userProfile.copyWith(
         totalXp: currentState.userProfile.totalXp + xpGained,
@@ -206,7 +278,6 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       }
 
       updatedProfile = updatedProfile.copyWith(achievements: updatedAchievements);
-      await repository.setUserProfile(userId, updatedProfile);
 
       // Unlock next level in sequence
       final List<GameLevel> updatedLevels = [...currentState.levels];
@@ -216,7 +287,6 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         final nextLevel = updatedLevels[levelIndex + 1];
         if (!nextLevel.isUnlocked) {
           final unlockedNext = nextLevel.copyWith(isUnlocked: true);
-          await repository.updateLevelProgress(userId, nextLevel.id, unlockedNext);
           updatedLevels[levelIndex + 1] = unlockedNext;
         }
       }
@@ -239,9 +309,10 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         );
       }).toList();
 
-      await repository.saveDailyMissions(userId, updatedMissions);
-      await repository.updateStreak(userId);
-
+      // ---------------------------------------------------------
+      // 🌟 PERFORMANCE OPTIMIZATION: OPTIMISTIC UI UPDATE! 🌟
+      // We push the state to UI immediately so it feels instantaneous (0ms lag)
+      // ---------------------------------------------------------
       state = AsyncValue.data(GameState(
         userProfile: updatedProfile,
         levels: updatedLevels,
@@ -249,6 +320,31 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         error: null,
         dailyMissions: updatedMissions,
       ));
+
+      // ---------------------------------------------------------
+      // 💾 BACKGROUND PERSISTENCE: SAVE ALL CHANGES IN PARALLEL
+      // Fire the async writes in the background without blocking the UI response.
+      // ---------------------------------------------------------
+      final List<Future<dynamic>> persistTasks = [
+        repository.updateLevelProgress(userId, levelId, updatedLevel),
+        repository.setUserProfile(userId, updatedProfile),
+        repository.saveDailyMissions(userId, updatedMissions),
+        repository.updateStreak(userId),
+      ];
+
+      if (justCompletedFullStation && levelIndex + 1 < updatedLevels.length) {
+        final nextLvl = updatedLevels[levelIndex + 1];
+        if (nextLvl.isUnlocked) {
+          // We must have just unlocked it in code above!
+          persistTasks.add(repository.updateLevelProgress(userId, nextLvl.id, nextLvl));
+        }
+      }
+
+      // Execute all saved operations concurrently behind the scenes
+      Future.wait(persistTasks).catchError((e, st) {
+        // Soft background log, doesn't kill UI fluidity.
+        return [];
+      });
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -273,11 +369,14 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         chestsClaimed: updatedChests,
       );
 
-      await repository.setUserProfile(userId, updatedProfile);
-      
+      // Instant visual response
       state = AsyncValue.data(currentState.copyWith(
         userProfile: updatedProfile,
       ));
+
+      // Fire and forget background persist
+      repository.setUserProfile(userId, updatedProfile).catchError((_) {});
+      
       return true;
     } catch (_) {
       return false;
@@ -344,12 +443,13 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
     }
   }
 
-  /// Purchase 1 heart for 50 coins
-  Future<bool> buyHeart() async {
+  /// Grants 3 bonus hearts from a Rewarded Ad
+  Future<bool> grantRewardAdHearts() async {
     final currentState = state.valueOrNull;
     if (currentState == null) return false;
 
-    if (currentState.userProfile.hearts >= 5 || currentState.userProfile.coins < 50) {
+    // If already at max, block
+    if (currentState.userProfile.hearts >= _maxHearts) {
       PremiumFeedbackService.errorAlert();
       return false;
     }
@@ -357,16 +457,25 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
     try {
       PremiumFeedbackService.successBeep();
 
+      final int oldHearts = currentState.userProfile.hearts;
+      final int newHearts = math.min(_maxHearts, oldHearts + 3); // Grants 3 hearts for one ad!
+
       final updatedProfile = currentState.userProfile.copyWith(
-        hearts: currentState.userProfile.hearts + 1,
-        coins: currentState.userProfile.coins - 50,
+        hearts: newHearts,
+        // If it hit the cap, clear regen time, otherwise keep it
+        nextHeartRegenTime: newHearts >= _maxHearts 
+            ? null 
+            : currentState.userProfile.nextHeartRegenTime,
       );
 
-      await repository.setUserProfile(userId, updatedProfile);
-      
+      // Instant response
       state = AsyncValue.data(currentState.copyWith(
         userProfile: updatedProfile,
       ));
+
+      // Background save
+      repository.setUserProfile(userId, updatedProfile).catchError((_) {});
+      
       return true;
     } catch (e) {
       return false;
@@ -380,16 +489,28 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
 
     try {
       PremiumFeedbackService.errorAlert();
+      final int oldHearts = currentState.userProfile.hearts;
+      final int newHearts = math.max(0, oldHearts - 1);
+      
+      DateTime? regenTime = currentState.userProfile.nextHeartRegenTime;
+      
+      // If dropping from full hearts, initialize regeneration countdown!
+      if (oldHearts >= _maxHearts && newHearts < _maxHearts) {
+        regenTime = DateTime.now().add(_regenInterval);
+      }
 
       final updatedProfile = currentState.userProfile.copyWith(
-        hearts: math.max(0, currentState.userProfile.hearts - 1),
+        hearts: newHearts,
+        nextHeartRegenTime: regenTime,
       );
 
-      await repository.setUserProfile(userId, updatedProfile);
-
+      // INSTANT visual updates for ultra-fast reaction on screen!
       state = AsyncValue.data(currentState.copyWith(
         userProfile: updatedProfile,
       ));
+
+      // Silently persist without freezing visual feedback loop
+      repository.setUserProfile(userId, updatedProfile).catchError((_) {});
     } catch (_) {}
   }
 

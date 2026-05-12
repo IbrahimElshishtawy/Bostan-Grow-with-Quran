@@ -6,6 +6,9 @@ import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/components/heart_timer_display.dart';
+import 'package:quranglow/features/gamification/application/gamification_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 
 class WriteGameplayScreen extends ConsumerStatefulWidget {
@@ -18,7 +21,6 @@ class WriteGameplayScreen extends ConsumerStatefulWidget {
 }
 
 class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
-  int _hearts = 3; // User has 3 in-game lives for the challenge
   int _currentAyahIndex = 0;
   List<Ayah> _ayahs = [];
   bool _isLoading = true;
@@ -35,15 +37,35 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
   }
 
   Future<void> _loadLevelData() async {
+    // Pre-check: Ensure user actually has hearts to begin with!
+    final initialHearts = ref.read(gamificationControllerProvider).valueOrNull?.userProfile.hearts ?? 0;
+    if (initialHearts <= 0) {
+      // Temporarily pause loading and show prompt
+      if (mounted) setState(() => _isLoading = true); // Keep spinning slightly while prompt is up
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showRefillPrompt());
+      return;
+    }
+
+    if (mounted) setState(() => _isLoading = true); // Ensure loader shows on restart
+
     try {
       final fetched = await ref.read(quranApiServiceProvider).getAyahRange(
         widget.level.surahId,
         widget.level.ayahStart,
         widget.level.ayahEnd,
       );
+
+      // ✨ RECALL PREVIOUS PROGRESS FROM LOCAL CACHE! ✨
+      final prefs = await SharedPreferences.getInstance();
+      final savedIdx = prefs.getInt('write_prog_${widget.level.id}') ?? 0;
+      
+      // Sanity cap the index just in case
+      final finalIdx = savedIdx >= fetched.length ? 0 : savedIdx;
+
       if (mounted) {
         setState(() {
           _ayahs = fetched;
+          _currentAyahIndex = finalIdx;
           _isLoading = false;
           _setupCurrentAyah();
         });
@@ -86,21 +108,25 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
     }
   }
 
-  void _deductHeart() {
-    setState(() {
-      _hearts--;
-    });
+  Future<void> _deductHeart() async {
+    final controller = ref.read(gamificationControllerProvider.notifier);
+    await controller.loseHeart();
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('خطأ! انتبه للكلمة التالية ❌', textAlign: TextAlign.center),
-        backgroundColor: Colors.redAccent,
-        duration: Duration(milliseconds: 600),
-      ),
-    );
-
-    if (_hearts <= 0) {
-      _showRefillPrompt();
+    if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('خطأ! انتبه للكلمة التالية ❌', textAlign: TextAlign.center),
+          backgroundColor: Colors.redAccent,
+          duration: Duration(milliseconds: 600),
+        ),
+      );
+      
+      // Verify live heart state post-deduction
+      final liveHearts = ref.read(gamificationControllerProvider).valueOrNull?.userProfile.hearts ?? 0;
+      if (liveHearts <= 0) {
+        _showRefillPrompt();
+      }
     }
   }
 
@@ -125,32 +151,111 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
             child: const Text('خروج'),
           ),
           ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(c);
-              setState(() {
-                _hearts = 3; // Simulate Ad reward instantly!
-              });
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            icon: const Icon(Icons.play_circle_fill_rounded, color: Colors.white),
-            label: const Text('مشاهدة إعلان لاستعادة المحاولات 🎁', style: TextStyle(color: Colors.white)),
+            onPressed: () => _simulateWatchAd(c),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[600],
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.play_circle_fill_rounded),
+            label: const Text(
+              'مشاهدة إعلان واستعادة المحاولات 🎁',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _advanceToNextAyah() {
+  /// 🎬 SIMULATED AD EXPERIENCE!
+  Future<void> _simulateWatchAd(BuildContext dialogContext) async {
+    // 1. Close the existing prompt dialog
+    Navigator.pop(dialogContext);
+
+    // 2. Show a cool 'Ad Player' simulation overlay!
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Force watch!
+        child: Dialog.fullscreen(
+          backgroundColor: Colors.black87,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(color: Colors.white),
+                const SizedBox(height: 24),
+                const Icon(Icons.movie_creation_rounded, size: 50, color: Colors.blueAccent),
+                const SizedBox(height: 16),
+                const Text(
+                  'جاري تشغيل الفيديو المكافيء...',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'استعادة المحاولات في غضون ثوانٍ معدودة',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // 3. Wait 2 seconds for realism!
+    await Future.delayed(const Duration(milliseconds: 2500));
+
+    // 4. Remove simulator and award hearts!
+    if (mounted) {
+      Navigator.pop(context); // Close Ad simulator
+      
+      final success = await ref.read(gamificationControllerProvider.notifier).grantRewardAdHearts();
+      
+      if (success && mounted) {
+        PremiumFeedbackService.grandCelebration();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تمت استعادة +3 محاولات بنجاح! 🎉', textAlign: TextAlign.center),
+            backgroundColor: Colors.green,
+          )
+        );
+
+        // ✨ Resume load cascade if were not loaded!
+        if (_ayahs.isEmpty) {
+          _loadLevelData();
+        }
+      }
+    }
+  }
+
+  Future<void> _advanceToNextAyah() async {
     if (_currentAyahIndex < _ayahs.length - 1) {
-      setState(() {
-        _currentAyahIndex++;
-        _setupCurrentAyah();
-      });
+      final nextIdx = _currentAyahIndex + 1;
+      
+      // ✨ PERSIST PROGRESS! ✨
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('write_prog_${widget.level.id}', nextIdx);
+      
+      if (mounted) {
+        setState(() {
+          _currentAyahIndex = nextIdx;
+          _setupCurrentAyah();
+        });
+      }
     } else {
       // COMPLETION!
-      setState(() {
-         _currentAyahIndex++; // flag complete
-      });
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('write_prog_${widget.level.id}'); // Wipe cache so they can replay
+      
+      if (mounted) {
+        setState(() {
+          _currentAyahIndex++; // flag complete
+        });
+      }
       ref.read(gamificationControllerProvider.notifier).completeSubTask(widget.level.id, 'write');
     }
   }
@@ -173,21 +278,26 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
           elevation: 0,
           iconTheme: IconThemeData(color: cs.onSurface),
           actions: [
-            // HEARTS ROW!
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.favorite_rounded, color: _hearts > 0 ? Colors.redAccent : Colors.grey[400], size: 18),
-                  const SizedBox(width: 4),
-                  Text('$_hearts', style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                ],
-              ),
+            // GLORIOUS REAL-TIME HEART COUNTER FROM GAME ENGINE!
+            Consumer(
+              builder: (context, ref, _) {
+                final state = ref.watch(gamificationControllerProvider);
+                final profile = state.valueOrNull?.userProfile;
+                if (profile == null) return const SizedBox();
+                
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: HeartTimerDisplay(
+                    profile: profile,
+                    fontSize: 14,
+                  ),
+                );
+              },
             ),
           ],
         ),

@@ -8,6 +8,7 @@ import 'package:quranglow/features/gamification/presentation/theme/gamification_
 import 'package:quranglow/features/gamification/presentation/widgets/components/task_tile.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/memorize_dialog.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/quiz_dialog.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/components/heart_timer_display.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/read_dialog.dart';
 
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/level_gameplay_screen.dart';
@@ -358,36 +359,20 @@ class _StationTasksSheetState extends ConsumerState<StationTasksSheet> {
 
   Widget _buildHeartsRow(WidgetRef ref) {
     final asyncState = ref.watch(gamificationControllerProvider);
-    final userHearts =
-        asyncState.valueOrNull?.userProfile.hearts ??
-        5; // defaults 5 max if null
+    final profile = asyncState.valueOrNull?.userProfile;
+    
+    if (profile == null) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.red.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.red.withValues(alpha: 0.1)),
       ),
-      child: Row(
-        children: [
-          Text(
-            '$userHearts',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.redAccent,
-            ),
-          ),
-          const SizedBox(width: 4),
-          const Icon(Icons.favorite_rounded, color: Colors.redAccent, size: 18)
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .scale(
-                begin: const Offset(1, 1),
-                end: const Offset(1.1, 1.1),
-                duration: const Duration(milliseconds: 1500),
-              ),
-        ],
+      child: HeartTimerDisplay(
+        profile: profile,
+        fontSize: 13,
       ),
     );
   }
