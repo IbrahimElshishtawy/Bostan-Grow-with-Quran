@@ -10,6 +10,7 @@ import 'package:quranglow/features/gamification/presentation/widgets/modern_home
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/game_level_node.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/station_section_header.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/goal_selector_sheet.dart';
+import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
 class ModernHomeScreen extends ConsumerStatefulWidget {
   const ModernHomeScreen({super.key});
@@ -145,8 +146,13 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     final gameStateAsync = ref.watch(gamificationControllerProvider);
 
     return gameStateAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => Scaffold(
+        body: ListView.builder(
+          padding: const EdgeInsets.only(top: 60),
+          itemCount: 3,
+          itemBuilder: (_, __) => const PremiumSkeletonCard(),
+        ),
+      ),
       error: (error, stackTrace) =>
           Scaffold(body: Center(child: Text('Error: $error'))),
       data: (gameState) {

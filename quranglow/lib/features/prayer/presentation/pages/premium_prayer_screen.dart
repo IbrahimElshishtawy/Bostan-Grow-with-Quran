@@ -14,6 +14,7 @@ import 'package:quranglow/features/prayer/presentation/widgets/prayer_countdown.
 import 'package:quranglow/features/prayer/presentation/widgets/premium_prayer_card.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/qibla_compass.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/streak_reward_card.dart';
+import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
 class PremiumPrayerScreen extends ConsumerWidget {
   const PremiumPrayerScreen({super.key});
@@ -88,10 +89,9 @@ class PremiumPrayerScreen extends ConsumerWidget {
             );
           },
           error: (error, stackTrace) => _buildLocationError(context),
-          loading: () => const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(Colors.tealAccent),
-            ),
+          loading: () => const Padding(
+            padding: EdgeInsets.only(top: 100),
+            child: PremiumSkeletonCard(),
           ),
         ),
       ),
