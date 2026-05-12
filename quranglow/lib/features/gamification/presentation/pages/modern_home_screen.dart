@@ -150,7 +150,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         body: ListView.builder(
           padding: const EdgeInsets.only(top: 60),
           itemCount: 3,
-          itemBuilder: (_, __) => const PremiumSkeletonCard(),
+          itemBuilder: (_, _) => const PremiumSkeletonCard(),
         ),
       ),
       error: (error, stackTrace) =>

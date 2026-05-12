@@ -95,7 +95,6 @@ class MushafSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF9F9F9);
     final barColor = isDark ? const Color(0xFF2A2A2A) : Colors.grey[300]!;
 
     return ShimmerLoading(
@@ -114,10 +113,8 @@ class MushafSkeleton extends StatelessWidget {
               child: ListView.separated(
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: 12,
-                separatorBuilder: (_, __) => const SizedBox(height: 20),
+                separatorBuilder: (_, _) => const SizedBox(height: 20),
                 itemBuilder: (_, index) {
-                  // Vary row lengths like real verses
-                  final widthFactor = index % 4 == 3 ? 0.7 : 1.0;
                   // Simulate real scattered Quran words using a Wrap instead of a single bar!
                   return Wrap(
                     alignment: WrapAlignment.center,
@@ -288,8 +285,8 @@ class SurahListSkeleton extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         itemCount: 6,
         physics: const NeverScrollableScrollPhysics(),
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => Container(
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (_, _) => Container(
           height: 88,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(

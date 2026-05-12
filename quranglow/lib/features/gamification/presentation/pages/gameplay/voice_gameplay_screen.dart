@@ -7,7 +7,6 @@ import 'package:quranglow/core/models/quran_models.dart';
 import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
-import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
 import 'package:quranglow/core/widgets/loading_widget.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/components/heart_timer_display.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,7 +33,6 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
   // Validation State
   List<String> _targetWords = [];
   List<WordStatus> _wordStatuses = [];
-  int _currentWordTargetIndex = 0;
 
   @override
   void initState() {
@@ -45,13 +43,23 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
 
   Future<void> _initSpeech() async {
     try {
-      _speechEnabled = await _speechToText.initialize(
+      // Using dynamic catch to capture both dart and platform side MissingPluginException silently
+      final initialized = await _speechToText.initialize(
         onError: (e) => debugPrint('Speech Error: $e'),
         onStatus: (s) => debugPrint('Speech Status: $s'),
       );
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {
+          _speechEnabled = initialized;
+        });
+      }
     } catch (e) {
-      debugPrint('STT Init Error: $e');
+      debugPrint('STT Init gracefully caught error: $e');
+      if (mounted) {
+        setState(() {
+          _speechEnabled = false;
+        });
+      }
     }
   }
 
@@ -87,7 +95,6 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
     final String fullText = _ayahs[_currentAyahIndex].text.replaceAll(RegExp(r'\s+'), ' ').trim();
     _targetWords = fullText.split(' ');
     _wordStatuses = List.generate(_targetWords.length, (_) => WordStatus.pending);
-    _currentWordTargetIndex = 0;
     _wordsSpoken = "";
   }
 
@@ -118,43 +125,71 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
   void _onSpeechResult(SpeechRecognitionResult result) {
     setState(() {
       _wordsSpoken = result.recognizedWords;
-      _processIncomingSpeech(_wordsSpoken);
     });
+
+    if (result.finalResult) {
+      _processFinalSpeech(_wordsSpoken);
+    }
   }
 
-  void _processIncomingSpeech(String rawText) {
+  void _processFinalSpeech(String rawText) {
     if (rawText.isEmpty) return;
 
-    final spokenSegments = rawText.trim().split(' ');
-    // Take only the last few elements to prevent overlap re-checking?
-    // Actually, check total matches linearly!
+    final normalizedSpokenText = _normalizeArabic(rawText);
+    final spokenWords = normalizedSpokenText.split(' ').where((w) => w.isNotEmpty).toList();
     
-    final normalizedText = _normalizeArabic(rawText);
-    final spokenWords = normalizedText.split(' ').where((w) => w.isNotEmpty).toList();
-
-    // Dynamic progressive detection
-    for (var sWord in spokenWords) {
-      if (_currentWordTargetIndex >= _targetWords.length) break;
-
-      final targetNormalized = _normalizeArabic(_targetWords[_currentWordTargetIndex]);
+    setState(() {
+      _isListening = false; // Automatically stop indicator
       
-      // Similarity Check
-      if (sWord == targetNormalized || targetNormalized.contains(sWord) || sWord.contains(targetNormalized)) {
-        setState(() {
-          _wordStatuses[_currentWordTargetIndex] = WordStatus.correct;
-          _currentWordTargetIndex++;
-        });
-      } else {
-        // User said something that doesn't match next word?
-        // Only mark incorrect if user finished total phrase or pauses?
-        // Let's optionally mark NEXT word wrong if failure rate high.
-        // User requested: "الغلط يتعمل عليه احمر" -> We mark current attempt's targeted word incorrect if no match after final results!
-      }
-    }
+      // 🎯 Global Match Logic:
+      int correctCount = 0;
+      
+      for (int i = 0; i < _targetWords.length; i++) {
+        final target = _normalizeArabic(_targetWords[i]);
+        if (target.isEmpty) continue;
 
-    if (_currentWordTargetIndex >= _targetWords.length) {
-      _onAyahCompleted();
-    }
+        bool matched = false;
+        
+        for (var s in spokenWords) {
+          // Exact or Contains Check first
+          if (s == target || target.contains(s) || s.contains(target)) {
+            matched = true;
+            break;
+          }
+          // Ultra-Relaxed Character Overlap (Fuzzy Matching):
+          if (_calculateCharacterOverlap(s, target) >= 0.6) {
+            matched = true;
+            break;
+          }
+        }
+        
+        if (matched) {
+          _wordStatuses[i] = WordStatus.correct;
+          correctCount++;
+        } else {
+          _wordStatuses[i] = WordStatus.incorrect;
+        }
+      }
+
+      // 🔥 Lowered to 65% threshold for extreme flexibility as requested!
+      final double successRatio = correctCount / _targetWords.length;
+      
+      if (successRatio >= 0.65) {
+        // Success!
+        for (int i = 0; i < _wordStatuses.length; i++) {
+          _wordStatuses[i] = WordStatus.correct;
+        }
+        _onAyahCompleted();
+      } else {
+        // Failure: Keep them highlighted red, clear current stream buffer and prompt retry.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('توجد بعض الأخطاء في القراءة، حاول مرة أخرى لتصحيح الكلمات الحمراء'),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+      }
+    });
   }
 
   void _onAyahCompleted() async {
@@ -208,17 +243,42 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
   // Normalize to plain Arabic for comparison
   String _normalizeArabic(String input) {
     return input
-        .replaceAll(RegExp(r'[\u0617-\u061A\u064B-\u0652]'), '') // Clear Tashkeel
+        .replaceAll(RegExp(r'[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED]'), '') // Clear Tashkeel AND Quranic Punctuation Marks
         .replaceAll(RegExp(r'[إأآ]'), 'ا')
         .replaceAll('ى', 'ي')
         .replaceAll('ة', 'ه')
+        .replaceAll(RegExp(r'[^\u0621-\u064A\s]'), '') // Remove ANY other non-letter symbol
         .trim()
+        .replaceAll(RegExp(r'\s+'), ' ')
         .toLowerCase();
+  }
+
+  // Super-relaxed logic: checks percentage of characters from target present in the spoken word
+  double _calculateCharacterOverlap(String s1, String s2) {
+    if (s1.isEmpty || s2.isEmpty) return 0.0;
+    
+    final chars1 = s1.split('');
+    final chars2 = s2.split('');
+    
+    int matchedCount = 0;
+    List<String> availableChars = List.from(chars2);
+
+    for (var char in chars1) {
+      if (availableChars.contains(char)) {
+        matchedCount++;
+        availableChars.remove(char); // Consume once
+      }
+    }
+
+    // Overlap ration relative to shortest word to ensure flexibility
+    final int minLen = chars1.length < chars2.length ? chars1.length : chars2.length;
+    if (minLen == 0) return 0.0;
+    
+    return matchedCount / minLen;
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_isLoading) return const Scaffold(body: LoadingWidget());
@@ -256,8 +316,26 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
 
               Expanded(
                 child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Container(
+                    margin: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _isListening ? Colors.blue : Colors.transparent, 
+                        width: 2
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _isListening 
+                            ? Colors.blue.withValues(alpha: 0.2) 
+                            : Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 20,
+                          spreadRadius: 2
+                        )
+                      ]
+                    ),
                     child: SingleChildScrollView(
                       child: Wrap(
                         spacing: 8,
@@ -265,9 +343,8 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
                         alignment: WrapAlignment.center,
                         children: List.generate(_targetWords.length, (i) {
                           final status = _wordStatuses[i];
-                          final isTarget = i == _currentWordTargetIndex;
 
-                          Color textColor = Colors.grey;
+                          Color textColor = isDark ? Colors.white70 : Colors.black87;
                           Color bgColor = Colors.transparent;
 
                           if (status == WordStatus.correct) {
@@ -276,21 +353,14 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
                           } else if (status == WordStatus.incorrect) {
                             textColor = Colors.red.shade700;
                             bgColor = Colors.red.shade50;
-                          } else if (isTarget) {
-                            textColor = Colors.blue.shade800;
-                            bgColor = Colors.blue.shade50;
-                          } else {
-                            textColor = isDark ? Colors.white70 : Colors.black87;
                           }
 
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: bgColor,
-                              borderRadius: BorderRadius.circular(8),
-                              border: isTarget ? Border.all(color: Colors.blue, width: 1.5) : null,
-                              boxShadow: isTarget ? [BoxShadow(color: Colors.blue.withValues(alpha: 0.2), blurRadius: 8)] : null,
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               _targetWords[i],
@@ -301,7 +371,7 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
                                 color: textColor,
                               ),
                             ),
-                          ).animate(target: isTarget ? 1 : 0).scale(duration: 300.ms, curve: Curves.easeOut);
+                          ).animate(target: status != WordStatus.pending ? 1 : 0).scale(duration: 300.ms, curve: Curves.easeOut);
                         }),
                       ),
                     ),

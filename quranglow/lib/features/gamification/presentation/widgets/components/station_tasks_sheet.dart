@@ -7,13 +7,12 @@ import 'package:quranglow/features/gamification/domain/models/gamification_model
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/components/task_tile.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/memorize_dialog.dart';
-import 'package:quranglow/features/gamification/presentation/widgets/dialogs/quiz_dialog.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/components/heart_timer_display.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/read_dialog.dart';
+import 'package:quranglow/features/gamification/presentation/pages/gameplay/voice_gameplay_screen.dart';
 
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/level_gameplay_screen.dart';
 import 'package:quranglow/features/gamification/presentation/pages/gameplay/write_gameplay_screen.dart';
-import 'package:quranglow/features/gamification/presentation/pages/gameplay/voice_gameplay_screen.dart';
 
 import 'package:quranglow/core/di/providers.dart'; // For alQuranProvider & settings
 
