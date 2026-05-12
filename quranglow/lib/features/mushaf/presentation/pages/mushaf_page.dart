@@ -344,6 +344,14 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 onNext: _chapter < 114 ? _goNext : null,
                 onSave: _saveCurrentPosition,
                 onTafsir: () => _openTafsirForAyah(_lastAyahNumber ?? 1),
+                onVoiceRecite: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('جاري تجهيز ميزة التسميع الصوتي لهذه الصفحة قريباً! 🎙️'),
+                      backgroundColor: Colors.indigo,
+                    ),
+                  );
+                },
               ),
               StreamBuilder<bool>(
                 stream: _ayahPreviewPlayer.playingStream,

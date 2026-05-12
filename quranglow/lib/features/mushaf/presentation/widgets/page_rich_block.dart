@@ -27,6 +27,7 @@ class PageRichBlock extends ConsumerStatefulWidget {
     required this.onLongPressIndex,
     this.onBackgroundTap,
     this.ayahNumberColor,
+    this.surahName,
   });
 
   final List<Aya> ayat;
@@ -38,6 +39,7 @@ class PageRichBlock extends ConsumerStatefulWidget {
   final void Function(int index) onLongPressIndex;
   final VoidCallback? onBackgroundTap;
   final Color? ayahNumberColor;
+  final String? surahName;
 
   @override
   ConsumerState<PageRichBlock> createState() => _PageRichBlockState();
@@ -138,6 +140,60 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (widget.surahName != null) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 24, top: 8),
+                      height: 80,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: const Color(0xFF3A5949),
+                        border: Border.all(
+                          color: const Color(0xFF2A4234),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Left Star
+                            _buildAuthenticStar(),
+                            const SizedBox(width: 16),
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 6, left: 8, right: 8), // Optical centering for Arabic
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    widget.surahName!,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: const Color(0xFFF1D486),
+                                      fontFamily: 'KFGQPC Uthmanic Script',
+                                      fontSize: 34 * fontScale,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Right Star
+                            _buildAuthenticStar(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   if (widget.showBasmala) ...[
                     Text(
                       widget.basmalaText,
@@ -215,6 +271,23 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
   int? _mapToLocal(int global, int start, int end) {
     if (global < start || global >= end) return null;
     return global - start;
+  }
+
+  Widget _buildAuthenticStar() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        const Icon(Icons.star_border, color: Color(0xFFF1D486), size: 28),
+        Container(
+          width: 5,
+          height: 5,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF1D486),
+            shape: BoxShape.circle,
+          ),
+        ),
+      ],
+    );
   }
 }
 

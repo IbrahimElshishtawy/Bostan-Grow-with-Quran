@@ -188,6 +188,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                           onBackgroundTap:
                               widget.onBackgroundTap, // Direct pass down
                           ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
+                          surahName: pageIndex == 0 ? widget.surahName : null,
                         ),
                       ),
 

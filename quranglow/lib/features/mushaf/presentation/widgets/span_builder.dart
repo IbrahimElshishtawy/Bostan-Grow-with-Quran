@@ -17,8 +17,9 @@ class AyahSpanBuilder {
   static final _selectedAyahColor = Colors.green.withValues(alpha: 0.16);
 
   TextStyle get _base => TextStyle(
-    fontSize: 20 * fontScale,
-    height: 1.9,
+    fontSize: 22 * fontScale,
+    height: 2.1,
+    fontFamily: 'KFGQPC Uthmanic Script',
     fontFamilyFallback: const ['Noto Naskh Arabic', 'Scheherazade'],
   );
 
@@ -75,6 +76,7 @@ class AyahSpanBuilder {
     Color? ayahNumberColor,
   }) {
     final txt = _toArabicDigits(ayahNumber);
+    
     return WidgetSpan(
       alignment: PlaceholderAlignment.middle,
       child: GestureDetector(
@@ -82,18 +84,55 @@ class AyahSpanBuilder {
         onTap: onTap,
         onLongPress: onLongPress,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 1),
-          child: Text(
-            '۝$txt',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.0,
-              color: ayahNumberColor,
-              backgroundColor: selected
-                  ? _selectedAyahColor
-                  : null,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // 🌟 8-POINTED ISLAMIC STAR LAYER 1 (BASE)
+              Transform.rotate(
+                angle: 0.785398, // 45 Degrees
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: selected ? Colors.green.shade100 : Colors.transparent,
+                    border: Border.all(
+                      color: ayahNumberColor ?? const Color(0xFFD4AF37),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              // 🌟 LAYER 2 (ROTATED)
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: selected ? Colors.green.shade100 : Colors.transparent,
+                  border: Border.all(
+                    color: ayahNumberColor ?? const Color(0xFFD4AF37),
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              // 📜 THE ARABIC NUMBER INSIDE!
+              Container(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  txt,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'KFGQPC Uthmanic Script',
+                    height: 1.0,
+                    color: ayahNumberColor ?? const Color(0xFF5D4037),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

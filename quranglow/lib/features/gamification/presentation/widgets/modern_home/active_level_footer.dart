@@ -23,11 +23,11 @@ class ActiveLevelFooter extends StatelessWidget {
         gradient: LinearGradient(
           colors: isDark
               ? [
-                  const Color(0xFF1A3225).withValues(alpha: 0.95),
-                  const Color(0xFF101D16).withValues(alpha: 0.95),
+                  const Color(0xFF1A3225),
+                  const Color(0xFF101D16),
                 ]
               : [
-                  Colors.white.withValues(alpha: 0.98),
+                  Colors.white,
                   const Color(0xFFF9FDF4),
                 ],
         ),
