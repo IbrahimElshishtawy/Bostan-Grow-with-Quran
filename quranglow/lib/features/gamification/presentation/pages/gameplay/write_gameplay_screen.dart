@@ -6,6 +6,7 @@ import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:quranglow/features/gamification/presentation/theme/gamification_colors.dart';
+import 'package:quranglow/core/widgets/loading_widget.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/components/heart_timer_display.dart';
 import 'package:quranglow/features/gamification/application/gamification_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -302,7 +303,7 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
           ],
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: GameificationColors.primaryGreen))
+            ? const Center(child: LoadingWidget(message: 'جاري تجهيز الآيات...'))
             : _error != null
                 ? Center(child: Text('خطأ: $_error'))
                 : isDone 

@@ -4,6 +4,7 @@ import 'package:quranglow/features/gamification/application/level_gameplay_contr
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:quranglow/core/widgets/loading_widget.dart';
 
 class LevelGameplayScreen extends ConsumerStatefulWidget {
   final GameLevel level;
@@ -88,7 +89,7 @@ class _LevelGameplayScreenState extends ConsumerState<LevelGameplayScreen> {
           ),
         ),
         body: state.isLoading
-            ? Center(child: CircularProgressIndicator(color: ayahAccent))
+            ? Center(child: LoadingWidget(message: 'جاري تجهيز محطة الاستماع...', color: ayahAccent))
             : state.error != null
                 ? Center(
                     child: Text(
