@@ -15,7 +15,7 @@ extension LocalStorageKV on LocalStorage {
       write(key, jsonEncode(value));
 
   Future<T?> getJson<T>(String key) async {
-    final raw = await getString(key);
+    final raw = await read<String>(key);
     if (raw == null) return null;
     try {
       final decoded = jsonDecode(raw);

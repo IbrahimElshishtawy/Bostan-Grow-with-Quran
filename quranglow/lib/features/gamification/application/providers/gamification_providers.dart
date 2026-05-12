@@ -28,7 +28,7 @@ final gamificationControllerProvider =
   return GameificationController(
     repository: repository,
     userId: userId,
-  )..initialize();
+  );
 });
 
 // User profile provider

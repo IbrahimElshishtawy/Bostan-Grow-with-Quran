@@ -63,7 +63,12 @@ class AppBootstrap {
 
     await _safeInit(
       'hive',
-      () => Hive.initFlutter(),
+      () async {
+        await Hive.initFlutter();
+        // ✨ HARDENED GLOBAL FIX: Ensure the core database box is fully pre-warmed at boot!
+        // This stops synchronous lookups like storage.getString from failing silently at startup.
+        await HiveStorageImpl().init();
+      },
       timeout: const Duration(seconds: 20),
     );
 

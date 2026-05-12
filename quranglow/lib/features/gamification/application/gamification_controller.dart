@@ -62,7 +62,7 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       
       final int dailyGoal = prefs.getInt('daily_reading_goal') ?? 10;
 
-      if (levels.isEmpty || levels.length < 200 || dataVersion < currentTargetVersion) {
+      if (levels.isEmpty || dataVersion < currentTargetVersion) {
         levels = _generateSpiritualJourneyStations(dailyGoal);
         await repository.initializeLevels(userId, levels);
         await prefs.setInt('quran_levels_data_version', currentTargetVersion);
