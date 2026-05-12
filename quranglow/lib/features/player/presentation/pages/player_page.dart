@@ -13,6 +13,7 @@ import 'package:quranglow/features/player/presentation/widgets/reader_row.dart';
 import 'package:quranglow/features/player/presentation/widgets/track_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/transport_controls.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
+import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
 class PlayerPage extends ConsumerStatefulWidget {
   const PlayerPage({super.key});
@@ -245,11 +246,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                 ),
                 const SizedBox(height: 14),
                 ctrl.when(
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: CircularProgressIndicator(),
-                    ),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: PremiumSkeletonCard(),
                   ),
                   error: (e, st) => Card(
                     color: cs.errorContainer,

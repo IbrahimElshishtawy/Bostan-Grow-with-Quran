@@ -14,6 +14,7 @@ import 'package:quranglow/features/mushaf/presentation/widgets/position_store.da
 import 'package:quranglow/features/mushaf/presentation/widgets/selected_ayah_panel.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_args.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
+import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
 final surahProvider = FutureProvider.autoDispose
     .family<Surah, (int chapter, String editionId)>((ref, args) async {
@@ -284,7 +285,12 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 ),
               ),
               asyncSurah.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: PremiumSkeletonCard(),
+                  ),
+                ),
                 error: (e, _) => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),

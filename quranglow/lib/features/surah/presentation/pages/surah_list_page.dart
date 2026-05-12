@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quranglow/core/data/surah_names_ar.dart';
 import 'package:quranglow/features/mushaf/presentation/pages/mushaf_page.dart';
+import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
 class SurahListPage extends StatefulWidget {
   const SurahListPage({super.key});
@@ -11,6 +12,7 @@ class SurahListPage extends StatefulWidget {
 
 class _SurahListPageState extends State<SurahListPage> {
   bool _isSearching = false;
+  bool _isLoading = true; // Show skeleton loader initially!
   final TextEditingController _searchController = TextEditingController();
   List<int> _filteredIndices = [];
 
@@ -19,6 +21,15 @@ class _SurahListPageState extends State<SurahListPage> {
     super.initState();
     // Initialize with all indices
     _filteredIndices = List.generate(kSurahNamesAr.length, (i) => i);
+    
+    // Artificial delay so user sees the gorgeous skeleton loader requested
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
   }
 
   void _onSearchChanged(String query) {
@@ -174,7 +185,12 @@ class _SurahListPageState extends State<SurahListPage> {
             ),
           ],
         ),
-        body: _filteredIndices.isEmpty
+        body: _isLoading
+            ? ListView.builder(
+                itemCount: 4,
+                itemBuilder: (_, __) => const PremiumSkeletonCard(),
+              )
+            : _filteredIndices.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -199,42 +215,49 @@ class _SurahListPageState extends State<SurahListPage> {
                 itemBuilder: (context, listIndex) {
                   final originalIndex = _filteredIndices[listIndex];
                   final surahNumber = originalIndex + 1;
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  
+                  // ✨ Ultra-Premium GOLD Palette and Theme Adaptive Variables
+                  final Color goldMain = const Color(0xFFD4AF37); 
+                  final Color goldAccent = const Color(0xFFC5A028);
+                  final Color surfaceColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+                  final Color textColorMain = isDark ? Colors.grey[200]! : const Color(0xFF2D3436);
+                  final Color textColorSub = isDark ? Colors.grey[500]! : const Color(0xFF636E72);
 
                   return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
+                      color: surfaceColor,
+                      borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1A2E21).withValues(alpha: 0.05),
-                          blurRadius: 15,
-                          offset: const Offset(0, 6),
+                          color: isDark ? Colors.black.withValues(alpha: 0.3) : goldMain.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(20),
                       child: Container(
                         decoration: BoxDecoration(
+                          // 🎨 Premium Gold Gradient Border Injection
                           border: Border.all(
-                            color: const Color(0xFF1B5E20).withValues(alpha: 0.06),
+                            color: goldMain.withValues(alpha: 0.25),
                             width: 1.2,
                           ),
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white,
-                              Color(0xFFFDFDFD),
-                              Color(0xFFF4F9EC),
-                            ],
-                            stops: [0.0, 0.7, 1.0],
+                            colors: isDark 
+                                ? [surfaceColor, const Color(0xFF252528)] 
+                                : [surfaceColor, const Color(0xFFFEFDF8)], // Pearl light variant
                           ),
                         ),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
+                            splashColor: goldMain.withValues(alpha: 0.1),
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -243,84 +266,95 @@ class _SurahListPageState extends State<SurahListPage> {
                                 ),
                               );
                             },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              child: Row(
-                                children: [
-                                  // 1. Modern Surah Index Badge
-                                  Container(
-                                    width: 46,
-                                    height: 46,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          const Color(0xFFBDE156).withValues(alpha: 0.1),
-                                          const Color(0xFF8DA740).withValues(alpha: 0.25),
+                            child: Stack(
+                              children: [
+                                // Subtle Islamic Geometry Backing Icon (Transparent watermark)
+                                Positioned(
+                                  left: -20,
+                                  bottom: -20,
+                                  child: Icon(
+                                    Icons.mosque_rounded,
+                                    size: 100,
+                                    color: goldMain.withValues(alpha: isDark ? 0.03 : 0.04),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 18,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // 1. Islamic-style Gold Badge Number
+                                      Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Transform.rotate(
+                                            angle: 0.785, // 45 degrees rotate for star look
+                                            child: Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                color: goldMain.withValues(alpha: 0.1),
+                                                borderRadius: BorderRadius.circular(10),
+                                                border: Border.all(color: goldAccent, width: 1.5),
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            _toArabicDigits(surahNumber),
+                                            style: TextStyle(
+                                              color: isDark ? goldMain : const Color(0xFF8E7224),
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 15,
+                                            ),
+                                          ),
                                         ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
                                       ),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: const Color(0xFF8DA740).withValues(alpha: 0.3),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      _toArabicDigits(surahNumber),
-                                      style: const TextStyle(
-                                        color: Color(0xFF1A3022),
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  // 2. Text Information
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          kSurahNamesAr[originalIndex],
-                                          style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w800,
-                                            color: Color(0xFF1A3022),
-                                            letterSpacing: 0.3,
-                                          ),
+                                      const SizedBox(width: 22),
+                                      // 2. Dynamic text details
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              kSurahNamesAr[originalIndex],
+                                              style: TextStyle(
+                                                fontSize: 19,
+                                                fontWeight: FontWeight.w800,
+                                                color: textColorMain,
+                                                fontFamily: 'KFGQPC Uthmanic Script', // Try to force arabic font
+                                                letterSpacing: 0.2,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 3),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.auto_awesome, size: 12, color: goldMain.withValues(alpha: 0.8)),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'سورة ${_toArabicDigits(surahNumber)}',
+                                                  style: TextStyle(
+                                                    color: textColorSub,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'سورة رقم ${_toArabicDigits(surahNumber)}',
-                                          style: TextStyle(
-                                            color: const Color(0xFF1A3022).withValues(alpha: 0.55),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                      // 3. Premium Gold Tail Icon
+                                      Icon(
+                                        Icons.arrow_back_ios_new_rounded, // Inverted for RTL naturally? Handled automatically by directionality
+                                        size: 16,
+                                        color: goldMain.withValues(alpha: 0.6),
+                                      ),
+                                    ],
                                   ),
-                                  // 3. Premium Soft Trailing Arrow Button
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1A3022).withValues(alpha: 0.04),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: const Icon(
-                                      Icons.chevron_right_rounded,
-                                      size: 22,
-                                      color: Color(0xFF1A3022),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
