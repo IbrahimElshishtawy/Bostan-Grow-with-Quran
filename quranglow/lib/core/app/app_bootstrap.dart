@@ -26,9 +26,13 @@ class AppBootstrap {
     final firebaseReady = DefaultFirebaseOptions.isConfigured
         ? await _safeInit(
             'firebase',
-            () => Firebase.initializeApp(
-              options: DefaultFirebaseOptions.currentPlatform,
-            ),
+            () async {
+              // ✨ HOT RESTART GUARD: Skip redundant native handshakes if already bootstrapped!
+              if (Firebase.apps.isNotEmpty) return;
+              await Firebase.initializeApp(
+                options: DefaultFirebaseOptions.currentPlatform,
+              );
+            },
             timeout: const Duration(seconds: 20),
           )
         : false;
