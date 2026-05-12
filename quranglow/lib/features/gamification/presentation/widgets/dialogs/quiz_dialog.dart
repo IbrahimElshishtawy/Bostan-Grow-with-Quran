@@ -64,18 +64,19 @@ class _InteractiveQuizDialogState extends State<InteractiveQuizDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isFinished = _currentQuestionIndex >= _questions.length;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       content: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
-        child: isFinished ? _buildSummary() : _buildQuestionView(),
+        child: isFinished ? _buildSummary(cs) : _buildQuestionView(cs),
       ),
     );
   }
 
-  Widget _buildQuestionView() {
+  Widget _buildQuestionView(ColorScheme cs) {
     final q = _questions[_currentQuestionIndex];
 
     return SizedBox(
@@ -87,7 +88,7 @@ class _InteractiveQuizDialogState extends State<InteractiveQuizDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('سؤال ${_currentQuestionIndex + 1}/5', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+              Text('سؤال ${_currentQuestionIndex + 1}/5', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.8), fontWeight: FontWeight.bold)),
               const Icon(Icons.workspace_premium_rounded, size: 30, color: Colors.orange),
             ],
           ),
@@ -95,23 +96,23 @@ class _InteractiveQuizDialogState extends State<InteractiveQuizDialog> {
           Text(
             q.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.5),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.5, color: cs.onSurface),
           ),
           const SizedBox(height: 20),
           ...List.generate(q.options.length, (idx) {
             final isSelected = _selectedIndex == idx;
             final isCorrect = idx == q.correctIndex;
 
-            Color bgColor = Colors.white;
-            Color textColor = Colors.black87;
+            Color bgColor = cs.surfaceContainerHighest.withValues(alpha: 0.5);
+            Color textColor = cs.onSurface;
 
             if (_isEvaluated) {
               if (isCorrect) {
-                bgColor = Colors.green[100]!;
-                textColor = Colors.green[900]!;
+                bgColor = Colors.green.withValues(alpha: 0.25);
+                textColor = Colors.green[800]!;
               } else if (isSelected) {
-                bgColor = Colors.red[100]!;
-                textColor = Colors.red[900]!;
+                bgColor = Colors.red.withValues(alpha: 0.25);
+                textColor = Colors.red[800]!;
               }
             }
 
@@ -145,7 +146,7 @@ class _InteractiveQuizDialogState extends State<InteractiveQuizDialog> {
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: _isEvaluated && (isCorrect || isSelected) ? textColor : Colors.grey[300]!),
+                      side: BorderSide(color: _isEvaluated && (isCorrect || isSelected) ? textColor : cs.outlineVariant.withValues(alpha: 0.5)),
                     ),
                   ),
                   child: Text(
@@ -161,7 +162,7 @@ class _InteractiveQuizDialogState extends State<InteractiveQuizDialog> {
     );
   }
 
-  Widget _buildSummary() {
+  Widget _buildSummary(ColorScheme cs) {
     final hasPassed = _correctCount >= 2; // User logic requirement: Pass with 2
 
     return Column(
@@ -180,18 +181,18 @@ class _InteractiveQuizDialogState extends State<InteractiveQuizDialog> {
         const SizedBox(height: 8),
         Text(
           'النتيجة: $_correctCount إجابات صحيحة من 5',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface),
         ),
         const SizedBox(height: 20),
         if (hasPassed)
-          const Text(
+          Text(
             'أحسنت! تم فتح المستوى التالي بنجاح.',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            style: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.7), fontSize: 12),
           )
         else
-          const Text(
+          Text(
             'تحتاج لـ 2 إجابات صحيحة على الأقل للفوز.',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            style: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.7), fontSize: 12),
           ),
         const SizedBox(height: 24),
         SizedBox(

@@ -124,13 +124,11 @@ class _NavTab {
     required this.label,
     required this.icon,
     required this.activeIcon,
-    this.assetPath,
   });
 
   final String label;
   final IconData icon;
   final IconData activeIcon;
-  final String? assetPath;
 }
 
 class _GlassNavigationBar extends StatelessWidget {

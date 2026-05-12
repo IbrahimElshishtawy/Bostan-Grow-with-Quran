@@ -41,7 +41,6 @@ class _InteractiveMemorizeDialogState extends ConsumerState<InteractiveMemorizeD
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

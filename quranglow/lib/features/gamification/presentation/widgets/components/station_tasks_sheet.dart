@@ -28,7 +28,6 @@ class StationTasksSheet extends ConsumerWidget {
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         final cs = Theme.of(context).colorScheme;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Container(
           decoration: BoxDecoration(

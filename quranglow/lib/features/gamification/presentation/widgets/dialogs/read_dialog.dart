@@ -23,6 +23,8 @@ class InteractiveReadDialog extends ConsumerStatefulWidget {
 class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
   bool _finished = false;
   late Future<List<Ayah>> _fetchFuture;
+  List<Ayah> _ayahs = [];
+  int _currentAyahIndex = 0;
 
   @override
   void initState() {
@@ -31,7 +33,10 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
       widget.level.surahId,
       widget.level.ayahStart,
       widget.level.ayahEnd,
-    );
+    ).then((list) {
+      setState(() => _ayahs = list);
+      return list;
+    });
   }
 
   @override
@@ -52,81 +57,117 @@ class _InteractiveReadDialogState extends ConsumerState<InteractiveReadDialog> {
   Widget _buildReadingState(ColorScheme cs) {
     return SizedBox(
       width: double.maxFinite,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.menu_book_rounded, size: 56, color: GameificationColors.goldAccent),
-          const SizedBox(height: 12),
-          Text(
-            'محطة القراءة والتحسين • ${widget.level.surahName}',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cs.onSurface),
-          ),
-          const SizedBox(height: 8),
-          Text('اقرأ الآيات الآتية بتمعن وتدبر:', style: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.7), fontSize: 12)),
-          const SizedBox(height: 16),
-          
-          // Real Dynamic Content Fetching
-          Flexible(
-            child: Container(
-              constraints: const BoxConstraints(maxHeight: 350),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+      child: FutureBuilder<List<Ayah>>(
+        future: _fetchFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox(
+              height: 250,
+              child: Center(child: CircularProgressIndicator(color: GameificationColors.primaryGreen)),
+            );
+          }
+          if (snapshot.hasError || _ayahs.isEmpty) {
+            return SizedBox(
+              height: 250,
+              child: Center(child: Text('تعذر تحميل الآيات: ${snapshot.error}', style: const TextStyle(color: Colors.red, fontSize: 12))),
+            );
+          }
+
+          final currentAyah = _ayahs[_currentAyahIndex];
+          final isLast = _currentAyahIndex == _ayahs.length - 1;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(Icons.menu_book_rounded, size: 32, color: GameificationColors.goldAccent),
+                  Text(
+                    'الآية ${_currentAyahIndex + 1} من ${_ayahs.length}',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.onSurfaceVariant),
+                  ),
+                ],
               ),
-              child: FutureBuilder<List<Ayah>>(
-                future: _fetchFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: GameificationColors.primaryGreen));
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('تعذر تحميل الآيات: ${snapshot.error}', style: const TextStyle(color: Colors.red, fontSize: 12)));
-                  }
-                  final ayahs = snapshot.data ?? [];
-                  return ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    shrinkWrap: true,
-                    itemCount: ayahs.length,
-                    separatorBuilder: (ctx, idx) => const Divider(height: 24),
-                    itemBuilder: (context, index) {
-                      final ayah = ayahs[index];
-                      return Text(
-                        '${ayah.text} ﴿${ayah.ayahNumber}﴾',
+              const SizedBox(height: 12),
+              Text(
+                widget.level.surahName,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: cs.onSurface),
+              ),
+              const SizedBox(height: 16),
+              
+              // Ayah Display Container
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  key: ValueKey(_currentAyahIndex),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10),
+                    ],
+                  ),
+                  child: Text(
+                    '${currentAyah.text} ﴿${currentAyah.ayahNumber}﴾',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      height: 1.9,
+                      color: Theme.of(context).brightness == Brightness.dark ? cs.onSurface : GameificationColors.primaryGreenDark,
+                      fontFamily: 'Kitab',
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Navigation controls
+              Row(
+                children: [
+                  if (_currentAyahIndex > 0)
+                    Expanded(
+                      child: TextButton.icon(
+                        onPressed: () => setState(() => _currentAyahIndex--),
+                        icon: const Icon(Icons.arrow_back_ios_rounded, size: 16),
+                        label: const Text('السابق', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  if (_currentAyahIndex > 0) const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (isLast) {
+                          setState(() => _finished = true);
+                          widget.onComplete();
+                        } else {
+                          setState(() => _currentAyahIndex++);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isLast ? GameificationColors.goldAccent : GameificationColors.primaryGreen,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: Text(
+                        isLast ? 'أكملت القراءة والتدبر ✅' : 'الآية التالية ⬅️',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          height: 1.8,
-                          color: GameificationColors.primaryGreenDark,
-                          fontFamily: 'Kitab',
-                        ),
-                      );
-                    },
-                  );
-                },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: () {
-                setState(() => _finished = true);
-                widget.onComplete();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: GameificationColors.goldAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('أكملت القراءة والتدبر ✅', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

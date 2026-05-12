@@ -197,12 +197,12 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
                 ? Center(child: Text('خطأ: $_error'))
                 : isDone 
                     ? _buildWinState()
-                    : _buildGameplayLayout(),
+                    : _buildGameplayLayout(cs, isDark),
       ),
     );
   }
 
-  Widget _buildGameplayLayout() {
+  Widget _buildGameplayLayout(ColorScheme cs, bool isDark) {
     return Column(
       children: [
         // Progress Bar
