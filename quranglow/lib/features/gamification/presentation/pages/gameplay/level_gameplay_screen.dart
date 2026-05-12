@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/features/gamification/application/level_gameplay_controller.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
 import 'package:quranglow/features/gamification/application/providers/gamification_providers.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
-class LevelGameplayScreen extends ConsumerWidget {
+class LevelGameplayScreen extends ConsumerStatefulWidget {
   final GameLevel level;
 
   const LevelGameplayScreen({
@@ -13,10 +14,45 @@ class LevelGameplayScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(levelGameplayControllerProvider(level));
-    final controller = ref.read(levelGameplayControllerProvider(level).notifier);
+  ConsumerState<LevelGameplayScreen> createState() => _LevelGameplayScreenState();
+}
+
+class _LevelGameplayScreenState extends ConsumerState<LevelGameplayScreen> {
+  final Map<int, GlobalKey> _ayahKeys = {};
+
+  GlobalKey _getOrCreateKey(int index) {
+    return _ayahKeys.putIfAbsent(index, () => GlobalKey());
+  }
+
+  void _scrollToAyah(int index) {
+    final key = _ayahKeys[index];
+    if (key != null && key.currentContext != null) {
+      Future.microtask(() {
+        Scrollable.ensureVisible(
+          key.currentContext!,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+          alignment: 0.35, // Perfectly positioned slightly down from top
+        );
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(levelGameplayControllerProvider(widget.level));
+    final controller = ref.read(levelGameplayControllerProvider(widget.level).notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // 🚀 Auto-Scroll Synchronization Listener
+    ref.listen<LevelGameplayState>(
+      levelGameplayControllerProvider(widget.level),
+      (previous, next) {
+        if (previous?.currentPlayingAyahIndex != next.currentPlayingAyahIndex) {
+          _scrollToAyah(next.currentPlayingAyahIndex);
+        }
+      },
+    );
 
     // Dynamic Theme Attributes
     final bgColor = isDark ? const Color(0xFF0B1A13) : const Color(0xFFF8FAFA);
@@ -27,7 +63,7 @@ class LevelGameplayScreen extends ConsumerWidget {
     final gradientBottom = isDark ? const Color(0xFF0B1A13) : const Color(0xFFF8FAFA);
     final ayahCardBase = isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white;
     final ayahBorderBase = isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFF1B3227).withValues(alpha: 0.08);
-    final ayahAccent = const Color(0xFF689F38); // Consistent energetic actionable green
+    final ayahAccent = const Color(0xFF689F38); 
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -41,21 +77,15 @@ class LevelGameplayScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                level.surahName,
+                widget.level.surahName,
                 style: TextStyle(color: textColor, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: -0.2),
               ),
               Text(
-                'آيات ${level.ayahStart} - ${level.ayahEnd}',
+                'آيات ${widget.level.ayahStart} - ${widget.level.ayahEnd}',
                 style: TextStyle(color: subTextColor, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ],
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.info_outline_rounded),
-              onPressed: () {},
-            ),
-          ],
         ),
         body: state.isLoading
             ? Center(child: CircularProgressIndicator(color: ayahAccent))
@@ -68,7 +98,6 @@ class LevelGameplayScreen extends ConsumerWidget {
                   )
                 : Stack(
                     children: [
-                      // Background Ambient Gradient Layer
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
@@ -80,7 +109,6 @@ class LevelGameplayScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-
                       Column(
                         children: [
                           // 1. Dynamic Status Bar
@@ -89,100 +117,104 @@ class LevelGameplayScreen extends ConsumerWidget {
                             child: _buildStatusBar(state, subTextColor, ayahAccent, isDark),
                           ),
 
-                          // 2. Main Scrolling Engine
+                          // 2. Main Continuous Scrolling Engine with Dynamic Position Keys
                           Expanded(
-                            child: ListView.separated(
+                            child: SingleChildScrollView(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                              itemCount: state.ayahs.length,
-                              separatorBuilder: (c, i) => const SizedBox(height: 16),
-                              itemBuilder: (context, index) {
-                                final ayah = state.ayahs[index];
-                                final isActive = state.currentPlayingAyahIndex == index;
-                                
-                                final cardBg = isActive
-                                    ? ayahAccent.withValues(alpha: isDark ? 0.15 : 0.08)
-                                    : ayahCardBase;
-                                final cardBorder = isActive
-                                    ? ayahAccent.withValues(alpha: 0.4)
-                                    : ayahBorderBase;
+                              child: Column(
+                                children: List.generate(state.ayahs.length, (index) {
+                                  final ayah = state.ayahs[index];
+                                  final isActive = state.currentPlayingAyahIndex == index;
+                                  
+                                  final cardBg = isActive
+                                      ? ayahAccent.withValues(alpha: isDark ? 0.15 : 0.08)
+                                      : ayahCardBase;
+                                  final cardBorder = isActive
+                                      ? ayahAccent.withValues(alpha: 0.4)
+                                      : ayahBorderBase;
 
-                                return GestureDetector(
-                                  onTap: () => controller.seekToAyah(index),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 350),
-                                    curve: Curves.easeOutExpo,
-                                    padding: const EdgeInsets.all(20),
-                                    decoration: BoxDecoration(
-                                      color: cardBg,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: cardBorder, width: isActive ? 1.5 : 1.0),
-                                      boxShadow: !isDark && !isActive 
-                                          ? [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(alpha: 0.03),
-                                                blurRadius: 10,
-                                                offset: const Offset(0, 4),
-                                              )
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        Row(
+                                  return Padding(
+                                    key: _getOrCreateKey(index), // 🎯 Critical key registration!
+                                    padding: const EdgeInsets.only(bottom: 12.0),
+                                    child: GestureDetector(
+                                      onTap: () => controller.seekToAyah(index),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 350),
+                                        curve: Curves.easeOutExpo,
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                        decoration: BoxDecoration(
+                                          color: cardBg,
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: cardBorder, width: isActive ? 1.5 : 1.0),
+                                          boxShadow: !isDark && !isActive 
+                                              ? [
+                                                  BoxShadow(
+                                                    color: Colors.black.withValues(alpha: 0.03),
+                                                    blurRadius: 10,
+                                                    offset: const Offset(0, 4),
+                                                  )
+                                                ]
+                                              : null,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
                                           children: [
-                                            Container(
-                                              width: 28,
-                                              height: 28,
-                                              decoration: BoxDecoration(
-                                                color: isActive ? ayahAccent : (isDark ? Colors.white12 : const Color(0xFF1B3227).withValues(alpha: 0.08)),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Text(
-                                                '${ayah.ayahNumber}',
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: isActive ? Colors.white : subTextColor,
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 28,
+                                                  height: 28,
+                                                  decoration: BoxDecoration(
+                                                    color: isActive ? ayahAccent : (isDark ? Colors.white12 : const Color(0xFF1B3227).withValues(alpha: 0.08)),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  alignment: Alignment.center,
+                                                  child: Text(
+                                                    '${ayah.ayahNumber}',
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w900,
+                                                      color: isActive ? Colors.white : subTextColor,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
+                                                const SizedBox(width: 12),
+                                                if (isActive)
+                                                  Text(
+                                                    'قيد الاستماع...',
+                                                    style: TextStyle(
+                                                      color: ayahAccent,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w800,
+                                                    ),
+                                                  ).animate().fadeIn(duration: 300.ms).shimmer(duration: 1200.ms),
+                                              ],
                                             ),
-                                            const SizedBox(width: 12),
-                                            if (isActive)
-                                              Text(
-                                                'قيد الاستماع...',
-                                                style: TextStyle(
-                                                  color: ayahAccent,
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w800,
-                                                ),
+                                            const SizedBox(height: 10),
+                                            Text(
+                                              ayah.text,
+                                              style: TextStyle(
+                                                fontSize: 25,
+                                                height: 1.6,
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: 'Kitab',
+                                                color: isActive ? textColor : subTextColor,
+                                                letterSpacing: -0.1,
                                               ),
+                                              textAlign: TextAlign.right,
+                                            ),
                                           ],
                                         ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          ayah.text,
-                                          style: TextStyle(
-                                            fontSize: 27,
-                                            height: 1.8,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: 'Kitab',
-                                            color: isActive ? textColor : subTextColor,
-                                            letterSpacing: -0.1,
-                                          ),
-                                          textAlign: TextAlign.right,
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                }),
+                              ),
                             ),
                           ),
 
-                          // 3. Premium Controls Footplate
-                          _buildPlaybackControlBar(controller, state, ref, context, isDark, ayahAccent, textColor),
+                          // 3. Dynamic Gated Completion Panel
+                          _buildPlaybackControlBar(controller, state, context, isDark, ayahAccent, textColor),
                         ],
                       ),
                     ],
@@ -225,7 +257,6 @@ class LevelGameplayScreen extends ConsumerWidget {
   Widget _buildPlaybackControlBar(
     LevelGameplayController controller,
     LevelGameplayState state,
-    WidgetRef ref,
     BuildContext context,
     bool isDark,
     Color accent,
@@ -234,6 +265,18 @@ class LevelGameplayScreen extends ConsumerWidget {
     final containerColor = isDark ? const Color(0xFF102419) : Colors.white;
     final shadowColor = Colors.black.withValues(alpha: isDark ? 0.4 : 0.08);
     final iconTint = isDark ? Colors.white70 : const Color(0xFF1B3227).withValues(alpha: 0.7);
+    
+    // Logic for DYNAMIC button text and actions
+    final bool canFinish = state.isFinished;
+    
+    String buttonLabel = 'استمع لبقية الآيات للإتمام';
+    if (canFinish) {
+      buttonLabel = 'تمت القراءة والإنصات بنجاح ✅';
+    } else if (state.isPlaying) {
+      buttonLabel = 'جاري الاستماع...';
+    } else {
+      buttonLabel = 'تم الإيقاف مؤقتاً';
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 36),
@@ -299,36 +342,55 @@ class LevelGameplayScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
+          
+          // 🔒 The Gated Action Button
           SizedBox(
             width: double.infinity,
             height: 55,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFF1B3227).withValues(alpha: 0.05),
-                foregroundColor: textColor,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.transparent),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutBack,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: canFinish 
+                      ? accent // Radiant green when fully usable!
+                      : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFF1B3227).withValues(alpha: 0.05)),
+                  foregroundColor: canFinish ? Colors.white : textColor,
+                  elevation: canFinish ? 4 : 0,
+                  shadowColor: accent.withValues(alpha: 0.4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: BorderSide(
+                      color: canFinish 
+                          ? Colors.transparent 
+                          : (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.transparent),
+                    ),
+                  ),
                 ),
-              ),
-              onPressed: () async {
-                await ref.read(gamificationControllerProvider.notifier).completeSubTask(level.id, 'listen');
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              },
-              child: Text(
-                'تمت القراءة والإنصات بنجاح',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 15,
-                  letterSpacing: 0.2,
-                  color: isDark ? Colors.white : const Color(0xFF1B3227),
+                onPressed: canFinish 
+                  ? () async {
+                      await ref.read(gamificationControllerProvider.notifier).completeSubTask(widget.level.id, 'listen');
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    }
+                  : null, // Locks interaction until audio physically concludes!
+                child: Text(
+                  buttonLabel,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    letterSpacing: 0.2,
+                    color: canFinish 
+                        ? Colors.white 
+                        : (isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF1B3227).withValues(alpha: 0.6)),
+                  ),
                 ),
               ),
             ),
-          ),
+          ).animate(target: canFinish ? 1.0 : 0.0)
+           .shimmer(delay: 400.ms, duration: 1500.ms, color: Colors.white24)
+           .scale(begin: const Offset(0.98, 0.98), end: const Offset(1, 1), curve: Curves.elasticOut),
         ],
       ),
     );

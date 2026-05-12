@@ -229,7 +229,10 @@ class UserGameProfile {
     this.achievements = const [],
     this.streakFreezeCount = 1, // Streak Freeze Shield item
     this.chestsClaimed = const [], // Surprise reward chests index e.g., 'chest_3'
+    this.nextHeartRegenTime,
   });
+
+  final DateTime? nextHeartRegenTime;
 
   final String userId;
   final int totalXp;
@@ -267,6 +270,7 @@ class UserGameProfile {
     List<String>? achievements,
     int? streakFreezeCount,
     List<String>? chestsClaimed,
+    DateTime? nextHeartRegenTime,
   }) {
     return UserGameProfile(
       userId: userId ?? this.userId,
@@ -284,6 +288,7 @@ class UserGameProfile {
       achievements: achievements ?? this.achievements,
       streakFreezeCount: streakFreezeCount ?? this.streakFreezeCount,
       chestsClaimed: chestsClaimed ?? this.chestsClaimed,
+      nextHeartRegenTime: nextHeartRegenTime ?? this.nextHeartRegenTime,
     );
   }
 
@@ -303,6 +308,7 @@ class UserGameProfile {
     'achievements': achievements,
     'streakFreezeCount': streakFreezeCount,
     'chestsClaimed': chestsClaimed,
+    'nextHeartRegenTime': nextHeartRegenTime?.toIso8601String(),
   };
 
   factory UserGameProfile.fromJson(Map<String, dynamic> json) {
@@ -326,6 +332,9 @@ class UserGameProfile {
       achievements: List<String>.from(json['achievements'] ?? const []),
       streakFreezeCount: json['streakFreezeCount'] as int? ?? 1,
       chestsClaimed: List<String>.from(json['chestsClaimed'] ?? const []),
+      nextHeartRegenTime: json['nextHeartRegenTime'] != null
+          ? DateTime.tryParse(json['nextHeartRegenTime'] as String)
+          : null,
     );
   }
 }

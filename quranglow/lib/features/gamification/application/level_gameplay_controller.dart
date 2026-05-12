@@ -12,6 +12,7 @@ class LevelGameplayState {
   final List<Ayah> ayahs;
   final int currentPlayingAyahIndex;
   final bool isPlaying;
+  final bool isFinished;
   final String? error;
 
   LevelGameplayState({
@@ -19,6 +20,7 @@ class LevelGameplayState {
     this.ayahs = const [],
     this.currentPlayingAyahIndex = 0,
     this.isPlaying = false,
+    this.isFinished = false,
     this.error,
   });
 
@@ -27,6 +29,7 @@ class LevelGameplayState {
     List<Ayah>? ayahs,
     int? currentPlayingAyahIndex,
     bool? isPlaying,
+    bool? isFinished,
     String? error,
   }) {
     return LevelGameplayState(
@@ -34,6 +37,7 @@ class LevelGameplayState {
       ayahs: ayahs ?? this.ayahs,
       currentPlayingAyahIndex: currentPlayingAyahIndex ?? this.currentPlayingAyahIndex,
       isPlaying: isPlaying ?? this.isPlaying,
+      isFinished: isFinished ?? this.isFinished,
       error: error,
     );
   }
@@ -73,6 +77,14 @@ class LevelGameplayController extends StateNotifier<LevelGameplayState> {
       _audioPlayer.currentIndexStream.listen((index) {
         if (index != null) {
           _safeUpdate(state.copyWith(currentPlayingAyahIndex: index));
+        }
+      }),
+    );
+
+    _subscriptions.add(
+      _audioPlayer.processingStateStream.listen((s) {
+        if (s == ProcessingState.completed) {
+          _safeUpdate(state.copyWith(isFinished: true, isPlaying: false));
         }
       }),
     );
@@ -160,9 +172,18 @@ class LevelGameplayController extends StateNotifier<LevelGameplayState> {
 
 
   void playPause() {
+    if (_audioPlayer.processingState == ProcessingState.completed) {
+      // Restarting from beginning if replaying after finish
+      _safeUpdate(state.copyWith(isFinished: false));
+      _audioPlayer.seek(Duration.zero, index: 0);
+      _audioPlayer.play();
+      return;
+    }
+    
     if (_audioPlayer.playing) {
       _audioPlayer.pause();
     } else {
+      _safeUpdate(state.copyWith(isFinished: false));
       _audioPlayer.play();
     }
   }
