@@ -602,6 +602,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       listenFor: const Duration(seconds: 45),
       pauseFor: const Duration(seconds: 6),
       partialResults: true,
+      listenMode: ListenMode.dictation, // 🎙️ Ultra-Optimized for continuous long-form dictation/recitation!
+      cancelOnError: false, // 🛑 Robust: remain active even on temporary network interruptions!
     );
 
     setState(() {
@@ -633,34 +635,30 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     final surah = asyncSurah.valueOrNull;
     if (surah == null) return;
 
-    // 1. Find the target incomplete ayah (on/after current page start offset)
-    int pageStartNum = _lastAyahNumber ?? 1;
-    int targetIndex = -1;
+    // 1. Determine active page boundaries to restrict Hifz to the CURRENT PAGE only!
+    final state = _pagedMushafKey.currentState;
+    final pageRange = state?.getCurrentPageRange();
+    
+    int searchStartIdx = 0;
+    int searchEndIdx = surah.ayat.length;
+    if (pageRange != null) {
+      searchStartIdx = pageRange.start;
+      searchEndIdx = pageRange.end;
+    }
 
-    for (int i = 0; i < surah.ayat.length; i++) {
+    // Find the target incomplete ayah strictly WITHIN the current page bounds!
+    int targetIndex = -1;
+    for (int i = searchStartIdx; i < searchEndIdx; i++) {
       final a = surah.ayat[i];
       final totalWords = a.text.trim().split(RegExp(r'\s+')).length;
       final revealedCount = _revealedWords[a.numberInSurah]?.length ?? 0;
-      if (a.numberInSurah >= pageStartNum && revealedCount < totalWords) {
+      if (revealedCount < totalWords) {
         targetIndex = i;
         break;
       }
     }
 
-    // Fallback search sequentially from beginning if none found after visible offset
-    if (targetIndex == -1) {
-      for (int i = 0; i < surah.ayat.length; i++) {
-        final a = surah.ayat[i];
-        final totalWords = a.text.trim().split(RegExp(r'\s+')).length;
-        final revealedCount = _revealedWords[a.numberInSurah]?.length ?? 0;
-        if (revealedCount < totalWords) {
-          targetIndex = i;
-          break;
-        }
-      }
-    }
-
-    if (targetIndex == -1) return; // Full page completely revealed!
+    if (targetIndex == -1) return; // 🔥 End of Page Reached or Page Completely Revealed!
 
     final targetAyah = surah.ayat[targetIndex];
     final targetWords = targetAyah.text.trim().split(RegExp(r'\s+'));
@@ -673,8 +671,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     if (allSpokenWords.length <= _consumedSpokenWordsCount) return;
     final newSpokenWords = allSpokenWords.sublist(_consumedSpokenWordsCount);
 
-    // 🚀 INTELLIGENT SKIP DETECTION: If the user spoke words of the NEXT ayah, they failed/skipped the current one!
-    if (targetIndex + 1 < surah.ayat.length) {
+    // 🚀 INTELLIGENT SKIP DETECTION: Restricted only to the bounds of the current page!
+    if (targetIndex + 1 < searchEndIdx) {
       final nextAyah = surah.ayat[targetIndex + 1];
       final nextWords = nextAyah.text.trim().split(RegExp(r'\s+'));
       int nextMatches = 0;
