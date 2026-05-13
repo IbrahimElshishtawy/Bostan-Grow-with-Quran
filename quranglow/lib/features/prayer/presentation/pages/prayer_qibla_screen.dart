@@ -6,8 +6,9 @@ import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/prayer_clock_visualizer.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/mini_tasbih_hub.dart';
-import 'package:quranglow/features/prayer/presentation/widgets/prayer_tips_card.dart';
+import 'package:quranglow/features/prayer/presentation/widgets/prayer_academy_hub.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
+import 'package:quranglow/core/widgets/pro_shimmer.dart';
 
 class PrayerQiblaScreen extends ConsumerStatefulWidget {
   const PrayerQiblaScreen({super.key});
@@ -36,34 +37,23 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
         subtitle: 'مواقيت الصلاة واتجاه القبلة بدقة عالية',
         showBack: false, // Remove the back arrow for cleaner navigation hub aesthetics
         actions: [
-          // Dynamic Mosque Scroll Hook
-          IconButton.filledTonal(
-            icon: const Icon(Icons.mosque_rounded, size: 20),
+          _buildAppBarAction(
+            icon: Icons.mosque_rounded,
             tooltip: 'مواقيت الصلاة',
-            onPressed: () {
+            onTap: () {
               _scrollController.animateTo(
                 0, 
                 duration: const Duration(milliseconds: 500), 
                 curve: Curves.easeInOut,
               );
             },
-            style: IconButton.styleFrom(
-              backgroundColor: cs.primaryContainer.withValues(alpha: 0.6),
-              foregroundColor: cs.onPrimaryContainer,
-            ),
           ),
-          const SizedBox(width: 8),
-          // Dynamic Qibla Scroll Hook
-          IconButton.filledTonal(
-            icon: const Icon(Icons.explore_rounded, size: 20),
+          _buildAppBarAction(
+            icon: Icons.explore_rounded,
             tooltip: 'بوصلة القبلة',
-            onPressed: () {
+            onTap: () {
               Navigator.pushNamed(context, AppRoutes.qibla);
             },
-            style: IconButton.styleFrom(
-              backgroundColor: cs.primaryContainer.withValues(alpha: 0.6),
-              foregroundColor: cs.onPrimaryContainer,
-            ),
           ),
         ],
       ),
@@ -99,8 +89,8 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
                     _buildPrayerTimes(context, data),
                     const SizedBox(height: 28),
 
-                    // Section 2.5: Beautiful Prayer Tips & Sunnahs Carousel
-                    const PrayerTipsCard(),
+                    // Section 2.5: Premium Interactive Prayer Academy Hub
+                    const PrayerAcademyHub(),
                     const SizedBox(height: 28),
 
                     const SizedBox(height: 4),
@@ -115,7 +105,7 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
                 ),
               ),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => _buildLoadingSkeleton(context),
             error: (err, stack) => _buildErrorState(context, err),
           ),
         ),
@@ -384,6 +374,143 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+  Widget _buildLoadingSkeleton(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 110),
+      physics: const NeverScrollableScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            // 1. Hero Clock Visualizer Shimmer
+            const ProShimmer(
+              width: double.infinity,
+              height: 320,
+              borderRadius: 32,
+            ),
+            const SizedBox(height: 28),
+
+            // 2. Section 2 Label Shimmer
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ProShimmer(width: 120, height: 22, borderRadius: 8),
+                ProShimmer(width: 140, height: 16, borderRadius: 6),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 3. Grid Items Shimmers (6 items)
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.4,
+              ),
+              itemCount: 6,
+              itemBuilder: (context, index) => const ProShimmer(
+                width: double.infinity,
+                height: double.infinity,
+                borderRadius: 22,
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // 4. Academy Grid Shimmer (6 tiles, 2 columns)
+            const ProShimmer(width: 160, height: 22, borderRadius: 8),
+            const SizedBox(height: 16),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.4,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: 6,
+              itemBuilder: (context, index) => const ProShimmer(
+                width: double.infinity,
+                height: double.infinity,
+                borderRadius: 22,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // 5. Tasbih Hub Shimmer
+            const ProShimmer(
+              width: double.infinity,
+              height: 150,
+              borderRadius: 28,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBarAction({
+    required IconData icon,
+    required VoidCallback onTap,
+    required String tooltip,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 8),
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                cs.surface,
+                cs.surfaceContainerLow,
+              ],
+            ),
+            border: Border.all(
+              color: cs.primary.withValues(alpha: 0.22),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: cs.shadow.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              splashColor: cs.primary.withValues(alpha: 0.15),
+              highlightColor: cs.primary.withValues(alpha: 0.05),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: cs.primary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

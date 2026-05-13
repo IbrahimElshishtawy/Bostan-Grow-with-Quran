@@ -3,9 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:quranglow/core/di/providers.dart';
-import 'package:quranglow/core/service/setting/notification_service.dart';
 
 class MiniTasbihHub extends ConsumerStatefulWidget {
   const MiniTasbihHub({super.key});
@@ -35,9 +32,7 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
   late final AnimationController _pulseController;
   late final AnimationController _glowController;
 
-  // Audio preview
-  final AudioPlayer _previewPlayer = AudioPlayer();
-  bool _isPlayingAudio = false;
+
 
   @override
   void initState() {
@@ -60,15 +55,7 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
       vsync: this,
     )..repeat();
 
-    _previewPlayer.playerStateStream.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isPlayingAudio =
-              state.playing &&
-              state.processingState != ProcessingState.completed;
-        });
-      }
-    });
+
   }
 
   @override
@@ -76,7 +63,7 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
     _scaleController.dispose();
     _pulseController.dispose();
     _glowController.dispose();
-    _previewPlayer.dispose();
+
     super.dispose();
   }
 
@@ -102,76 +89,11 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
     });
   }
 
-  Future<void> _playSalawatAudio() async {
-    if (_isPlayingAudio) {
-      await _previewPlayer.stop();
-      return;
-    }
 
-    setState(() => _isPlayingAudio = true);
-    // To prevent IDE debugger pauses on caught exceptions, we use the guaranteed physical file path.
-    // 'android/app/src/main/res/raw/salawat.mp3'
-    const String salawatAsset =
-        'android/app/src/main/res/raw/adhan_madinah.mp3';
-
-    try {
-      await _previewPlayer.setAsset(salawatAsset);
-      await _previewPlayer.play();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تعذر تشغيل الصوت: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _toggleSalawatNotification(bool enabled) async {
-    final settings = ref.read(settingsProvider).valueOrNull;
-    if (settings == null) return;
-
-    try {
-      HapticFeedback.selectionClick();
-      await ref.read(settingsProvider.notifier).setSalawatEnabled(enabled);
-
-      final nextSettings = settings.copyWith(salawatEnabled: enabled);
-      await NotificationService.instance.scheduleSalawat(
-        enabled: enabled,
-        intervalMinutes: nextSettings.salawatIntervalMinutes,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              enabled
-                  ? 'تم تفعيل تذكير الصلاة على النبي ﷺ بنجاح'
-                  : 'تم تعطيل تذكير الصلاة على النبي ﷺ',
-              style: const TextStyle(
-                fontFamily: 'Tajawal',
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: enabled
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey[800],
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (_) {}
-  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final settings = ref.watch(settingsProvider).valueOrNull;
-    final salawatActive = settings?.salawatEnabled ?? false;
-    final salawatInterval = settings?.salawatIntervalMinutes ?? 15;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10),
@@ -378,84 +300,6 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
             ),
           ),
 
-          Divider(color: cs.outlineVariant.withValues(alpha: 0.4), height: 1),
-
-          // Bottom Section - Salawat Panel
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.favorite_rounded,
-                  size: 18,
-                  color: salawatActive
-                      ? Colors.redAccent
-                      : cs.onSurfaceVariant.withValues(alpha: 0.5),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'تذكير الصلاة على النبي ﷺ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 13,
-                          fontFamily: 'Tajawal',
-                        ),
-                      ),
-                      Text(
-                        salawatActive
-                            ? 'مُفعل حاليًا، كل $salawatInterval دقيقة صوتيًا'
-                            : 'تنبيه دوري صوتي يظهر بالإشعارات',
-                        style: TextStyle(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 10,
-                          fontFamily: 'Tajawal',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Test Audio voice button
-                IconButton.filledTonal(
-                  onPressed: _playSalawatAudio,
-                  icon: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      _isPlayingAudio
-                          ? Icons.stop_circle_rounded
-                          : Icons.volume_up_rounded,
-                      key: ValueKey<bool>(_isPlayingAudio),
-                      size: 18,
-                    ),
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: _isPlayingAudio
-                        ? cs.primary
-                        : cs.surfaceContainerHighest,
-                    foregroundColor: _isPlayingAudio
-                        ? cs.onPrimary
-                        : cs.primary,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  tooltip: 'استماع للصوت',
-                ),
-                const SizedBox(width: 8),
-                // Toggle switch
-                Transform.scale(
-                  scale: 0.85,
-                  child: Switch(
-                    value: salawatActive,
-                    onChanged: _toggleSalawatNotification,
-                    activeTrackColor: cs.primary.withValues(alpha: 0.4),
-                    activeColor: cs.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
