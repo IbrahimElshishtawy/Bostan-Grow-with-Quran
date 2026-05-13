@@ -727,8 +727,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       }
     }
 
-    if (targetIndex == -1)
+    if (targetIndex == -1) {
       return; // 🔥 End of Page Reached or Page Completely Revealed!
+    }
 
     final targetAyah = surah.ayat[targetIndex];
     final targetWords = targetAyah.text.trim().split(RegExp(r'\s+'));

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -16,14 +17,14 @@ void main() {
           bytes.addAll(data);
         }
         await file.writeAsBytes(bytes);
-        print('Successfully written ${bytes.length} bytes to ${file.path}');
+        debugPrint('Successfully written ${bytes.length} bytes to ${file.path}');
         expect(true, isTrue);
       } else {
-        print('Error status: ${response.statusCode}');
+        debugPrint('Error status: ${response.statusCode}');
         expect(false, isTrue);
       }
     } catch (e) {
-      print('Caught: $e');
+      debugPrint('Caught: $e');
       expect(false, isTrue);
     } finally {
       client.close();

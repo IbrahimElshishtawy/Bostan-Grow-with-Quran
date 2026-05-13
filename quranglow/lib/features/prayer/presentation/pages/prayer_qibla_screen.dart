@@ -8,7 +8,6 @@ import 'package:quranglow/features/prayer/presentation/widgets/prayer_clock_visu
 import 'package:quranglow/features/prayer/presentation/widgets/prayer_academy_hub.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 import 'package:quranglow/core/widgets/pro_shimmer.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class PrayerQiblaScreen extends ConsumerStatefulWidget {
   const PrayerQiblaScreen({super.key});
