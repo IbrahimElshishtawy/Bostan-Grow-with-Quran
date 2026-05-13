@@ -5,7 +5,6 @@ import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/prayer_clock_visualizer.dart';
-import 'package:quranglow/features/prayer/presentation/widgets/mini_tasbih_hub.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/prayer_academy_hub.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 import 'package:quranglow/core/widgets/pro_shimmer.dart';
@@ -93,14 +92,7 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
                     const PrayerAcademyHub(),
                     const SizedBox(height: 28),
 
-                    const SizedBox(height: 4),
-
-                    // Section 5: Interactive Mini Tasbih & Salawat Hub
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: const MiniTasbihHub(),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -446,12 +438,7 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
             ),
             const SizedBox(height: 32),
 
-            // 5. Tasbih Hub Shimmer
-            const ProShimmer(
-              width: double.infinity,
-              height: 150,
-              borderRadius: 28,
-            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),

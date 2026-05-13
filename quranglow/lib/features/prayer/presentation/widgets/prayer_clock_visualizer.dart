@@ -265,16 +265,32 @@ class _PrayerClockVisualizerState extends State<PrayerClockVisualizer>
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                               decoration: BoxDecoration(
-                                color: cs.primaryContainer,
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFFFFD700), // Premium Gold
+                                    Color(0xFFDAA520), // Golden Rod
+                                    Color(0xFFB8860B), // Deep Metallic Gold
+                                  ],
+                                ),
                                 borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFB8860B).withValues(alpha: 0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
                               ),
                               child: Text(
                                 arabicNext,
-                                style: TextStyle(
-                                  color: cs.onPrimaryContainer,
-                                  fontSize: 14,
+                                style: const TextStyle(
+                                  color: Color(0xFF3E2723), // Rich Dark Bronze for high luxury contrast
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w900,
                                   fontFamily: 'Tajawal',
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ),
