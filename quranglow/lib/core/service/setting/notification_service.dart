@@ -18,6 +18,8 @@ class NotificationService {
 
   final _plugin = FlutterLocalNotificationsPlugin();
 
+  bool get _isSupported => !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+
   static const _dailyChannelId = 'daily_reminder_ch';
   static const _salawatChannelId = 'salawat_ch';
   static const _remindersChannelId = 'reminders_ch';
@@ -35,7 +37,7 @@ class NotificationService {
   static const _azkarPrayerBaseId = 3100;
 
   Future<void> init() async {
-    if (kIsWeb) return;
+    if (!_isSupported) return;
 
     await _configureLocalTimezone();
 
@@ -66,7 +68,7 @@ class NotificationService {
   }
 
   Future<void> requestPermissionsIfNeededFromUI(BuildContext context) async {
-    if (kIsWeb || !context.mounted) return;
+    if (!_isSupported || !context.mounted) return;
 
     final hasUiView =
         WidgetsBinding.instance.platformDispatcher.implicitView != null;
@@ -217,8 +219,9 @@ class NotificationService {
     required TimeOfDay time,
     DailyReminderKind kind = DailyReminderKind.quran,
   }) async {
+    if (!_isSupported) return;
     await _plugin.cancel(_dailyId);
-    if (!enabled || kIsWeb) return;
+    if (!enabled) return;
 
     final mode = await _androidScheduleMode();
 
@@ -271,10 +274,11 @@ class NotificationService {
     required bool enabled,
     required int intervalMinutes,
   }) async {
+    if (!_isSupported) return;
     for (var i = 0; i < _salawatBatchSize; i++) {
       await _plugin.cancel(_salawatId + i);
     }
-    if (!enabled || kIsWeb) return;
+    if (!enabled) return;
 
     final mode = await _androidScheduleMode();
 
@@ -318,8 +322,8 @@ class NotificationService {
     required DateTime when,
     required bool daily,
   }) async {
+    if (!_isSupported) return;
     await _plugin.cancel(id);
-    if (kIsWeb) return;
 
     final mode = await _androidScheduleMode();
 
@@ -381,7 +385,7 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    if (kIsWeb) return;
+    if (!_isSupported) return;
 
     const android = AndroidNotificationDetails(
       _remindersChannelId,
@@ -416,7 +420,7 @@ class NotificationService {
     required String body,
     AppSettings? settings,
   }) async {
-    if (kIsWeb) return;
+    if (!_isSupported) return;
 
     final activeSettings = settings ?? await SettingsService().load();
     await _ensurePrayerChannel(activeSettings);
@@ -457,8 +461,9 @@ class NotificationService {
     required List<PrayerScheduleDay> days,
     bool enabled = true,
   }) async {
+    if (!_isSupported) return;
     await cancelPrayerNotifications();
-    if (!enabled || kIsWeb || days.isEmpty) return;
+    if (!enabled || days.isEmpty) return;
 
     await _configureLocalTimezone(
       preferredTimezone: _firstValidPrayerTimezone(days),
@@ -525,6 +530,7 @@ class NotificationService {
   }
 
   Future<void> cancelPrayerNotifications() async {
+    if (!_isSupported) return;
     for (var dayIndex = 0; dayIndex < _prayerScheduleWindowDays; dayIndex++) {
       for (var prayerIndex = 0; prayerIndex < _prayerCount; prayerIndex++) {
         await _plugin.cancel(_prayerNotificationId(dayIndex, prayerIndex));
@@ -533,6 +539,7 @@ class NotificationService {
   }
 
   Future<void> scheduleMorningAzkarReminder({required bool enabled}) async {
+    if (!_isSupported) return;
     await _plugin.cancel(_azkarMorningId);
     if (!enabled) return;
     await scheduleReminder(
@@ -545,6 +552,7 @@ class NotificationService {
   }
 
   Future<void> scheduleEveningAzkarReminder({required bool enabled}) async {
+    if (!_isSupported) return;
     await _plugin.cancel(_azkarEveningId);
     if (!enabled) return;
     await scheduleReminder(
@@ -560,8 +568,9 @@ class NotificationService {
     required bool enabled,
     required PrayerTimesData data,
   }) async {
+    if (!_isSupported) return;
     await cancelAfterPrayerAzkarReminders();
-    if (!enabled || kIsWeb) return;
+    if (!enabled) return;
 
     final mode = await _androidScheduleMode();
     const android = AndroidNotificationDetails(
@@ -608,14 +617,21 @@ class NotificationService {
   }
 
   Future<void> cancelAfterPrayerAzkarReminders() async {
+    if (!_isSupported) return;
     for (var i = 0; i < 5; i++) {
       await _plugin.cancel(_azkarPrayerBaseId + i);
     }
   }
 
-  Future<void> cancel(int id) async => _plugin.cancel(id);
+  Future<void> cancel(int id) async {
+    if (!_isSupported) return;
+    await _plugin.cancel(id);
+  }
 
-  Future<void> cancelAll() => _plugin.cancelAll();
+  Future<void> cancelAll() async {
+    if (!_isSupported) return;
+    await _plugin.cancelAll();
+  }
 
   static String _prayerChannelId(String soundId) => 'prayer_adhan_ch_$soundId';
 
