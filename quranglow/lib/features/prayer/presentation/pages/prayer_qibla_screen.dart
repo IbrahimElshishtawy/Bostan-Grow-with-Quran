@@ -6,7 +6,8 @@ import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/prayer_clock_visualizer.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/mini_tasbih_hub.dart';
-import 'package:quranglow/features/qibla/presentation/widgets/qibla_compass.dart';
+import 'package:quranglow/features/prayer/presentation/widgets/prayer_tips_card.dart';
+import 'package:quranglow/features/ui/routes/app_routes.dart';
 
 class PrayerQiblaScreen extends ConsumerStatefulWidget {
   const PrayerQiblaScreen({super.key});
@@ -16,15 +17,55 @@ class PrayerQiblaScreen extends ConsumerStatefulWidget {
 }
 
 class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final prayersAsync = ref.watch(todayPrayersProvider);
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: const ProAppBar(
+      appBar: ProAppBar(
         title: 'المصلى',
         subtitle: 'مواقيت الصلاة واتجاه القبلة بدقة عالية',
+        showBack: false, // Remove the back arrow for cleaner navigation hub aesthetics
+        actions: [
+          // Dynamic Mosque Scroll Hook
+          IconButton.filledTonal(
+            icon: const Icon(Icons.mosque_rounded, size: 20),
+            tooltip: 'مواقيت الصلاة',
+            onPressed: () {
+              _scrollController.animateTo(
+                0, 
+                duration: const Duration(milliseconds: 500), 
+                curve: Curves.easeInOut,
+              );
+            },
+            style: IconButton.styleFrom(
+              backgroundColor: cs.primaryContainer.withValues(alpha: 0.6),
+              foregroundColor: cs.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Dynamic Qibla Scroll Hook
+          IconButton.filledTonal(
+            icon: const Icon(Icons.explore_rounded, size: 20),
+            tooltip: 'بوصلة القبلة',
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.qibla);
+            },
+            style: IconButton.styleFrom(
+              backgroundColor: cs.primaryContainer.withValues(alpha: 0.6),
+              foregroundColor: cs.onPrimaryContainer,
+            ),
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -42,6 +83,7 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
             data: (data) => RefreshIndicator(
               onRefresh: () => ref.refresh(todayPrayersProvider.future),
               child: SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.only(bottom: 110), // extra padding for stack navbar
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
@@ -57,31 +99,11 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
                     _buildPrayerTimes(context, data),
                     const SizedBox(height: 28),
 
-                    // Section 3: Qibla Title
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'اتجاه القبلة',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: cs.onSurface,
-                          fontFamily: 'Tajawal',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    // Section 2.5: Beautiful Prayer Tips & Sunnahs Carousel
+                    const PrayerTipsCard(),
+                    const SizedBox(height: 28),
 
-                    // Section 4: Integrated Real Compass Widget
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: const QiblaCompass(
-                        showEffects: true,
-                        showCalibrationCard: false, // keep it clean
-                        showHintCard: true,         // but give them hint
-                        showInfoCards: true,        // and basic degrees
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 4),
 
                     // Section 5: Interactive Mini Tasbih & Salawat Hub
                     Padding(

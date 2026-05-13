@@ -63,7 +63,8 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
     _previewPlayer.playerStateStream.listen((state) {
       if (mounted) {
         setState(() {
-          _isPlayingAudio = state.playing &&
+          _isPlayingAudio =
+              state.playing &&
               state.processingState != ProcessingState.completed;
         });
       }
@@ -108,28 +109,24 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
     }
 
     setState(() => _isPlayingAudio = true);
+    // To prevent IDE debugger pauses on caught exceptions, we use the guaranteed physical file path.
+    // 'android/app/src/main/res/raw/salawat.mp3'
+    const String salawatAsset =
+        'android/app/src/main/res/raw/adhan_madinah.mp3';
+
     try {
-      // Try setting the primary requested salawat file
-      await _previewPlayer.setAsset('android/app/src/main/res/raw/salawat.mp3');
-    } catch (_) {
-      try {
-        // Fallback to testing/mock sound seamlessly
-        await _previewPlayer.setAsset('android/app/src/main/res/raw/adhan_madinah.mp3');
-      } catch (innerErr) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('تعذر العثور على ملف الصوت: $innerErr'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
+      await _previewPlayer.setAsset(salawatAsset);
+      await _previewPlayer.play();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تعذر تشغيل الصوت: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     }
-    
-    try {
-      await _previewPlayer.play();
-    } catch (_) {}
   }
 
   Future<void> _toggleSalawatNotification(bool enabled) async {
@@ -139,7 +136,7 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
     try {
       HapticFeedback.selectionClick();
       await ref.read(settingsProvider.notifier).setSalawatEnabled(enabled);
-      
+
       final nextSettings = settings.copyWith(salawatEnabled: enabled);
       await NotificationService.instance.scheduleSalawat(
         enabled: enabled,
@@ -150,13 +147,18 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              enabled 
-                  ? 'تم تفعيل تذكير الصلاة على النبي ﷺ بنجاح' 
+              enabled
+                  ? 'تم تفعيل تذكير الصلاة على النبي ﷺ بنجاح'
                   : 'تم تعطيل تذكير الصلاة على النبي ﷺ',
-              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontFamily: 'Tajawal',
+                fontWeight: FontWeight.w600,
+              ),
             ),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: enabled ? Theme.of(context).colorScheme.primary : Colors.grey[800],
+            backgroundColor: enabled
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey[800],
             duration: const Duration(seconds: 2),
           ),
         );
@@ -178,10 +180,7 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            cs.surface,
-            cs.surfaceContainerLow,
-          ],
+          colors: [cs.surface, cs.surfaceContainerLow],
         ),
         border: Border.all(
           color: cs.primary.withValues(alpha: 0.12),
@@ -269,7 +268,9 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
                                   fontFamily: 'Tajawal',
-                                  color: cs.onPrimaryContainer.withValues(alpha: 0.7),
+                                  color: cs.onPrimaryContainer.withValues(
+                                    alpha: 0.7,
+                                  ),
                                 ),
                               ),
                             ],
@@ -313,7 +314,11 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
                           IconButton(
                             visualDensity: VisualDensity.compact,
                             onPressed: _resetCount,
-                            icon: Icon(Icons.refresh_rounded, size: 18, color: cs.onSurfaceVariant),
+                            icon: Icon(
+                              Icons.refresh_rounded,
+                              size: 18,
+                              color: cs.onSurfaceVariant,
+                            ),
                             tooltip: 'تصفير العداد',
                           ),
                         ],
@@ -341,7 +346,9 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
                                 },
                                 child: Container(
                                   key: ValueKey<int>(_adhkarIndex),
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
                                   alignment: Alignment.centerRight,
                                   child: Text(
                                     _adhkar[_adhkarIndex],
@@ -370,11 +377,8 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
               ],
             ),
           ),
-          
-          Divider(
-            color: cs.outlineVariant.withValues(alpha: 0.4),
-            height: 1,
-          ),
+
+          Divider(color: cs.outlineVariant.withValues(alpha: 0.4), height: 1),
 
           // Bottom Section - Salawat Panel
           Padding(
@@ -382,9 +386,11 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
             child: Row(
               children: [
                 Icon(
-                  Icons.favorite_rounded, 
-                  size: 18, 
-                  color: salawatActive ? Colors.redAccent : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                  Icons.favorite_rounded,
+                  size: 18,
+                  color: salawatActive
+                      ? Colors.redAccent
+                      : cs.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -400,8 +406,8 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
                         ),
                       ),
                       Text(
-                        salawatActive 
-                            ? 'مُفعل حاليًا، كل $salawatInterval دقيقة صوتيًا' 
+                        salawatActive
+                            ? 'مُفعل حاليًا، كل $salawatInterval دقيقة صوتيًا'
                             : 'تنبيه دوري صوتي يظهر بالإشعارات',
                         style: TextStyle(
                           color: cs.onSurfaceVariant,
@@ -418,16 +424,20 @@ class _MiniTasbihHubState extends ConsumerState<MiniTasbihHub>
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
-                      _isPlayingAudio 
-                          ? Icons.stop_circle_rounded 
+                      _isPlayingAudio
+                          ? Icons.stop_circle_rounded
                           : Icons.volume_up_rounded,
                       key: ValueKey<bool>(_isPlayingAudio),
                       size: 18,
                     ),
                   ),
                   style: IconButton.styleFrom(
-                    backgroundColor: _isPlayingAudio ? cs.primary : cs.surfaceContainerHighest,
-                    foregroundColor: _isPlayingAudio ? cs.onPrimary : cs.primary,
+                    backgroundColor: _isPlayingAudio
+                        ? cs.primary
+                        : cs.surfaceContainerHighest,
+                    foregroundColor: _isPlayingAudio
+                        ? cs.onPrimary
+                        : cs.primary,
                     visualDensity: VisualDensity.compact,
                   ),
                   tooltip: 'استماع للصوت',
