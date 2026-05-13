@@ -5,6 +5,7 @@ import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/prayer_clock_visualizer.dart';
+import 'package:quranglow/features/prayer/presentation/widgets/mini_tasbih_hub.dart';
 import 'package:quranglow/features/qibla/presentation/widgets/qibla_compass.dart';
 
 class PrayerQiblaScreen extends ConsumerStatefulWidget {
@@ -79,6 +80,13 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
                         showHintCard: true,         // but give them hint
                         showInfoCards: true,        // and basic degrees
                       ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Section 5: Interactive Mini Tasbih & Salawat Hub
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: const MiniTasbihHub(),
                     ),
                     const SizedBox(height: 24),
                   ],
