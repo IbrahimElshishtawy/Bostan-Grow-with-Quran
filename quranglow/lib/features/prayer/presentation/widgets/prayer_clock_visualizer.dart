@@ -255,26 +255,30 @@ class _PrayerClockVisualizerState extends State<PrayerClockVisualizer>
                             color: cs.primary.withValues(alpha: 0.2),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.timer_outlined,
-                              size: 16,
-                              color: cs.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _formatDuration(remaining),
-                              style: TextStyle(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.timer_outlined,
+                                size: 16,
                                 color: cs.primary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'System', // Solid fixed-width font for timer
-                                letterSpacing: 0.8,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatDuration(remaining),
+                                style: TextStyle(
+                                  color: cs.primary,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'System', // Solid fixed-width font for timer
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

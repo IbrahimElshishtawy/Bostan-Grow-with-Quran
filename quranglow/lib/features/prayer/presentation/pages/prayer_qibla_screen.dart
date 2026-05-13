@@ -115,13 +115,18 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
                   fontFamily: 'Tajawal',
                 ),
               ),
-              const Spacer(),
-              Text(
-                data.methodName,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Tajawal',
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  data.methodName,
+                  textAlign: TextAlign.left, // opposite end alignment in RTL
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Tajawal',
+                  ),
                 ),
               ),
             ],

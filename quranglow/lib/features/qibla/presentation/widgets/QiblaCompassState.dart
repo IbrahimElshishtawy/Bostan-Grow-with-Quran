@@ -23,6 +23,7 @@ class QiblaCompassState extends State<QiblaCompass>
   Position? _pos;
   StreamSubscription<Position>? _posSub;
   StreamSubscription<CompassEvent>? _compassSub;
+  Timer? _sensorCheckTimer;
 
   String _sensorStatus = '—';
   bool _usingCourse = false;
@@ -33,6 +34,11 @@ class QiblaCompassState extends State<QiblaCompass>
   String? _error;
 
   int _initSeq = 0;
+
+  // Manual mode for damaged / missing sensors
+  bool _sensorMissing = false;
+  bool _isManualMode = false;
+  double _manualHeading = 0.0; // Simulated heading set by dragging dial
 
   @override
   void initState() {
@@ -47,6 +53,7 @@ class QiblaCompassState extends State<QiblaCompass>
   @override
   void dispose() {
     _animationController.dispose();
+    _sensorCheckTimer?.cancel();
     _cancelStreams();
     super.dispose();
   }
@@ -66,7 +73,9 @@ class QiblaCompassState extends State<QiblaCompass>
   Future<void> _init() async {
     final seq = ++_initSeq;
     _cancelStreams();
+    _sensorCheckTimer?.cancel();
     _usingCourse = false;
+    _sensorMissing = false;
     _sensorStatus = '—';
     _heading = _smoothedHeading = _delta = null;
     _error = null;
@@ -114,7 +123,7 @@ class QiblaCompassState extends State<QiblaCompass>
         _pos = p;
         _bearingToQibla = _bearing(p.latitude, p.longitude, _kaabaLat, _kaabaLng);
 
-        if (_usingCourse || _heading == null) {
+        if (!_isManualMode && (_usingCourse || _heading == null)) {
           if (p.speed > 1.0 && p.heading >= 0) {
             final course = _normalize(p.heading);
             _usingCourse = true;
@@ -127,8 +136,26 @@ class QiblaCompassState extends State<QiblaCompass>
         _safeSet(() {});
       });
 
+      // Set detection timer for missing/broken magnetometer
+      _sensorCheckTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted && _heading == null && !_usingCourse) {
+          _safeSet(() {
+            _sensorMissing = true;
+            // Enable manual mode automatically if we determine the sensor gives no data
+            _isManualMode = true;
+            _updateDelta();
+          });
+        }
+      });
+
       _compassSub = FlutterCompass.events?.listen((e) {
         if (!mounted || seq != _initSeq) return;
+
+        // We received data, cancel missing sensor trigger
+        _sensorCheckTimer?.cancel();
+        if (_sensorMissing) {
+          _safeSet(() => _sensorMissing = false);
+        }
 
         final acc = e.accuracy;
         if (acc == null) {
@@ -159,7 +186,7 @@ class QiblaCompassState extends State<QiblaCompass>
   }
 
   void _updateDelta() {
-    final src = _smoothedHeading ?? _heading;
+    final src = _isManualMode ? _manualHeading : (_smoothedHeading ?? _heading);
     if (src == null || _bearingToQibla == null) return;
     _delta = _normalize(_bearingToQibla! - src);
   }
@@ -193,18 +220,28 @@ class QiblaCompassState extends State<QiblaCompass>
       return const LoadingCard();
     }
 
-    final heading = (_smoothedHeading ?? _heading) ?? 0;
+    final heading = _isManualMode 
+        ? _manualHeading 
+        : ((_smoothedHeading ?? _heading) ?? 0);
     final delta = _delta ?? 0;
 
-    final hint = _usingCourse
-        ? 'لا يوجد مستشعر بوصلة دقيق، يتم الاعتماد على حركة GPS.'
-        : (_sensorStatus == 'CALIBRATION'
-              ? 'حرّك الهاتف بشكل 8 وابتعد عن المعادن لتحسين الدقة.'
-              : 'ثبّت الهاتف أفقيًا ووجّه السهم حتى يتطابق مع اتجاه القبلة.');
-
-    final hintColor = _usingCourse
-        ? cs.tertiary
-        : (_sensorStatus == 'CALIBRATION' ? cs.tertiary : cs.onSurfaceVariant);
+    // Build premium contextual hints based on active system state
+    String hint;
+    Color hintColor;
+    if (_isManualMode) {
+      hint = _sensorMissing
+          ? 'مستشعر الاتجاه غير متوفر. استخدم أصبعك لتدوير القرص ومحاذاة حرف N مع جهة الشمال الحقيقية.'
+          : 'وضع التوجيه اليدوي نشط. قم بتدوير البوصلة يدويًا لمحاذاة الاتجاه.';
+      hintColor = cs.primary;
+    } else if (_usingCourse) {
+      hint = 'يتم التوجيه اعتمادًا على حركة نظام الـ GPS، تحرك لزيادة الدقة.';
+      hintColor = cs.tertiary;
+    } else {
+      hint = (_sensorStatus == 'CALIBRATION')
+          ? 'حرّك الهاتف بشكل 8 وابتعد عن المعادن لتحسين دقة البوصلة.'
+          : 'ثبّت الهاتف أفقيًا ووجّه السهم حتى يتطابق مع اتجاه القبلة.';
+      hintColor = (_sensorStatus == 'CALIBRATION' ? cs.tertiary : cs.onSurfaceVariant);
+    }
 
     return Column(
       children: [
@@ -231,57 +268,148 @@ class QiblaCompassState extends State<QiblaCompass>
               Row(
                 children: [
                   _StatusChip(
-                    icon: _usingCourse
-                        ? Icons.my_location_rounded
-                        : Icons.sensors_rounded,
-                    text: _usingCourse ? 'وضع GPS' : 'وضع البوصلة',
+                    icon: _isManualMode 
+                        ? Icons.touch_app_rounded
+                        : (_usingCourse ? Icons.my_location_rounded : Icons.sensors_rounded),
+                    text: _isManualMode 
+                        ? 'توجيه يدوي' 
+                        : (_usingCourse ? 'وضع GPS' : 'وضع البوصلة'),
                   ),
                   const Spacer(),
-                  Text(
-                    'الدقة: ${_statusLabel(_sensorStatus)}',
-                    style: TextStyle(
-                      color: cs.onSurfaceVariant,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                  // Quick switch button for manual rotation fallback
+                  InkWell(
+                    onTap: () {
+                      _safeSet(() {
+                        _isManualMode = !_isManualMode;
+                        _updateDelta();
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(30),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _isManualMode 
+                            ? cs.primaryContainer.withValues(alpha: 0.5)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: _isManualMode ? cs.primary : cs.outlineVariant,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isManualMode ? Icons.auto_mode_rounded : Icons.edit_location_alt_rounded,
+                            size: 14,
+                            color: _isManualMode ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _isManualMode ? 'تلقائي' : 'يدوي',
+                            style: TextStyle(
+                              color: _isManualMode ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  if (!_isManualMode) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      'الدقة: ${_statusLabel(_sensorStatus)}',
+                      style: TextStyle(
+                        color: cs.onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Tajawal',
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 14),
               AspectRatio(
                 aspectRatio: 1,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    dial.CompassDial(
-                      rotationDeg: heading,
-                      ringsColor: cs.outlineVariant,
-                    ),
-                    if (widget.showEffects)
-                      AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          return CustomPaint(
-                            size: Size.infinite,
-                            painter: BurningEffectPainter(
-                              rotation: delta,
-                              color: cs.primary,
-                              animationValue: _animationController.value,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      // Trigonometry-powered polar tracking for premium manual dial manipulation
+                      onPanUpdate: _isManualMode ? (details) {
+                        final box = context.findRenderObject() as RenderBox;
+                        final center = box.size.center(Offset.zero);
+                        final touchVec = details.localPosition - center;
+                        
+                        // Calculate relative angle (radians) and convert to compass-relative degrees
+                        final rad = math.atan2(touchVec.dy, touchVec.dx);
+                        _safeSet(() {
+                          // Add 90 degrees buffer to lock trig plane (0 to right) into compass plane (0 to top)
+                          _manualHeading = _normalize(_rad2deg(rad) + 90);
+                          _updateDelta();
+                        });
+                      } : null,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          dial.CompassDial(
+                            rotationDeg: heading,
+                            ringsColor: cs.outlineVariant,
+                          ),
+                          if (widget.showEffects)
+                            AnimatedBuilder(
+                              animation: _animationController,
+                              builder: (context, child) {
+                                return CustomPaint(
+                                  size: Size.infinite,
+                                  painter: BurningEffectPainter(
+                                    rotation: delta,
+                                    color: cs.primary,
+                                    animationValue: _animationController.value,
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
+                          QiblaArrow(rotationDeg: delta, color: cs.primary),
+                          // Hand/Touch helper indicator when in manual mode
+                          if (_isManualMode)
+                            IgnorePointer(
+                              child: AnimatedBuilder(
+                                animation: _animationController,
+                                builder: (context, child) {
+                                  return Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: cs.primary.withValues(alpha: 0.6 * (1.0 - _animationController.value)),
+                                        width: 2 + (4 * _animationController.value),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: cs.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: cs.surface, width: 2),
+                            ),
+                          ),
+                        ],
                       ),
-                    QiblaArrow(rotationDeg: delta, color: cs.primary),
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: cs.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: cs.surface, width: 2),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ],
@@ -290,13 +418,45 @@ class QiblaCompassState extends State<QiblaCompass>
         const SizedBox(height: 12),
         if (widget.showInfoCards) ...[
           info.InfoRow(
-            heading: _smoothedHeading ?? _heading,
+            heading: _isManualMode ? _manualHeading : (_smoothedHeading ?? _heading),
             bearing: _bearingToQibla,
             delta: _delta,
           ),
           const SizedBox(height: 10),
         ],
-        if (widget.showCalibrationCard) ...[
+        // If sensor is determined to be physically unavailable or broken, render direct reassurance banner
+        if (_sensorMissing && _isManualMode)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: cs.errorContainer.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: cs.error, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                            child: Text(
+                              'تم كشف عطل بحساس الاتجاهات، تم تفعيل وضع التوجيه اليدوي البديل كحل دائم.',
+                              style: TextStyle(
+                                color: cs.onErrorContainer,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                height: 1.4,
+                                fontFamily: 'Tajawal',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+        if (widget.showCalibrationCard && !_isManualMode) ...[
           CalibrationCard(status: _sensorStatus == 'CALIBRATION' ? 'WARN' : 'OK'),
           const SizedBox(height: 10),
         ],
@@ -313,7 +473,9 @@ class QiblaCompassState extends State<QiblaCompass>
               hint,
               style: TextStyle(
                 color: hintColor,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Tajawal',
+                height: 1.4,
               ),
             ),
           ),
@@ -360,8 +522,9 @@ class _StatusChip extends StatelessWidget {
             text,
             style: TextStyle(
               color: cs.primary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w900,
               fontSize: 12,
+              fontFamily: 'Tajawal',
             ),
           ),
         ],
