@@ -22,6 +22,7 @@ import 'package:quranglow/features/mushaf/presentation/pages/mushaf_page.dart';
 import 'package:quranglow/features/mushaf/presentation/pages/paged_mushaf.dart';
 import 'package:quranglow/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:quranglow/features/player/presentation/pages/player_page.dart';
+import 'package:quranglow/features/prayer/presentation/pages/nearest_mosque_screen.dart';
 import 'package:quranglow/features/qibla/presentation/pages/qibla_page.dart';
 import 'package:quranglow/features/search/presentation/pages/search_page.dart';
 import 'package:quranglow/features/settings/presentation/pages/settings_page.dart';
@@ -242,6 +243,8 @@ Route<dynamic>? onGenerateRoute(RouteSettings s) {
     return _mat(const QiblaPage(), s);
   } else if (name == AppRoutes.azkar) {
     return _mat(const AzkarTasbihPage(), s);
+  } else if (name == AppRoutes.nearestMosque) {
+    return _mat(const NearestMosqueScreen(), s);
   }
 
   return _mat(_routeMessagePage('المسارات', 'Route not found'), s);

@@ -345,30 +345,67 @@ class _MushafPageState extends ConsumerState<MushafPage> {
               ),
               asyncSurah.when(
                 loading: () => const MushafSkeleton(),
-                error: (e, _) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('تعذر تحميل السورة'),
-                        const SizedBox(height: 8),
-                        Text(
-                          '$e',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton(
-                          onPressed: () => ref.refresh(
-                            surahProvider((_chapter, widget.editionId)),
+                error: (e, _) {
+                  final errStr = e.toString().toLowerCase();
+                  final isNetworkError = errStr.contains('dio') || errStr.contains('socket') || errStr.contains('network') || errStr.contains('host');
+                  
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
+                              size: 48,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                           ),
-                          child: const Text('إعادة المحاولة'),
-                        ),
-                      ],
+                          const SizedBox(height: 20),
+                          Text(
+                            isNetworkError ? 'لا يوجد اتصال بالإنترنت' : 'عذراً، تعذر تحميل السورة',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            isNetworkError 
+                                ? 'يرجى التحقق من اتصالك بالشبكة لسحب بيانات المصحف الشريف.'
+                                : 'حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى لاحقاً.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontFamily: 'Tajawal',
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.refresh_rounded, size: 20),
+                            label: const Text('إعادة المحاولة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            onPressed: () => ref.refresh(
+                              surahProvider((_chapter, widget.editionId)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
                 data: (surah) => PagedMushaf(
                   key: _pagedMushafKey,
                   ayat: surah.ayat,

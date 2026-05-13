@@ -8,6 +8,7 @@ import 'package:quranglow/features/prayer/presentation/widgets/prayer_clock_visu
 import 'package:quranglow/features/prayer/presentation/widgets/prayer_academy_hub.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 import 'package:quranglow/core/widgets/pro_shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PrayerQiblaScreen extends ConsumerStatefulWidget {
   const PrayerQiblaScreen({super.key});
@@ -38,13 +39,9 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
         actions: [
           _buildAppBarAction(
             icon: Icons.mosque_rounded,
-            tooltip: 'مواقيت الصلاة',
+            tooltip: 'أقرب المساجد',
             onTap: () {
-              _scrollController.animateTo(
-                0, 
-                duration: const Duration(milliseconds: 500), 
-                curve: Curves.easeInOut,
-              );
+              Navigator.pushNamed(context, AppRoutes.nearestMosque);
             },
           ),
           _buildAppBarAction(

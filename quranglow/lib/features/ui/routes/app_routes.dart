@@ -21,4 +21,5 @@ class AppRoutes {
   static const tafsirReader = '/tafsirReader';
   static const qibla = '/qibla';
   static const azkar = '/azkar';
+  static const nearestMosque = '/nearestMosque';
 }
