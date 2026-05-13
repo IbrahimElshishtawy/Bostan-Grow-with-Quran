@@ -60,13 +60,17 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   // 🎙️ Hifz Voice Recitation Mode State
   bool _voiceReciteMode = false;
-  final Map<int, Set<int>> _revealedWords = {}; // Surah Ayah Number -> Set of word indices
-  final Map<int, Set<int>> _mistakenWords = {}; // Surah Ayah Number -> Set of wrong/skipped word indices
-  int _consumedSpokenWordsCount = 0; // Tracker for real-time session stream offsets
+  final Map<int, Set<int>> _revealedWords =
+      {}; // Surah Ayah Number -> Set of word indices
+  final Map<int, Set<int>> _mistakenWords =
+      {}; // Surah Ayah Number -> Set of wrong/skipped word indices
+  int _consumedSpokenWordsCount =
+      0; // Tracker for real-time session stream offsets
   bool _speechEnabled = false;
   bool _isListening = false;
   String _wordsSpoken = "";
-  bool _matchedAnyWordsThisSession = false; // 🎯 Tracks if at least 1 word was matched during current microphone active session
+  bool _matchedAnyWordsThisSession =
+      false; // 🎯 Tracks if at least 1 word was matched during current microphone active session
   final SpeechToText _speechToText = SpeechToText();
 
   @override
@@ -75,7 +79,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     _trackingService = ref.read(trackingServiceProvider);
     _chapter = widget.chapter.clamp(1, 114);
     _lastAyahNumber = widget.initialAyah;
-    
+
     // Initialize Hifz Speech Recognition
     _initSpeech();
 
@@ -189,9 +193,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   }
 
   Future<void> _playAyahAudio(Aya aya, int ayahNumber) async {
-    final isActuallyPlaying = _ayahPreviewPlayer.playing &&
+    final isActuallyPlaying =
+        _ayahPreviewPlayer.playing &&
         _ayahPreviewPlayer.processingState != ProcessingState.completed;
-        
+
     if (isActuallyPlaying) {
       await _ayahPreviewPlayer.stop();
       return;
@@ -228,7 +233,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
       await _ayahPreviewPlayer.setUrl(url);
       await _ayahPreviewPlayer.play();
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -239,7 +244,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     } on PlayerInterruptedException {
       // 🤫 User tapped another Ayah before the previous one finished loading!
       // This is perfectly expected, so we stay completely silent.
-      debugPrint('Audio loading was interrupted by user action (swapping tracks).');
+      debugPrint(
+        'Audio loading was interrupted by user action (swapping tracks).',
+      );
     } on PlayerException catch (e) {
       // A real just_audio error (network fail, source not found etc.)
       if (!mounted) return;
@@ -302,11 +309,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       orElse: () => null,
     );
 
-
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgGradient = isDark 
-        ? const [Color(0xFF18140E), Color(0xFF0D0B08)] 
+    final bgGradient = isDark
+        ? const [Color(0xFF18140E), Color(0xFF0D0B08)]
         : const [Color(0xFFFFFDF8), Color(0xFFFDF7E8)];
 
     return Directionality(
@@ -325,7 +330,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
               // 1. Subtle Subconscious Islamic Pattern Texture
               Positioned.fill(
                 child: Opacity(
-                  opacity: isDark ? 0.05 : 0.03, // Extremely subtle as requested
+                  opacity: isDark
+                      ? 0.05
+                      : 0.03, // Extremely subtle as requested
                   child: Image.asset(
                     'assets/images/islamic_pattern.png',
                     repeat: ImageRepeat.repeat,
@@ -377,13 +384,11 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                     _trackingService.incAyat(1);
                   },
                   onAyahLongPress: (int ayahNumber, Aya aya) {
-                    _openAyahActions(
-                      ayahNumber: ayahNumber,
-                      ayat: surah.ayat,
-                    );
+                    _openAyahActions(ayahNumber: ayahNumber, ayat: surah.ayat);
                   },
                   onVisiblePageChanged: (n) => _lastAyahNumber = n,
-                  onBackgroundTap: () => setState(() => _uiVisible = !_uiVisible),
+                  onBackgroundTap: () =>
+                      setState(() => _uiVisible = !_uiVisible),
                   isHifzMode: _voiceReciteMode,
                   revealedWords: _revealedWords,
                   mistakenWords: _mistakenWords,
@@ -408,7 +413,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                     _wordsSpoken = "";
                     _uiVisible = false; // Hide standard UI to focus on Hifz
                   });
-                  
+
                   if (_voiceReciteMode) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -418,7 +423,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                         ),
                         backgroundColor: Colors.amber.shade800,
                         behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         duration: const Duration(seconds: 5),
                       ),
                     );
@@ -429,10 +436,14 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 stream: _ayahPreviewPlayer.playerStateStream,
                 builder: (context, snapshot) {
                   final state = snapshot.data;
-                  final isPlaying = (state?.playing ?? false) &&
+                  final isPlaying =
+                      (state?.playing ?? false) &&
                       (state?.processingState != ProcessingState.completed);
                   return SelectedAyahPanel(
-                    visible: _lastAyahNumber != null && selectedAyahText != null && !_voiceReciteMode,
+                    visible:
+                        _lastAyahNumber != null &&
+                        selectedAyahText != null &&
+                        !_voiceReciteMode,
                     ayahNumber: _lastAyahNumber,
                     ayahText: selectedAyahText,
                     isPlaying: isPlaying,
@@ -440,7 +451,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                       _ayahPreviewPlayer.stop(); // Stop if user clears panel
                       setState(() => _lastAyahNumber = null);
                     },
-                    onOpenTafsir: () => _openTafsirForAyah(_lastAyahNumber ?? 1),
+                    onOpenTafsir: () =>
+                        _openTafsirForAyah(_lastAyahNumber ?? 1),
                     onPlay: () {
                       final ayahNum = _lastAyahNumber;
                       final surah = asyncSurah.valueOrNull;
@@ -530,14 +542,18 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
     // 2. Inspect spoken text
     final normalized = _normalizeArabic(_wordsSpoken);
-    final spokenWords = normalized.split(' ').where((w) => w.isNotEmpty).toList();
+    final spokenWords = normalized
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .toList();
     final int spokenCount = spokenWords.length;
 
     // 🛑 TOTAL FAILURE HEURISTIC: 3+ words spoken with ZERO matches
     if (spokenCount >= 3 && !_matchedAnyWordsThisSession) {
       HapticFeedback.heavyImpact();
 
-      final Set<int> oldRevealed = _revealedWords[targetAyah.numberInSurah] ?? {};
+      final Set<int> oldRevealed =
+          _revealedWords[targetAyah.numberInSurah] ?? {};
       final Set<int> missedIndices = {};
       for (int wIdx = 0; wIdx < totalWordCount; wIdx++) {
         if (!oldRevealed.contains(wIdx)) {
@@ -549,7 +565,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         if (missedIndices.isNotEmpty) {
           _mistakenWords[targetAyah.numberInSurah] = missedIndices;
         }
-        final allWordIndices = Set<int>.from(Iterable<int>.generate(totalWordCount));
+        final allWordIndices = Set<int>.from(
+          Iterable<int>.generate(totalWordCount),
+        );
         _revealedWords[targetAyah.numberInSurah] = allWordIndices;
         _isListening = false; // Force UI reflect STOPPED
       });
@@ -562,10 +580,18 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('⚠️ قراءة غير مطابقة تماماً! تم إيقاف التسجيل للمراجعة والتصحيح.', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          content: const Text(
+            '⚠️ قراءة غير مطابقة تماماً! تم إيقاف التسجيل للمراجعة والتصحيح.',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: Colors.red.shade800,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -587,7 +613,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('الميكروفون غير مفعل أو مقيد! يرجى إعطاء الصلاحيات.'),
+              content: Text(
+                'الميكروفون غير مفعل أو مقيد! يرجى إعطاء الصلاحيات.',
+              ),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -602,15 +630,19 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       listenFor: const Duration(seconds: 45),
       pauseFor: const Duration(seconds: 6),
       partialResults: true,
-      listenMode: ListenMode.dictation, // 🎙️ Ultra-Optimized for continuous long-form dictation/recitation!
-      cancelOnError: false, // 🛑 Robust: remain active even on temporary network interruptions!
+      listenMode: ListenMode
+          .dictation, // 🎙️ Ultra-Optimized for continuous long-form dictation/recitation!
+      cancelOnError:
+          false, // 🛑 Robust: remain active even on temporary network interruptions!
     );
 
     setState(() {
       _isListening = true;
       _wordsSpoken = "";
-      _matchedAnyWordsThisSession = false; // 📍 Reset matching flag on fresh start
-      _consumedSpokenWordsCount = 0; // 📍 Reset stream consumer counter on fresh session
+      _matchedAnyWordsThisSession =
+          false; // 📍 Reset matching flag on fresh start
+      _consumedSpokenWordsCount =
+          0; // 📍 Reset stream consumer counter on fresh session
     });
   }
 
@@ -630,7 +662,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   void _processSpeechResult(String spokenText, {required bool isFinal}) {
     if (spokenText.trim().isEmpty) return;
-    
+
     final asyncSurah = ref.read(surahProvider((_chapter, widget.editionId)));
     final surah = asyncSurah.valueOrNull;
     if (surah == null) return;
@@ -638,7 +670,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     // 1. Determine active page boundaries to restrict Hifz to the CURRENT PAGE only!
     final state = _pagedMushafKey.currentState;
     final pageRange = state?.getCurrentPageRange();
-    
+
     int searchStartIdx = 0;
     int searchEndIdx = surah.ayat.length;
     if (pageRange != null) {
@@ -658,16 +690,20 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       }
     }
 
-    if (targetIndex == -1) return; // 🔥 End of Page Reached or Page Completely Revealed!
+    if (targetIndex == -1)
+      return; // 🔥 End of Page Reached or Page Completely Revealed!
 
     final targetAyah = surah.ayat[targetIndex];
     final targetWords = targetAyah.text.trim().split(RegExp(r'\s+'));
     final totalWordCount = targetWords.length;
-    
+
     // 2. Extract ONLY unconsumed spoken words since last milestone
     final normalizedSpoken = _normalizeArabic(spokenText);
-    final allSpokenWords = normalizedSpoken.split(' ').where((w) => w.isNotEmpty).toList();
-    
+    final allSpokenWords = normalizedSpoken
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .toList();
+
     if (allSpokenWords.length <= _consumedSpokenWordsCount) return;
     final newSpokenWords = allSpokenWords.sublist(_consumedSpokenWordsCount);
 
@@ -677,7 +713,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       final nextWords = nextAyah.text.trim().split(RegExp(r'\s+'));
       int nextMatches = 0;
       final checkLen = nextWords.length < 3 ? nextWords.length : 3;
-      
+
       for (int k = 0; k < checkLen; k++) {
         final ntw = _normalizeArabic(nextWords[k]);
         if (ntw.isEmpty) continue;
@@ -695,11 +731,14 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         }
       }
 
-      final bool hasSkippedCurrent = (checkLen >= 2 && nextMatches >= 2) || (checkLen < 2 && nextMatches >= 1);
-      
+      final bool hasSkippedCurrent =
+          (checkLen >= 2 && nextMatches >= 2) ||
+          (checkLen < 2 && nextMatches >= 1);
+
       if (hasSkippedCurrent) {
         // 🛑 ABANDON CURRENT AYAH: Reveal all remaining words as MISTAKES in Red!
-        final Set<int> oldRevealed = _revealedWords[targetAyah.numberInSurah] ?? {};
+        final Set<int> oldRevealed =
+            _revealedWords[targetAyah.numberInSurah] ?? {};
         final Set<int> missedIndices = {};
         for (int wIdx = 0; wIdx < totalWordCount; wIdx++) {
           if (!oldRevealed.contains(wIdx)) {
@@ -712,7 +751,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
           if (missedIndices.isNotEmpty) {
             _mistakenWords[targetAyah.numberInSurah] = missedIndices;
           }
-          final allWordIndices = Set<int>.from(Iterable<int>.generate(totalWordCount));
+          final allWordIndices = Set<int>.from(
+            Iterable<int>.generate(totalWordCount),
+          );
           _revealedWords[targetAyah.numberInSurah] = allWordIndices;
         });
 
@@ -721,7 +762,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
           if (!mounted) return;
           _checkPageCompletion(surah.ayat);
         });
-        
+
         // Flush listener and restart. In the next frame, targetIndex will evaluate to targetIndex + 1,
         // and those very same spoken words will be processed against it instantly!
         _stopListening();
@@ -760,8 +801,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
           wordMatched = true;
           break;
         }
-        // 🎯 TIGHT OVERLAP: Only for longer words (>3 chars), require 75%+ similarity
-        if (sw.length > 3 && tw.length > 3 && _calculateOverlap(sw, tw) >= 0.75) {
+        // 🎯 RELAXED OVERLAP: Only for longer words (>3 chars), require 55%+ similarity to avoid false negatives
+        if (sw.length > 3 &&
+            tw.length > 3 &&
+            _calculateOverlap(sw, tw) >= 0.60) {
           wordMatched = true;
           break;
         }
@@ -778,17 +821,18 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
     if (stateUpdated) {
       HapticFeedback.selectionClick();
-      _matchedAnyWordsThisSession = true; // 🎯 TRIPPED: Actually matched something!
+      _matchedAnyWordsThisSession =
+          true; // 🎯 TRIPPED: Actually matched something!
       setState(() {
         _revealedWords[targetAyah.numberInSurah] = currentRevealed;
       });
     }
 
-    // 4. 🔥 Evaluate ayah completion with user-requested 70% threshold!
+    // 4. 🔥 Evaluate ayah completion with user-requested relaxed 60% threshold!
     final double completionRatio = currentRevealed.length / totalWordCount;
-    if (completionRatio >= 0.70) {
+    if (completionRatio >= 0.55) {
       HapticFeedback.heavyImpact();
-      
+
       // 🛑 IDENTIFY MISTAKES: Find any word indices that were NOT completed before triggering 70% autocomplete!
       final Set<int> missedIndices = {};
       for (int wIdx = 0; wIdx < totalWordCount; wIdx++) {
@@ -804,9 +848,11 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         }
 
         // Auto-reveal the entire remaining words of this ayah (missed ones will render in Red!)
-        final allWordIndices = Set<int>.from(Iterable<int>.generate(totalWordCount));
+        final allWordIndices = Set<int>.from(
+          Iterable<int>.generate(totalWordCount),
+        );
         _revealedWords[targetAyah.numberInSurah] = allWordIndices;
-        
+
         // 🎯 Transition: consume all spoken words to ignore them when checking next ayah!
         _consumedSpokenWordsCount = allSpokenWords.length;
       });
@@ -820,10 +866,14 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('أحسنت! اكتملت الآية رقم ${targetAyah.numberInSurah} (التقييم: ${(completionRatio * 100).toInt()}%) 🎉'),
+          content: Text(
+            'أحسنت! اكتملت الآية رقم ${targetAyah.numberInSurah} (التقييم: ${(completionRatio * 100).toInt()}%) 🎉',
+          ),
           backgroundColor: Colors.teal.shade800,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(milliseconds: 1200),
         ),
       );
@@ -836,11 +886,14 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   String _normalizeArabic(String input) {
     return input
-        .replaceAll(RegExp(r'[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]'), '') 
+        .replaceAll(
+          RegExp(r'[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]'),
+          '',
+        )
         .replaceAll(RegExp(r'[إأآ]'), 'ا')
         .replaceAll('ى', 'ي')
         .replaceAll('ة', 'ه')
-        .replaceAll(RegExp(r'[^\u0621-\u064A\s]'), '') 
+        .replaceAll(RegExp(r'[^\u0621-\u064A\s]'), '')
         .trim()
         .replaceAll(RegExp(r'\s+'), ' ')
         .toLowerCase();
@@ -857,16 +910,18 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         available.remove(c);
       }
     }
-    final int minLen = chars1.length < chars2.length ? chars1.length : chars2.length;
+    final int minLen = chars1.length < chars2.length
+        ? chars1.length
+        : chars2.length;
     if (minLen == 0) return 0.0;
     return matchedCount / minLen;
   }
 
   Widget _buildHifzVoiceOverlay(Surah? surah) {
     if (!_voiceReciteMode) return const SizedBox.shrink();
-    
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     int targetNum = 1;
     if (surah != null) {
       int pageStartNum = _lastAyahNumber ?? 1;
@@ -894,10 +949,12 @@ class _MushafPageState extends ConsumerState<MushafPage> {
               color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 25,
               spreadRadius: 5,
-            )
+            ),
           ],
           border: Border.all(
-            color: _isListening ? Colors.teal.withValues(alpha: 0.5) : Colors.amber.withValues(alpha: 0.3),
+            color: _isListening
+                ? Colors.teal.withValues(alpha: 0.5)
+                : Colors.amber.withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
@@ -944,7 +1001,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
               ],
             ),
             const SizedBox(height: 10),
-            
+
             if (_isListening || _wordsSpoken.isNotEmpty)
               Container(
                 width: double.infinity,
@@ -959,7 +1016,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontStyle: FontStyle.italic,
-                    color: _wordsSpoken.isEmpty ? Colors.grey : Colors.amber.shade800,
+                    color: _wordsSpoken.isEmpty
+                        ? Colors.grey
+                        : Colors.amber.shade800,
                     fontSize: 15,
                   ),
                 ),
@@ -968,25 +1027,35 @@ class _MushafPageState extends ConsumerState<MushafPage> {
             if (_isListening)
               GestureDetector(
                 onTap: _stopListening,
-                child: Container(
-                  width: 75,
-                  height: 75,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.redAccent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.redAccent.withValues(alpha: 0.4),
-                        blurRadius: 20,
-                        spreadRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.mic, color: Colors.white, size: 36),
-                )
-                .animate(onPlay: (c) => c.repeat(reverse: true))
-                .scaleXY(begin: 1.0, end: 1.15, duration: 800.ms, curve: Curves.easeInOut)
-                .shimmer(color: Colors.white24, duration: 1600.ms),
+                child:
+                    Container(
+                          width: 75,
+                          height: 75,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.redAccent,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent.withValues(alpha: 0.4),
+                                blurRadius: 20,
+                                spreadRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.mic,
+                            color: Colors.white,
+                            size: 36,
+                          ),
+                        )
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .scaleXY(
+                          begin: 1.0,
+                          end: 1.15,
+                          duration: 800.ms,
+                          curve: Curves.easeInOut,
+                        )
+                        .shimmer(color: Colors.white24, duration: 1600.ms),
               )
             else
               GestureDetector(
@@ -1005,12 +1074,18 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.mic_none, color: Colors.white, size: 36),
+                  child: const Icon(
+                    Icons.mic_none,
+                    color: Colors.white,
+                    size: 36,
+                  ),
                 ),
               ),
             const SizedBox(height: 8),
             Text(
-              _isListening ? 'اضغط للإيقاف أو التصحيح' : 'اضغط وابدأ القراءة بصوتك',
+              _isListening
+                  ? 'اضغط للإيقاف أو التصحيح'
+                  : 'اضغط وابدأ القراءة بصوتك',
               style: TextStyle(
                 color: _isListening ? Colors.redAccent : Colors.teal.shade700,
                 fontSize: 13,
@@ -1022,6 +1097,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       ),
     );
   }
+
   void _checkPageCompletion(List<Aya> surahAyat) {
     final state = _pagedMushafKey.currentState;
     if (state == null) return;
@@ -1057,15 +1133,18 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     IconData icon;
     Color themeColor;
     if (pageMistakesCount == 0) {
-      motivationMsg = "ما شاء الله تبارك الله! قراءة متقنة كالدر المنثور خالية تماماً من الأخطاء! 👑✨ ثبتك الله ورفع قدرك.";
+      motivationMsg =
+          "ما شاء الله تبارك الله! قراءة متقنة كالدر المنثور خالية تماماً من الأخطاء! 👑✨ ثبتك الله ورفع قدرك.";
       icon = Icons.stars_rounded;
       themeColor = Colors.amber.shade700;
     } else if (pageMistakesCount <= 3) {
-      motivationMsg = "أداء رائع جداً ومبارك! وقعت في $pageMistakesCount أخطاء يسيرة جداً. كرر التسميع الآن لتصل لدرجة الإتقان الكامل! 💪🌟";
+      motivationMsg =
+          "أداء رائع جداً ومبارك! وقعت في $pageMistakesCount أخطاء يسيرة جداً. كرر التسميع الآن لتصل لدرجة الإتقان الكامل! 💪🌟";
       icon = Icons.verified_rounded;
       themeColor = Colors.teal;
     } else {
-      motivationMsg = "جهد رائع ومبارك! لديك $pageMistakesCount أخطاء. التكرار هو سر تمكين الحفظ وتثبيته، أعد التسميع بنشاط واستعن بالله! ❤️🌱";
+      motivationMsg =
+          "جهد رائع ومبارك! لديك $pageMistakesCount أخطاء. التكرار هو سر تمكين الحفظ وتثبيته، أعد التسميع بنشاط واستعن بالله! ❤️🌱";
       icon = Icons.menu_book_rounded;
       themeColor = Colors.blue.shade600;
     }
@@ -1076,16 +1155,22 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       builder: (ctx) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark 
-              ? Colors.grey.shade900.withValues(alpha: 0.95) 
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade900.withValues(alpha: 0.95)
               : Colors.white.withValues(alpha: 0.95),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 70, color: themeColor).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+                Icon(
+                  icon,
+                  size: 70,
+                  color: themeColor,
+                ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
                 const SizedBox(height: 16),
                 Text(
                   "تم بفضل الله!",
@@ -1099,7 +1184,11 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 const SizedBox(height: 6),
                 const Text(
                   "إتمام تسميع الصفحة بنجاح 🎉",
-                  style: TextStyle(fontSize: 15, fontFamily: 'Tajawal', fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const Divider(height: 30, thickness: 1),
                 Row(
@@ -1112,10 +1201,12 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                     Text(
                       "$pageMistakesCount",
                       style: TextStyle(
-                        fontSize: 20, 
-                        fontFamily: 'Tajawal', 
-                        fontWeight: FontWeight.bold, 
-                        color: pageMistakesCount > 0 ? Colors.redAccent.shade700 : Colors.teal,
+                        fontSize: 20,
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        color: pageMistakesCount > 0
+                            ? Colors.redAccent.shade700
+                            : Colors.teal,
                       ),
                     ),
                   ],
@@ -1126,15 +1217,17 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                   decoration: BoxDecoration(
                     color: themeColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: themeColor.withValues(alpha: 0.15)),
+                    border: Border.all(
+                      color: themeColor.withValues(alpha: 0.15),
+                    ),
                   ),
                   child: Text(
                     motivationMsg,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 14, 
+                      fontSize: 14,
                       height: 1.6,
-                      fontFamily: 'Tajawal', 
+                      fontFamily: 'Tajawal',
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1144,13 +1237,26 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
-                        label: const Text("إعادة التسميع", style: TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                        icon: const Icon(
+                          Icons.refresh,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          "إعادة التسميع",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal.shade700,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: () {
                           Navigator.pop(ctx);
@@ -1170,7 +1276,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: BorderSide(color: Colors.grey.shade300),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: () {
                           Navigator.pop(ctx);
@@ -1180,7 +1288,13 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                             _mistakenWords.clear();
                           });
                         },
-                        child: const Text("إغلاق", style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          "إغلاق",
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
