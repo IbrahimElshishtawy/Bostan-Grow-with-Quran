@@ -1,18 +1,12 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:quranglow/features/azkar/presentation/pages/azkar_tasbih_page.dart';
+import 'package:quranglow/features/gamification/presentation/pages/modern_home_screen.dart';
 import 'package:quranglow/features/home/presentation/widgets/app_drawer.dart';
-import 'package:quranglow/features/home/presentation/widgets/daily_ayah_card.dart';
-import 'package:quranglow/features/home/presentation/widgets/goals_strip.dart';
-import 'package:quranglow/features/home/presentation/widgets/hero_header.dart';
-import 'package:quranglow/features/home/presentation/widgets/last_read_card.dart';
-import 'package:quranglow/features/home/presentation/widgets/prayer_times_card.dart';
-import 'package:quranglow/features/home/presentation/widgets/quick_actions_grid.dart';
-import 'package:quranglow/features/home/presentation/widgets/section_spacing.dart';
-import 'package:quranglow/features/home/presentation/widgets/shortcuts_list.dart';
 import 'package:quranglow/features/player/presentation/pages/player_page.dart';
-import 'package:quranglow/features/search/presentation/pages/search_page.dart';
+import 'package:quranglow/features/prayer/presentation/pages/prayer_qibla_screen.dart';
 import 'package:quranglow/features/surah/presentation/pages/surah_list_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -24,12 +18,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _tab = 0;
+  bool _isNavVisible = true;
 
   static const _tabs = <_NavTab>[
     _NavTab(
-      label: 'الرئيسية',
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
+      label: 'التعلم',
+      icon: Icons.school_outlined,
+      activeIcon: Icons.school_rounded,
     ),
     _NavTab(
       label: 'المصحف',
@@ -38,8 +33,8 @@ class _HomePageState extends State<HomePage> {
     ),
     _NavTab(
       label: 'الأذكار',
-      icon: Icons.favorite_border,
-      activeIcon: Icons.favorite,
+      icon: Icons.spa_outlined,
+      activeIcon: Icons.spa,
     ),
     _NavTab(
       label: 'المشغل',
@@ -47,9 +42,9 @@ class _HomePageState extends State<HomePage> {
       activeIcon: Icons.play_circle,
     ),
     _NavTab(
-      label: 'بحث',
-      icon: Icons.search_rounded,
-      activeIcon: Icons.manage_search_rounded,
+      label: 'المصلى',
+      icon: Icons.explore_outlined,
+      activeIcon: Icons.explore,
     ),
   ];
 
@@ -58,18 +53,50 @@ class _HomePageState extends State<HomePage> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        extendBody: true, // Crucial for layered stacking!
         drawer: AppDrawer(
           onNavigate: (route) {
             Navigator.pop(context);
             Navigator.pushNamed(context, route);
           },
         ),
-        bottomNavigationBar: _GlassNavigationBar(
-          tabs: _tabs,
-          selectedIndex: _tab,
-          onSelect: (i) => setState(() => _tab = i),
+        body: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            final ScrollDirection direction = notification.direction;
+            if (direction == ScrollDirection.reverse) {
+              if (_isNavVisible) {
+                setState(() => _isNavVisible = false);
+              }
+            } else if (direction == ScrollDirection.forward) {
+              if (!_isNavVisible) {
+                setState(() => _isNavVisible = true);
+              }
+            }
+            return false; // allow notification to continue bubbling
+          },
+          child: Stack(
+            children: [
+              // The Content
+              Positioned.fill(
+                child: _buildTabBody(),
+              ),
+              
+              // The Animated Stacked Bottom Nav Bar
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 450),
+                curve: Curves.fastEaseInToSlowEaseOut,
+                left: 0,
+                right: 0,
+                bottom: _isNavVisible ? 0 : -120, // slide completely off screen
+                child: _GlassNavigationBar(
+                  tabs: _tabs,
+                  selectedIndex: _tab,
+                  onSelect: (i) => setState(() => _tab = i),
+                ),
+              ),
+            ],
+          ),
         ),
-        body: _buildTabBody(),
       ),
     );
   }
@@ -77,7 +104,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildTabBody() {
     switch (_tab) {
       case 0:
-        return const _HomeSections();
+        return const ModernHomeScreen();
       case 1:
         return const SurahListPage();
       case 2:
@@ -85,9 +112,9 @@ class _HomePageState extends State<HomePage> {
       case 3:
         return const PlayerPage();
       case 4:
-        return const SearchPage();
+        return const PrayerQiblaScreen();
       default:
-        return const _HomeSections();
+        return const ModernHomeScreen();
     }
   }
 }
@@ -183,7 +210,8 @@ class _GlassNavigationBar extends StatelessWidget {
                             size: active ? 24 : 22,
                             color: active
                                 ? cs.primary
-                                : cs.onSurfaceVariant.withValues(alpha: 0.90),
+                                : cs.onSurfaceVariant
+                                    .withValues(alpha: 0.90),
                           ),
                           const SizedBox(height: 2),
                           AnimatedDefaultTextStyle(
@@ -218,151 +246,3 @@ class _GlassNavigationBar extends StatelessWidget {
   }
 }
 
-class _HomeSections extends StatelessWidget {
-  const _HomeSections();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final mediaQuery = MediaQuery.of(context);
-    final isCompactWidth = mediaQuery.size.width < 380;
-    final topBarHeight = mediaQuery.padding.top + (isCompactWidth ? 66.0 : 68.0);
-    final heroHeight = isCompactWidth ? 238.0 : 222.0;
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [cs.surface, cs.surfaceContainerLowest],
-              ),
-            ),
-          ),
-        ),
-        _SoftOrb(
-          alignment: Alignment.topRight,
-          offset: const Offset(120, -140),
-          size: 260,
-          color: cs.primary.withValues(alpha: 0.12),
-        ),
-        _SoftOrb(
-          alignment: Alignment.centerLeft,
-          offset: const Offset(-110, -30),
-          size: 220,
-          color: cs.tertiary.withValues(alpha: 0.09),
-        ),
-        CustomScrollView(
-          physics: const ClampingScrollPhysics(),
-          slivers: [
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _PinnedHeaderDelegate(
-                height: topBarHeight,
-                child: HomeHeroTopBar(),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: heroHeight,
-                child: HeroHeader(),
-              ),
-            ),
-            const SliverToBoxAdapter(
-              child: SectionSpacing(child: PrayerTimesCard()),
-            ),
-            const SliverToBoxAdapter(
-              child: SectionSpacing(child: DailyAyahCard()),
-            ),
-            const SliverToBoxAdapter(
-              child: SectionSpacing(child: GoalsStrip()),
-            ),
-            const SliverToBoxAdapter(
-              child: SectionSpacing(child: LastReadCard()),
-            ),
-            const SliverToBoxAdapter(
-              child: SectionSpacing(child: QuickActionsGrid()),
-            ),
-            const SliverToBoxAdapter(
-              child: SectionSpacing(child: ShortcutsList()),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: MediaQuery.of(context).padding.bottom + 16,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _PinnedHeaderDelegate({
-    required this.height,
-    required this.child,
-  });
-
-  final double height;
-  final Widget child;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
-    return oldDelegate.height != height || oldDelegate.child != child;
-  }
-}
-
-class _SoftOrb extends StatelessWidget {
-  const _SoftOrb({
-    required this.alignment,
-    required this.offset,
-    required this.size,
-    required this.color,
-  });
-
-  final Alignment alignment;
-  final Offset offset;
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Align(
-        alignment: alignment,
-        child: Transform.translate(
-          offset: offset,
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [color, color.withValues(alpha: 0)],
-                stops: const [0, 1],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -45,7 +45,16 @@ class Aya {
                 numberInSurah)
             as int;
 
-    final String text = (m['text'] ?? m['arabic'] ?? '') as String;
+    String text = (m['text'] ?? m['arabic'] ?? '') as String;
+    
+    // 🌟 INTELLIGENT BISMILLAH STRIPPER 🌟
+    if (surah > 1 && numberInSurah == 1) {
+      const String bismillahPrefix = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ";
+      if (text.startsWith(bismillahPrefix)) {
+        text = text.replaceFirst(bismillahPrefix, '').trim();
+      }
+    }
+
     final String? translation =
         (m['translation'] ?? m['translation_text'] ?? null) as String?;
     final String? audioUrl = (m['audio'] ?? m['audioUrl'] ?? null) as String?;

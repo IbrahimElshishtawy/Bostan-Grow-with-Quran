@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
 import 'package:quranglow/core/model/setting/reader_settings.dart';
@@ -20,12 +21,14 @@ class NotificationService {
   static const _dailyChannelId = 'daily_reminder_ch';
   static const _salawatChannelId = 'salawat_ch';
   static const _remindersChannelId = 'reminders_ch';
+  static const _deviceChannel = MethodChannel('quranglow/device');
+  static const _fallbackTimezoneName = 'Africa/Cairo';
 
   static const _dailyId = 1001;
   static const _salawatId = 1002;
   static const _salawatBatchSize = 96;
   static const _prayerBaseId = 2000;
-  static const _prayerScheduleWindowDays = 7;
+  static const _prayerScheduleWindowDays = 30;
   static const _prayerCount = 5;
   static const _azkarMorningId = 3001;
   static const _azkarEveningId = 3002;
@@ -34,8 +37,7 @@ class NotificationService {
   Future<void> init() async {
     if (kIsWeb) return;
 
-    tz.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('Africa/Cairo'));
+    await _configureLocalTimezone();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const darwinInit = DarwinInitializationSettings(
@@ -111,7 +113,56 @@ class NotificationService {
   }
 
   Future<AndroidScheduleMode> _androidScheduleMode() async {
+    if (kIsWeb || !Platform.isAndroid) {
+      return AndroidScheduleMode.exactAllowWhileIdle;
+    }
+
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    try {
+      final canScheduleExact = await android?.canScheduleExactNotifications();
+      if (canScheduleExact == false) {
+        return AndroidScheduleMode.inexactAllowWhileIdle;
+      }
+    } catch (e) {
+      debugPrint('[NOTIF] exact alarm capability check skipped: $e');
+    }
     return AndroidScheduleMode.exactAllowWhileIdle;
+  }
+
+  Future<void> _configureLocalTimezone({String? preferredTimezone}) async {
+    tz.initializeTimeZones();
+
+    final candidateTimezones = <String>{
+      if (preferredTimezone != null && preferredTimezone.trim().isNotEmpty)
+        preferredTimezone.trim(),
+    };
+
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
+      try {
+        final deviceTimezone = await _deviceChannel.invokeMethod<String>(
+          'getTimeZone',
+        );
+        if (deviceTimezone != null && deviceTimezone.trim().isNotEmpty) {
+          candidateTimezones.add(deviceTimezone.trim());
+        }
+      } catch (e) {
+        debugPrint('[NOTIF] device timezone lookup skipped: $e');
+      }
+    }
+
+    candidateTimezones.add(_fallbackTimezoneName);
+
+    for (final timezoneName in candidateTimezones) {
+      try {
+        tz.setLocalLocation(tz.getLocation(timezoneName));
+        return;
+      } catch (e) {
+        debugPrint('[NOTIF] unsupported timezone "$timezoneName": $e');
+      }
+    }
   }
 
   Future<void> _ensurePrayerChannel(AppSettings settings) async {
@@ -370,10 +421,15 @@ class NotificationService {
     final activeSettings = settings ?? await SettingsService().load();
     await _ensurePrayerChannel(activeSettings);
     final adhanSound = activeSettings.adhanSound;
-    await _plugin.show(
+    final mode = await _androidScheduleMode();
+    final scheduled = tz.TZDateTime.now(
+      tz.local,
+    ).add(const Duration(seconds: 1));
+    await _plugin.zonedSchedule(
       991002,
       title,
       body,
+      scheduled,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _prayerChannelId(adhanSound.id),
@@ -393,6 +449,7 @@ class NotificationService {
         macOS: const DarwinNotificationDetails(),
         windows: const WindowsNotificationDetails(),
       ),
+      androidScheduleMode: mode,
     );
   }
 
@@ -403,6 +460,9 @@ class NotificationService {
     await cancelPrayerNotifications();
     if (!enabled || kIsWeb || days.isEmpty) return;
 
+    await _configureLocalTimezone(
+      preferredTimezone: _firstValidPrayerTimezone(days),
+    );
     final settings = await SettingsService().load();
     await _ensurePrayerChannel(settings);
     final adhanSound = settings.adhanSound;
@@ -418,6 +478,8 @@ class NotificationService {
       enableVibration: true,
       playSound: true,
       sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
+      ongoing: true,
+      autoCancel: false,
       channelShowBadge: true,
     );
     const ios = DarwinNotificationDetails();
@@ -427,10 +489,17 @@ class NotificationService {
     final mode = await _androidScheduleMode();
     final now = tz.TZDateTime.now(tz.local);
     const orderedPrayerKeys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    final daysToSchedule = days
+        .take(_prayerScheduleWindowDays)
+        .toList(growable: false);
 
-    for (var dayIndex = 0; dayIndex < days.length; dayIndex++) {
-      final day = days[dayIndex];
-      for (var prayerIndex = 0; prayerIndex < orderedPrayerKeys.length; prayerIndex++) {
+    for (var dayIndex = 0; dayIndex < daysToSchedule.length; dayIndex++) {
+      final day = daysToSchedule[dayIndex];
+      for (
+        var prayerIndex = 0;
+        prayerIndex < orderedPrayerKeys.length;
+        prayerIndex++
+      ) {
         final key = orderedPrayerKeys[prayerIndex];
         final time = day.prayers[key];
         if (time == null) continue;
@@ -552,6 +621,18 @@ class NotificationService {
 
   int _prayerNotificationId(int dayIndex, int prayerIndex) {
     return _prayerBaseId + (dayIndex * 10) + prayerIndex;
+  }
+
+  String? _firstValidPrayerTimezone(List<PrayerScheduleDay> days) {
+    for (final day in days) {
+      final timezoneName = day.timezone.trim();
+      if (timezoneName.isEmpty) continue;
+      try {
+        tz.getLocation(timezoneName);
+        return timezoneName;
+      } catch (_) {}
+    }
+    return null;
   }
 
   String _arabicPrayerName(String key) {

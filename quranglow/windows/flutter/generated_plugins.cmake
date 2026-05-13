@@ -10,6 +10,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   geolocator_windows
   just_audio_windows
   share_plus
+  speech_to_text_windows
   url_launcher_windows
 )
 

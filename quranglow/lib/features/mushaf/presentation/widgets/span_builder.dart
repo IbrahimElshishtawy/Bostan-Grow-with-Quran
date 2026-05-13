@@ -17,8 +17,9 @@ class AyahSpanBuilder {
   static final _selectedAyahColor = Colors.green.withValues(alpha: 0.16);
 
   TextStyle get _base => TextStyle(
-    fontSize: 20 * fontScale,
-    height: 1.9,
+    fontSize: 22 * fontScale,
+    height: 2.1,
+    fontFamily: 'KFGQPC Uthmanic Script',
     fontFamilyFallback: const ['Noto Naskh Arabic', 'Scheherazade'],
   );
 
@@ -27,11 +28,29 @@ class AyahSpanBuilder {
     required int? currentAyahIndex,
     Color? ayahNumberColor,
     required List<GestureRecognizer> recognizersBucket,
+    bool isHifzMode = false,
+    Map<int, Set<int>> revealedWords = const {},
+    Map<int, Set<int>> mistakenWords = const {},
   }) {
+    // Compute stable content hash for the Map cache keys
+    int revealedContentHash = 0;
+    for (final entry in revealedWords.entries) {
+      revealedContentHash ^= Object.hash(entry.key, Object.hashAll(entry.value));
+    }
+    int mistakenContentHash = 0;
+    for (final entry in mistakenWords.entries) {
+      mistakenContentHash ^= Object.hash(entry.key, Object.hashAll(entry.value));
+    }
+
     final cacheKey = Object.hash(
       ayat.first.number,
       ayat.last.number,
       currentAyahIndex,
+      isHifzMode,
+      revealedWords.length,
+      revealedContentHash,
+      mistakenWords.length,
+      mistakenContentHash,
     );
     if (_cache.containsKey(cacheKey)) {
       return _cache[cacheKey]!;
@@ -48,20 +67,49 @@ class AyahSpanBuilder {
       final r = TapGestureRecognizer()..onTap = () => onAyahTap(i);
       recognizersBucket.add(r);
       final selected = currentAyahIndex == i;
-      final s = selected
+      
+      final words = a.text.trim().split(RegExp(r'\s+'));
+      final revealedIndices = revealedWords[a.numberInSurah] ?? const {};
+      final mistakenIndices = mistakenWords[a.numberInSurah] ?? const {};
+      
+      final isAnyWordRevealed = revealedIndices.isNotEmpty || mistakenIndices.isNotEmpty;
+      
+      TextStyle baseStyle = selected
           ? _base.copyWith(
-              backgroundColor: _selectedAyahColor,
+              backgroundColor: isHifzMode && !isAnyWordRevealed ? Colors.transparent : _selectedAyahColor,
             )
           : _base;
-      out.add(TextSpan(text: '${a.text.trim()} ', style: s, recognizer: r));
+
+      // 🧩 Split and render word by word
+      for (int wIdx = 0; wIdx < words.length; wIdx++) {
+        final isWordMistaken = mistakenIndices.contains(wIdx);
+        final isWordHidden = isHifzMode && !isWordMistaken && !revealedIndices.contains(wIdx);
+        
+        TextStyle s = baseStyle;
+        if (isWordMistaken) {
+          // 🚨 Render mistaken word in striking red!
+          s = s.copyWith(
+            color: Colors.redAccent.shade700, 
+            fontWeight: FontWeight.bold,
+          );
+        } else if (isWordHidden) {
+          s = s.copyWith(color: Colors.transparent, backgroundColor: Colors.transparent);
+        }
+        out.add(TextSpan(text: '${words[wIdx]} ', style: s, recognizer: r));
+      }
+
+      out.add(const TextSpan(text: '\u200F')); // Force RTL continuity for WidgetSpan
       out.add(_ayahMarker(
         ayahNumber: a.numberInSurah,
-        selected: selected,
+        selected: selected && (!isHifzMode || isAnyWordRevealed),
         ayahNumberColor: ayahNumberColor,
         onTap: () => onAyahTap(i),
         onLongPress: () => onAyahLongPress(i),
       ));
-      out.add(TextSpan(text: '  ', style: _base));
+      out.add(const TextSpan(text: '\u200F'));
+      
+      final isSpaceHidden = isHifzMode && !isAnyWordRevealed;
+      out.add(TextSpan(text: '  ', style: isSpaceHidden ? _base.copyWith(color: Colors.transparent) : _base));
     }
     _cache[cacheKey] = out;
     return out;
@@ -75,6 +123,7 @@ class AyahSpanBuilder {
     Color? ayahNumberColor,
   }) {
     final txt = _toArabicDigits(ayahNumber);
+    
     return WidgetSpan(
       alignment: PlaceholderAlignment.middle,
       child: GestureDetector(
@@ -82,18 +131,55 @@ class AyahSpanBuilder {
         onTap: onTap,
         onLongPress: onLongPress,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 1),
-          child: Text(
-            '۝$txt',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.0,
-              color: ayahNumberColor,
-              backgroundColor: selected
-                  ? _selectedAyahColor
-                  : null,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // 🌟 8-POINTED ISLAMIC STAR LAYER 1 (BASE)
+              Transform.rotate(
+                angle: 0.785398, // 45 Degrees
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: selected ? Colors.green.shade100 : Colors.transparent,
+                    border: Border.all(
+                      color: ayahNumberColor ?? const Color(0xFFD4AF37),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              // 🌟 LAYER 2 (ROTATED)
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: selected ? Colors.green.shade100 : Colors.transparent,
+                  border: Border.all(
+                    color: ayahNumberColor ?? const Color(0xFFD4AF37),
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              // 📜 THE ARABIC NUMBER INSIDE!
+              Container(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  txt,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'KFGQPC Uthmanic Script',
+                    height: 1.0,
+                    color: ayahNumberColor ?? const Color(0xFF5D4037),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

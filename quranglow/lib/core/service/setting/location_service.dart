@@ -18,9 +18,18 @@ class LocationService {
 
   Future<Position?> getCurrentOnce() async {
     if (!await ensurePermission()) return null;
-    return Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 7),
+      );
+    } catch (_) {
+      try {
+        return await Geolocator.getLastKnownPosition();
+      } catch (_) {
+        return null;
+      }
+    }
   }
 
   void startStream(void Function(Position) onData) async {

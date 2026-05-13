@@ -1,11 +1,9 @@
-﻿// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:quranglow/core/model/aya/aya.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_header.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_page_card.dart';
+
 import 'package:quranglow/features/mushaf/presentation/widgets/page_indicator.dart';
 import 'package:quranglow/features/mushaf/presentation/widgets/page_rich_block.dart';
 import 'package:quranglow/features/mushaf/presentation/widgets/position_store.dart';
@@ -22,7 +20,12 @@ class PagedMushaf extends StatefulWidget {
     this.initialSelectedAyah,
     required this.onAyahTap,
     required this.onAyahLongPress,
+    this.onVisiblePageChanged,
+    this.onBackgroundTap,
     this.ayahNumberColor,
+    this.isHifzMode = false,
+    this.revealedWords = const {},
+    this.mistakenWords = const {},
   });
 
   final List<Aya> ayat;
@@ -33,7 +36,12 @@ class PagedMushaf extends StatefulWidget {
   final int? initialSelectedAyah;
   final void Function(int ayahNumber, Aya aya) onAyahTap;
   final void Function(int ayahNumber, Aya aya) onAyahLongPress;
+  final void Function(int pageFirstAyahNumber)? onVisiblePageChanged;
+  final VoidCallback? onBackgroundTap;
   final Color? ayahNumberColor;
+  final bool isHifzMode;
+  final Map<int, Set<int>> revealedWords;
+  final Map<int, Set<int>> mistakenWords;
 
   @override
   State<PagedMushaf> createState() => PagedMushafState();
@@ -44,6 +52,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   final _controller = PageController(keepPage: true);
 
   int? _currentAyahIdx0;
+  int? _savedAyahIndex;
   late final List<PageRange> _pages;
   bool _justSaved = false;
 
@@ -56,17 +65,26 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   }
 
   Future<void> _restoreInitial() async {
+    // Load the permanently saved position for this surah
+    final loaded = await _pos.load(widget.surahNumber);
+    if (!mounted) return;
+
+    setState(() {
+      _savedAyahIndex = loaded;
+    });
+
     int? idx0;
     if (widget.initialSelectedAyah != null) {
       final targetAyah = widget.initialSelectedAyah!;
-      final found = widget.ayat.indexWhere((a) => a.numberInSurah == targetAyah);
+      final found = widget.ayat.indexWhere(
+        (a) => a.numberInSurah == targetAyah,
+      );
       if (found != -1) {
         idx0 = found;
       } else {
         idx0 = (targetAyah - 1).clamp(0, widget.ayat.length - 1);
       }
     } else {
-      final loaded = await _pos.load(widget.surahNumber);
       if (loaded is int) idx0 = loaded.clamp(0, widget.ayat.length - 1);
     }
 
@@ -78,6 +96,15 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
         if (mounted) _controller.jumpToPage(p);
       });
     }
+  }
+
+  PageRange? getCurrentPageRange() {
+    if (!mounted || !_controller.hasClients) return null;
+    final pageIdx = _controller.page?.round() ?? 0;
+    if (pageIdx >= 0 && pageIdx < _pages.length) {
+      return _pages[pageIdx];
+    }
+    return null;
   }
 
   @override
@@ -95,27 +122,17 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   }
 
   void _saveCurrentIfAny() {
-    final i = _currentAyahIdx0;
-    if (i != null) _pos.save(widget.surahNumber, i);
+    // Auto-saving explicitly disabled by user request to only save manually.
   }
 
-  void _onAyahTap(int index0) async {
-    setState(() => _currentAyahIdx0 = index0);
-    await _pos.save(widget.surahNumber, index0);
-
-    setState(() => _justSaved = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _justSaved = false);
+  void _onAyahTap(int index0) {
+    setState(() {
+      _currentAyahIdx0 = index0;
     });
 
     if (index0 >= 0 && index0 < widget.ayat.length) {
       final aya = widget.ayat[index0];
       widget.onAyahTap(aya.numberInSurah, aya);
-    }
-
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('saved ${widget.surahNumber}:${widget.ayat[index0].numberInSurah}');
     }
   }
 
@@ -132,6 +149,17 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOutCubic,
     );
+  }
+
+  /// Allows externally triggering a UI refresh for the bookmark ribbon!
+  void forceRefreshBookmark(int? index) {
+    setState(() {
+      _savedAyahIndex = index;
+      _justSaved = true;
+    });
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _justSaved = false);
+    });
   }
 
   @override
@@ -152,28 +180,99 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
           child: SafeArea(
             child: Stack(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
-                  child: MushafPageCard(
-                    header: MushafHeader(surahName: widget.surahName),
-                    content: Expanded(
-                      child: PageRichBlock(
-                        ayat: widget.ayat,
-                        range: r,
-                        showBasmala: widget.showBasmala && pageIndex == 0,
-                        basmalaText: widget.basmalaText,
-                        currentAyahIndex: _currentAyahIdx0,
-                        onTapIndex: _onAyahTap,
-                        onLongPressIndex: _onAyahLongPress,
-                        ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
+                // 1. Ultimate Edge-to-Edge Content Area
+                Positioned.fill(
+                  child: Column(
+                    children: [
+                      // Dynamic Minimal Header Spacer for alignment
+                      const SizedBox(height: 1),
+
+                      // 2. The Immersive Interactive Quran Text Block
+                      Expanded(
+                        child: PageRichBlock(
+                          ayat: widget.ayat,
+                          range: r,
+                          showBasmala:
+                              widget.showBasmala &&
+                              pageIndex == 0 &&
+                              widget.surahNumber > 1,
+                          basmalaText: widget.basmalaText,
+                          currentAyahIndex: _currentAyahIdx0,
+                          onTapIndex: _onAyahTap,
+                          onLongPressIndex: _onAyahLongPress,
+                          onBackgroundTap:
+                              widget.onBackgroundTap, // Direct pass down
+                          ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
+                          surahName: pageIndex == 0 ? widget.surahName : null,
+                          isHifzMode: widget.isHifzMode,
+                          revealedWords: widget.revealedWords,
+                          mistakenWords: widget.mistakenWords,
+                        ),
                       ),
-                    ),
-                    indicator: PageIndicator(
-                      current: pageIndex + 1,
-                      total: _pages.length,
-                    ),
+
+                      // 3. Sleek, minimal Page Indicator floating at base
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: PageIndicator(
+                          current: pageIndex + 1,
+                          total: _pages.length,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                // 4. Ultimate High-End Physical Floating Bookmark Ribbon!
+                if (_savedAyahIndex != null && r.contains(_savedAyahIndex!))
+                  Positioned(
+                    top: 0,
+                    right: 30,
+                    child: TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 600),
+                      tween: Tween(begin: -60.0, end: 0.0),
+                      curve: Curves.elasticOut,
+                      builder: (context, value, child) {
+                        return Transform.translate(
+                          offset: Offset(0, value),
+                          child: child,
+                        );
+                      },
+                      child: Container(
+                        height: 65,
+                        width: 32,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFF8DA740), Color(0xFF627A25)],
+                          ),
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(8),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Icon(
+                                Icons.bookmark_added_rounded,
+                                size: 18,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
                 SavedPositionBanner(
                   visible: _justSaved,
                   text: _currentAyahIdx0 == null
@@ -186,6 +285,14 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
         );
       },
       onPageChanged: (newPageIndex) {
+        if (newPageIndex >= 0 && newPageIndex < _pages.length) {
+          final range = _pages[newPageIndex];
+          if (range.start >= 0 && range.start < widget.ayat.length) {
+            final firstAyahNum = widget.ayat[range.start].numberInSurah;
+            // Dynamically notify the host page what ayah is currently viewed
+            widget.onVisiblePageChanged?.call(firstAyahNum);
+          }
+        }
         _saveCurrentIfAny();
       },
     );
@@ -231,4 +338,3 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
     return buf.toString();
   }
 }
-

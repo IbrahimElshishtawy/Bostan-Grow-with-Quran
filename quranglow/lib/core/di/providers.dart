@@ -8,6 +8,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:quranglow/core/api/api_cache_manager.dart';
+import 'package:quranglow/core/api/api_interceptor.dart';
 import 'package:quranglow/core/api/alquran_cloud_source.dart';
 import 'package:quranglow/core/api/fawaz_cdn_source.dart';
 import 'package:quranglow/core/data/surah_names_ar.dart';
@@ -25,6 +27,7 @@ import 'package:quranglow/core/service/quran/stats_service_impl.dart';
 import 'package:quranglow/core/service/setting/daily_reminder_kind.dart';
 import 'package:quranglow/core/service/setting/download_service.dart';
 import 'package:quranglow/core/service/setting/goals_service.dart';
+import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
 import 'package:quranglow/core/service/setting/location_service.dart';
 import 'package:quranglow/core/service/setting/prayer_times_service.dart';
 import 'package:quranglow/core/service/sync/firebase_sync_service.dart';
@@ -41,7 +44,7 @@ import 'package:quranglow/features/player/presentation/widgets/CombinedPositionD
 final httpClientProvider = Provider<http.Client>((ref) => http.Client());
 
 final dioProvider = Provider<Dio>((ref) {
-  return Dio(
+  final dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
@@ -49,6 +52,12 @@ final dioProvider = Provider<Dio>((ref) {
       validateStatus: (s) => s != null && s < 500,
     ),
   );
+  
+  // Add the universal caching interceptor for instant speed!
+  final cacheManager = ApiCacheManager(boxName: 'api_cache');
+  dio.interceptors.add(ApiInterceptor(cacheManager: cacheManager));
+  
+  return dio;
 });
 
 final storageProvider = Provider<LocalStorage>((ref) => HiveStorageImpl());
@@ -117,6 +126,11 @@ final prayerTimesServiceProvider = Provider<PrayerTimesService>((ref) {
     locationService: ref.watch(locationServiceProvider),
     storage: ref.watch(storageProvider),
   );
+});
+
+final todayPrayersProvider = FutureProvider.autoDispose<PrayerTimesData>((ref) {
+  final svc = ref.watch(prayerTimesServiceProvider);
+  return svc.fetchForToday();
 });
 
 final goalsStreamProvider = StreamProvider.autoDispose<List<Goal>>((ref) {

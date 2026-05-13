@@ -4,6 +4,8 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/core/model/book/surah.dart';
 
 class DailyAyah {
   final String text;
@@ -25,20 +27,13 @@ final dailyAyatLocalProvider = FutureProvider.autoDispose<List<DailyAyah>>((
   const editionId = 'quran-uthmani';
   const count = 3;
   final rnd = Random();
-
+  final quranService = ref.read(quranServiceProvider);
   final box = await Hive.openBox('quran_cache');
 
   List<String> _surahKeys() => box.keys
       .where((k) => k.toString().startsWith('$editionId-'))
       .map((e) => e.toString())
       .toList();
-
-  final keys = _surahKeys();
-  if (keys.isEmpty) {
-    throw Exception(
-      'لا توجد آيات محفوظة محليًا بعد. افتح سورة أثناء الاتصال بالإنترنت ليتم حفظها ثم أعد المحاولة.',
-    );
-  }
 
   Map<String, dynamic> _asStringKeyMap(Object? raw) {
     if (raw is Map) {
@@ -70,44 +65,96 @@ final dailyAyatLocalProvider = FutureProvider.autoDispose<List<DailyAyah>>((
   final chosen = <String>{};
   final out = <DailyAyah>[];
 
-  for (int i = 0; i < count * 3 && out.length < count; i++) {
+  bool _addAyah({
+    required int surahNum,
+    required int ayahNum,
+    required String text,
+    required String surahName,
+  }) {
+    final trimmedText = text.trim();
+    if (trimmedText.isEmpty) return false;
+
+    final uniqueKey = '$surahNum:$ayahNum';
+    if (!chosen.add(uniqueKey)) return false;
+
+    out.add(
+      DailyAyah(
+        text: trimmedText,
+        ref:
+            surahName.trim().isEmpty
+                ? 'آية $ayahNum'
+                : 'سورة $surahName • آية $ayahNum',
+        surah: surahNum,
+        ayah: ayahNum,
+      ),
+    );
+    return true;
+  }
+
+  final keys = _surahKeys();
+  for (int i = 0; i < count * 3 && out.length < count && keys.isNotEmpty; i++) {
     final k = keys[rnd.nextInt(keys.length)];
     final raw = box.get(k);
-    final j = _asStringKeyMap(raw);
-    final r = _root(j);
 
-    final parts = k.split('-');
-    final surahNum = _parseInt(parts.isNotEmpty ? parts.last : null, orElse: 1);
+    try {
+      final j = _asStringKeyMap(raw);
+      final r = _root(j);
+      final parts = k.split('-');
+      final surahNum = _parseInt(parts.isNotEmpty ? parts.last : null);
+      final surahName =
+          (r['name_ar'] ?? r['name_arabic'] ?? r['name'] ?? '').toString();
+      final verses = _verses(r);
+      if (verses.isEmpty) continue;
 
-    final name = (r['name_ar'] ?? r['name_arabic'] ?? r['name'] ?? '').toString();
-    final verses = _verses(r);
-    if (verses.isEmpty) continue;
+      final vMap = _asStringKeyMap(verses[rnd.nextInt(verses.length)]);
+      final ayahNum = _parseInt(
+        vMap['number'] ??
+            vMap['numberInSurah'] ??
+            vMap['verse'] ??
+            vMap['verse_number'] ??
+            vMap['id'],
+      );
 
-    final vMap = _asStringKeyMap(verses[rnd.nextInt(verses.length)]);
-    final ayahNum = _parseInt(
-      vMap['number'] ??
-          vMap['numberInSurah'] ??
-          vMap['verse'] ??
-          vMap['verse_number'] ??
-          vMap['id'],
-      orElse: 1,
-    );
+      _addAyah(
+        surahNum: surahNum,
+        ayahNum: ayahNum,
+        text: _verseText(vMap),
+        surahName: surahName,
+      );
+    } catch (_) {
+      continue;
+    }
+  }
 
-    final text = _verseText(vMap).trim();
-    if (text.isEmpty) continue;
+  if (out.length < count) {
+    final chapters = List<int>.generate(114, (i) => i + 1)..shuffle(rnd);
+    final maxFetches = min(8, chapters.length);
 
-    final keyUniq = '$surahNum:$ayahNum';
-    if (chosen.contains(keyUniq)) continue;
-    chosen.add(keyUniq);
+    for (int i = 0; i < maxFetches && out.length < count; i++) {
+      try {
+        final Surah surah = await quranService.getSurahText(
+          editionId,
+          chapters[i],
+        );
+        if (surah.ayat.isEmpty) continue;
 
-    final refText = name.isEmpty ? 'آية $ayahNum' : 'سورة $name • آية $ayahNum';
-    out.add(
-      DailyAyah(text: text, ref: refText, surah: surahNum, ayah: ayahNum),
-    );
+        final ayah = surah.ayat[rnd.nextInt(surah.ayat.length)];
+        _addAyah(
+          surahNum: surah.number,
+          ayahNum: ayah.numberInSurah,
+          text: ayah.text,
+          surahName: surah.name,
+        );
+      } catch (_) {
+        continue;
+      }
+    }
   }
 
   if (out.isEmpty) {
-    throw Exception('تعذر اختيار آيات اليوم من التخزين المحلي.');
+    throw Exception(
+      'لا توجد آيات متاحة حاليًا. جرّب فتح سورة مع اتصال بالإنترنت ثم أعد المحاولة.',
+    );
   }
 
   return out;

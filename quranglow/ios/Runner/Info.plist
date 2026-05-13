@@ -47,5 +47,9 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>يتم استخدام التعرف على الكلام للسماح لك بقراءة الآيات والتحقق من صحتها.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>يتم استخدام الميكروفون للسماح لك بتسجيل قراءتك للقرآن الكريم.</string>
 	</dict>
 </plist>

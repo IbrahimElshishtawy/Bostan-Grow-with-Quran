@@ -10,6 +10,8 @@ class SelectedAyahPanel extends StatelessWidget {
     required this.onOpenTafsir,
     required this.onPlay,
     required this.onCopy,
+    required this.onSave,
+    this.isPlaying = false,
   });
 
   final bool visible;
@@ -19,6 +21,8 @@ class SelectedAyahPanel extends StatelessWidget {
   final VoidCallback onOpenTafsir;
   final VoidCallback onPlay;
   final VoidCallback onCopy;
+  final VoidCallback onSave;
+  final bool isPlaying;
 
   TextStyle _ayahPreviewTextStyle(BuildContext context, Color color) =>
       DefaultTextStyle.of(context).style.copyWith(
@@ -94,8 +98,18 @@ class SelectedAyahPanel extends StatelessWidget {
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: onPlay,
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('تشغيل'),
+                          style: isPlaying
+                              ? FilledButton.styleFrom(
+                                  backgroundColor: Colors.red.shade800,
+                                  foregroundColor: Colors.white,
+                                )
+                              : null,
+                          icon: Icon(
+                            isPlaying
+                                ? Icons.stop_circle_rounded
+                                : Icons.play_arrow_rounded,
+                          ),
+                          label: Text(isPlaying ? 'إيقاف' : 'تشغيل'),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -103,16 +117,34 @@ class SelectedAyahPanel extends StatelessWidget {
                         child: FilledButton.icon(
                           onPressed: onOpenTafsir,
                           icon: const Icon(Icons.menu_book_rounded),
-                          label: const Text('عرض التفسير'),
+                          label: const Text('التفسير'),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: onCopy,
-                    icon: const Icon(Icons.copy_rounded),
-                    label: const Text('نسخ الآية'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: onSave,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF8DA740),
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: const Icon(Icons.bookmark_add_rounded),
+                          label: const Text('حفظ الموضوع'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: onCopy,
+                          icon: const Icon(Icons.copy_rounded),
+                          label: const Text('نسخ الآية'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

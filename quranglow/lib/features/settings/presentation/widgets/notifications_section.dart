@@ -70,7 +70,9 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
       await NotificationService.instance.requestPermissionsIfNeededFromUI(
         context,
       );
-      final days = await ref.read(prayerTimesServiceProvider).fetchUpcomingDays();
+      final days = await ref
+          .read(prayerTimesServiceProvider)
+          .fetchUpcomingDays();
       await NotificationService.instance.schedulePrayerNotifications(
         days: days,
         enabled: true,
@@ -183,10 +185,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                               : 'تم إيقاف إشعارات الأذان المحلية',
                         );
                       } catch (e) {
-                        _snack(
-                          'تعذر تحديث إشعارات الأذان: $e',
-                          bg: cs.error,
-                        );
+                        _snack('تعذر تحديث إشعارات الأذان: $e', bg: cs.error);
                       }
                     },
                   ),
@@ -212,10 +211,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                             'تم تغيير صوت الأذان إلى ${AdhanSounds.byId(value).label}',
                           );
                         } catch (e) {
-                          _snack(
-                            'تعذر تغيير صوت الأذان: $e',
-                            bg: cs.error,
-                          );
+                          _snack('تعذر تغيير صوت الأذان: $e', bg: cs.error);
                         }
                       },
                       items: AdhanSounds.values
@@ -284,6 +280,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                               try {
                                 await NotificationService.instance
                                     .requestPermissionsIfNeededFromUI(context);
+                                await _previewSelectedAdhan(selectedAdhan);
                                 await NotificationService.instance.showAdhanPreview(
                                   title: 'اختبار أذان ${selectedAdhan.label}',
                                   body:
@@ -312,7 +309,9 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                           : () async {
                               try {
                                 await _syncPrayerNotifications(settings);
-                                _snack('تمت إعادة جدولة إشعارات الأذان القادمة');
+                                _snack(
+                                  'تمت إعادة جدولة إشعارات الأذان القادمة',
+                                );
                               } catch (e) {
                                 _snack(
                                   'تعذر إعادة جدولة الأذان: $e',
@@ -334,7 +333,8 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
             const SizedBox(height: 12),
             _SectionCard(
               title: 'التذكير اليومي',
-              subtitle: 'ورد قرآني أو ذكر أو استعداد للصلاة في وقت ثابت كل يوم.',
+              subtitle:
+                  'ورد قرآني أو ذكر أو استعداد للصلاة في وقت ثابت كل يوم.',
               child: Column(
                 children: [
                   SwitchListTile(
@@ -356,10 +356,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                               : 'تم إيقاف التذكير اليومي',
                         );
                       } catch (e) {
-                        _snack(
-                          'تعذر تحديث التذكير اليومي: $e',
-                          bg: cs.error,
-                        );
+                        _snack('تعذر تحديث التذكير اليومي: $e', bg: cs.error);
                       }
                     },
                   ),
@@ -456,10 +453,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                               : 'تم إيقاف التذكير المتكرر',
                         );
                       } catch (e) {
-                        _snack(
-                          'تعذر تحديث التذكير المتكرر: $e',
-                          bg: cs.error,
-                        );
+                        _snack('تعذر تحديث التذكير المتكرر: $e', bg: cs.error);
                       }
                     },
                   ),
@@ -517,10 +511,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                     );
                     _snack('تم إرسال إشعار تجريبي فوري');
                   } catch (e) {
-                    _snack(
-                      'تعذر إرسال الإشعار التجريبي: $e',
-                      bg: cs.error,
-                    );
+                    _snack('تعذر إرسال الإشعار التجريبي: $e', bg: cs.error);
                   }
                 },
               ),

@@ -26,10 +26,14 @@ class AppBootstrap {
     final firebaseReady = DefaultFirebaseOptions.isConfigured
         ? await _safeInit(
             'firebase',
-            () => Firebase.initializeApp(
-              options: DefaultFirebaseOptions.currentPlatform,
-            ),
-            timeout: const Duration(seconds: 8),
+            () async {
+              // ✨ HOT RESTART GUARD: Skip redundant native handshakes if already bootstrapped!
+              if (Firebase.apps.isNotEmpty) return;
+              await Firebase.initializeApp(
+                options: DefaultFirebaseOptions.currentPlatform,
+              );
+            },
+            timeout: const Duration(seconds: 20),
           )
         : false;
 
@@ -45,7 +49,7 @@ class AppBootstrap {
           _safeInit(
             'firebase-anon-signin',
             () => FirebaseSyncService().signInAnonymously(),
-            timeout: const Duration(seconds: 5),
+            timeout: const Duration(seconds: 20),
           ),
         );
       } else {
@@ -63,20 +67,25 @@ class AppBootstrap {
 
     await _safeInit(
       'hive',
-      () => Hive.initFlutter(),
-      timeout: const Duration(seconds: 5),
+      () async {
+        await Hive.initFlutter();
+        // ✨ HARDENED GLOBAL FIX: Ensure the core database box is fully pre-warmed at boot!
+        // This stops synchronous lookups like storage.getString from failing silently at startup.
+        await HiveStorageImpl().init();
+      },
+      timeout: const Duration(seconds: 20),
     );
 
     await _safeInit(
       'audio-handler',
       () => initAudioHandler(),
-      timeout: const Duration(seconds: 10),
+      timeout: const Duration(seconds: 25),
     );
 
     await _safeInit(
       'notifications',
       () => NotificationService.instance.init(),
-      timeout: const Duration(seconds: 5),
+      timeout: const Duration(seconds: 20),
     );
 
     unawaited(

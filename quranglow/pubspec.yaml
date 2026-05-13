@@ -45,6 +45,11 @@ dependencies:
   firebase_analytics: ^11.4.1
   firebase_crashlytics: ^4.3.1
   firebase_messaging: ^15.2.10
+  flutter_animate: ^4.5.2
+  go_router: ^17.2.3
+  intl: ^0.20.2
+  scrollable_positioned_list: ^0.3.8
+  speech_to_text: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -60,6 +65,7 @@ flutter:
   assets:
     - assets/anim/Quran.json
     - assets/iosn/icongrowquran.jpg
+    - assets/images/
     - android/app/src/main/res/raw/adhan_alaqsa.mp3
     - android/app/src/main/res/raw/adhan_makkah.mp3
     - android/app/src/main/res/raw/adhan_madinah.mp3
