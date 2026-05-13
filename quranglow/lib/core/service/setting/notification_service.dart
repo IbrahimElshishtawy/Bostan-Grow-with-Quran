@@ -188,6 +188,7 @@ class NotificationService {
         description: 'تنبيهات الأذان مع صوت أذان مخصص',
         importance: Importance.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
         audioAttributesUsage: AudioAttributesUsage.alarm,
         enableVibration: true,
         showBadge: true,
@@ -441,6 +442,7 @@ class NotificationService {
           showWhen: true,
           enableVibration: true,
           playSound: true,
+          sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
           channelShowBadge: true,
         ),
         iOS: const DarwinNotificationDetails(),
@@ -475,6 +477,9 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
+      sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
+      ongoing: true,
+      autoCancel: false,
       channelShowBadge: true,
     );
     const ios = DarwinNotificationDetails();

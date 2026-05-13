@@ -27,6 +27,7 @@ import 'package:quranglow/core/service/quran/stats_service_impl.dart';
 import 'package:quranglow/core/service/setting/daily_reminder_kind.dart';
 import 'package:quranglow/core/service/setting/download_service.dart';
 import 'package:quranglow/core/service/setting/goals_service.dart';
+import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
 import 'package:quranglow/core/service/setting/location_service.dart';
 import 'package:quranglow/core/service/setting/prayer_times_service.dart';
 import 'package:quranglow/core/service/sync/firebase_sync_service.dart';
@@ -125,6 +126,11 @@ final prayerTimesServiceProvider = Provider<PrayerTimesService>((ref) {
     locationService: ref.watch(locationServiceProvider),
     storage: ref.watch(storageProvider),
   );
+});
+
+final todayPrayersProvider = FutureProvider.autoDispose<PrayerTimesData>((ref) {
+  final svc = ref.watch(prayerTimesServiceProvider);
+  return svc.fetchForToday();
 });
 
 final goalsStreamProvider = StreamProvider.autoDispose<List<Goal>>((ref) {
