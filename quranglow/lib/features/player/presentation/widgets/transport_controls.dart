@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/book/Play_list_State.dart';
 import 'package:quranglow/features/player/presentation/widgets/position_bar.dart';
@@ -60,71 +61,89 @@ class TransportControls extends ConsumerWidget {
         const SizedBox(height: 24),
         
         // Main Transport Row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Shuffle/Repeat Left side
-            IconButton(
-              onPressed: () => ref.read(playerControllerProvider.notifier).toggleLoop(),
-              icon: const Icon(Icons.repeat_rounded),
-              color: Colors.white70,
-              iconSize: 26,
-            ),
-            
-            // Core Controls
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: () => ref.read(playerControllerProvider.notifier).previous(),
-                  icon: const Icon(Icons.skip_previous_rounded),
-                  color: Colors.white,
-                  iconSize: 42,
-                ),
-                const SizedBox(width: 16),
-                StreamBuilder<bool>(
-                  stream: state.playingStream,
-                  initialData: false,
-                  builder: (_, snap) {
-                    final playing = snap.data ?? false;
-                    return Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        onPressed: () => playing
-                            ? ref.read(playerControllerProvider.notifier).pause()
-                            : ref.read(playerControllerProvider.notifier).play(),
-                        icon: Icon(
-                          playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Shuffle/Repeat Left side
+              StreamBuilder<LoopMode>(
+                stream: state.loopModeStream,
+                initialData: LoopMode.off,
+                builder: (_, snap) {
+                  final loopMode = snap.data ?? LoopMode.off;
+                  final isLooping = loopMode != LoopMode.off;
+                  return IconButton(
+                    onPressed: () => ref.read(playerControllerProvider.notifier).toggleLoop(),
+                    icon: Icon(isLooping ? Icons.repeat_one_rounded : Icons.repeat_rounded),
+                    color: isLooping ? Colors.tealAccent : Colors.white70,
+                    iconSize: 22,
+                  );
+                }
+              ),
+              
+              // Core Controls
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () => ref.read(playerControllerProvider.notifier).previous(),
+                    icon: const Icon(Icons.skip_previous_rounded),
+                    color: Colors.white,
+                    iconSize: 36,
+                  ),
+                  const SizedBox(width: 12),
+                  StreamBuilder<bool>(
+                    stream: state.playingStream,
+                    initialData: false,
+                    builder: (_, snap) {
+                      final playing = snap.data ?? false;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                            ),
+                          ],
                         ),
-                        color: Colors.black,
-                        iconSize: 42,
-                        padding: const EdgeInsets.all(16),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 16),
-                IconButton(
-                  onPressed: () => ref.read(playerControllerProvider.notifier).next(),
-                  icon: const Icon(Icons.skip_next_rounded),
-                  color: Colors.white,
-                  iconSize: 42,
-                ),
-              ],
-            ),
-            
-            // Speed Menu Right side
-            SpeedMenu(
-              currentSpeed: speed,
-              onSelect: (v) {
-                ref.read(playbackSpeedProvider.notifier).state = v;
-                ref.read(playerControllerProvider.notifier).setSpeed(v);
-              },
-            ),
-          ],
+                        child: IconButton(
+                          onPressed: () => playing
+                              ? ref.read(playerControllerProvider.notifier).pause()
+                              : ref.read(playerControllerProvider.notifier).play(),
+                          icon: Icon(
+                            playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          ),
+                          color: Colors.black,
+                          iconSize: 38,
+                          padding: const EdgeInsets.all(14),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    onPressed: () => ref.read(playerControllerProvider.notifier).next(),
+                    icon: const Icon(Icons.skip_next_rounded),
+                    color: Colors.white,
+                    iconSize: 36,
+                  ),
+                ],
+              ),
+              
+              // Speed Menu Right side
+              SpeedMenu(
+                currentSpeed: speed,
+                onSelect: (v) {
+                  ref.read(playbackSpeedProvider.notifier).state = v;
+                  ref.read(playerControllerProvider.notifier).setSpeed(v);
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );

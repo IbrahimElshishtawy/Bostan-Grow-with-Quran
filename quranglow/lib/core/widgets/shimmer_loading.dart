@@ -165,14 +165,14 @@ class PlayerSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            
             // Main Artwork Big Box
-            Container(
-              height: 280,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: panelColor,
-                borderRadius: BorderRadius.circular(24),
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: panelColor,
+                  borderRadius: BorderRadius.circular(24),
+                ),
               ),
             ),
             const SizedBox(height: 24),

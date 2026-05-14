@@ -272,14 +272,15 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                           style: const TextStyle(color: Colors.redAccent),
                         ),
                       ),
-                      data: (s) => Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TrackCard(state: s),
-                          const SizedBox(height: 24),
-                          TransportControls(state: s),
-                          const SizedBox(height: 32),
-                        ],
+                      data: (s) => SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            TrackCard(state: s),
+                            const SizedBox(height: 24),
+                            TransportControls(state: s),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
                       ),
                     ),
                   ),
