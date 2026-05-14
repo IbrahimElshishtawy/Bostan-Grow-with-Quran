@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 class MyAudioHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
+  AudioPlayer get player => _player;
   String? _activeUrl;
   Uri? _artworkUri;
 
@@ -162,12 +163,8 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> rewind() => _player.seek(_player.position - const Duration(seconds: 10));
 
   @override
-  Future<void> skipToNext() async {
-    // Custom logic can be added here if needed
-  }
+  Future<void> skipToNext() => _player.seekToNext();
 
   @override
-  Future<void> skipToPrevious() async {
-    // Custom logic can be added here if needed
-  }
+  Future<void> skipToPrevious() => _player.seekToPrevious();
 }

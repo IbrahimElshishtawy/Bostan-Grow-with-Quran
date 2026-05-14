@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -334,13 +335,15 @@ final playerControllerProvider =
 
 class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   PlayerController(this.ref) : super(const AsyncValue.loading()) {
+    final handler = ref.read(audioHandlerProvider);
+    _player = handler.player;
     _playingSub = _player.playingStream.listen((_) => _emitState());
     _indexSub = _player.currentIndexStream.listen((_) => _emitState());
     _init();
   }
 
   final Ref ref;
-  final AudioPlayer _player = AudioPlayer();
+  late final AudioPlayer _player;
   StreamSubscription<bool>? _playingSub;
   StreamSubscription<int?>? _indexSub;
   List<String> _urls = const <String>[];
@@ -371,7 +374,23 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
 
       _urls = urls;
       _reciterName = await _resolveReciterName(editionId);
+      final surahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
+          ? kSurahNamesAr[chapter - 1]
+          : 'سورة $chapter';
+
       if (_disposed || !mounted) return;
+
+      // Update AudioHandler metadata for the WHOLE surah
+      final handler = ref.read(audioHandlerProvider);
+      handler.mediaItem.add(
+        MediaItem(
+          id: 'surah_$chapter',
+          title: surahName,
+          artist: _reciterName,
+          album: 'القرآن الكريم',
+          duration: null, // Will be updated by just_audio
+        ),
+      );
 
       await _player.setAudioSource(
         // ignore: deprecated_member_use

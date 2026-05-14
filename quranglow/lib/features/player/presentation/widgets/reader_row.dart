@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/model/book/surah.dart';
+import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
 class ReaderRow extends StatelessWidget {
   const ReaderRow({
@@ -25,68 +26,363 @@ class ReaderRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: editions.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('خطأ في القراء: $e'),
-            data: (list) {
-              final items = list
-                  .whereType<Map>()
-                  .map((m) => Map<String, dynamic>.from(m))
-                  .toList();
-              if (items.isEmpty) {
-                return const Text('لا توجد إصدارات صوتية متاحة');
-              }
-              return DropdownButtonFormField<String>(
-                initialValue: selectedEditionId,
-                decoration: const InputDecoration(
-                  labelText: 'اختيار القارئ',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                isExpanded: true,
-                items: items.map((m) {
-                  final id = (m['identifier'] ?? '').toString();
-                  final name = (m['name'] ?? m['englishName'] ?? id).toString();
-                  return DropdownMenuItem(value: id, child: Text(name));
-                }).toList(),
-                onChanged: (v) {
-                  if (v != null) onEditionChanged(v);
-                },
-              );
-            },
+          child: _SelectionButton(
+            label: 'القارئ',
+            value: editions.when(
+              data: (list) {
+                final item = list.firstWhere(
+                  (m) =>
+                      (m['identifier'] ?? '').toString() == selectedEditionId,
+                  orElse: () => {'name': selectedEditionId},
+                );
+                return (item['name'] ??
+                        item['englishName'] ??
+                        selectedEditionId)
+                    .toString();
+              },
+              loading: () => '...',
+              error: (_, _) => 'خطأ',
+            ),
+            icon: Icons.person_outline_rounded,
+            onTap: () => _showSelectionSheet(
+              context,
+              title: 'اختر القارئ',
+              items: editions.maybeWhen(
+                data: (list) => list
+                    .whereType<Map>()
+                    .map(
+                      (m) => {
+                        'id': (m['identifier'] ?? '').toString(),
+                        'name': (m['name'] ?? m['englishName'] ?? '')
+                            .toString(),
+                      },
+                    )
+                    .toList(),
+                orElse: () => [],
+              ),
+              selectedId: selectedEditionId,
+              onSelected: (id) => onEditionChanged(id as String),
+            ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: surahs.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('خطأ في السور: $e'),
-            data: (list) {
-              if (list.isEmpty) return const Text('لا توجد سور');
-              return DropdownButtonFormField<int>(
-                initialValue: selectedSurah,
-                decoration: const InputDecoration(
-                  labelText: 'السورة',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                isExpanded: true,
-                items: list
+          child: _SelectionButton(
+            label: 'السورة',
+            value: surahs.maybeWhen(
+              data: (list) =>
+                  list.firstWhere((s) => s.number == selectedSurah).name,
+              orElse: () => 'سورة $selectedSurah',
+            ),
+            icon: Icons.auto_stories_outlined,
+            onTap: () => _showSelectionSheet(
+              context,
+              title: 'اختر السورة',
+              items: surahs.maybeWhen(
+                data: (list) => list
                     .map(
-                      (s) => DropdownMenuItem<int>(
-                        value: s.number,
-                        child: Text(s.name),
-                      ),
+                      (s) => {
+                        'id': s.number,
+                        'name': s.name,
+                        'subtitle': 'سورة رقم ${s.number}',
+                      },
                     )
                     .toList(),
-                onChanged: (v) {
-                  if (v != null) onChapterChanged(v);
-                },
-              );
-            },
+                orElse: () => [],
+              ),
+              selectedId: selectedSurah,
+              onSelected: (id) => onChapterChanged(id as int),
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  void _showSelectionSheet(
+    BuildContext context, {
+    required String title,
+    required List<Map<String, dynamic>> items,
+    required dynamic selectedId,
+    required ValueChanged<dynamic> onSelected,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => _SelectionSheet(
+        title: title,
+        items: items,
+        selectedId: selectedId,
+        onSelected: onSelected,
+      ),
+    );
+  }
+}
+
+class _SelectionButton extends StatelessWidget {
+  const _SelectionButton({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: Colors.tealAccent),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 10,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 18,
+              color: Colors.white38,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectionSheet extends StatefulWidget {
+  const _SelectionSheet({
+    required this.title,
+    required this.items,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final String title;
+  final List<Map<String, dynamic>> items;
+  final dynamic selectedId;
+  final ValueChanged<dynamic> onSelected;
+
+  @override
+  State<_SelectionSheet> createState() => _SelectionSheetState();
+}
+
+class _SelectionSheetState extends State<_SelectionSheet> {
+  late List<Map<String, dynamic>> filteredItems = widget.items;
+  final TextEditingController _searchController = TextEditingController();
+
+  void _filter(String query) {
+    setState(() {
+      filteredItems = widget.items
+          .where(
+            (item) =>
+                item['name'].toString().contains(query) ||
+                (item['subtitle']?.toString().contains(query) ?? false),
+          )
+          .toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      maxChildSize: 0.9,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _filter,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'بحث...',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: Colors.white38,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: widget.items.isEmpty
+                  ? const SelectionShimmer()
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: filteredItems.length,
+                      itemBuilder: (context, index) {
+                        final item = filteredItems[index];
+                        final isSelected = item['id'] == widget.selectedId;
+                        return ListTile(
+                          onTap: () {
+                            widget.onSelected(item['id']);
+                            Navigator.pop(context);
+                          },
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.tealAccent
+                                  : Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              isSelected
+                                  ? Icons.check_rounded
+                                  : Icons.music_note_rounded,
+                              color: isSelected ? Colors.black : Colors.white38,
+                            ),
+                          ),
+                          title: Text(
+                            item['name'],
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.tealAccent
+                                  : Colors.white,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                          subtitle: item['subtitle'] != null
+                              ? Text(
+                                  item['subtitle'],
+                                  style: const TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 12,
+                                  ),
+                                )
+                              : null,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class SelectionShimmer extends StatelessWidget {
+  const SelectionShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      itemCount: 10,
+      itemBuilder: (context, index) => ShimmerLoading(
+        child: ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          title: Container(
+            width: 100,
+            height: 12,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          subtitle: Container(
+            width: 150,
+            height: 10,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

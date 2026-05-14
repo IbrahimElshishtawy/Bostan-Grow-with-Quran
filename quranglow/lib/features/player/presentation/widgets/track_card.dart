@@ -19,34 +19,39 @@ class TrackCard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Massive Album Art
-        AspectRatio(
-          aspectRatio: 1.0,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF2C5364),
-                  Color(0xFF203A43),
-                  Color(0xFF0F2027),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
+        // Rectangular Compact Artwork
+        Center(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 1,
+            child: AspectRatio(
+              aspectRatio: 1.6, // Wider and shorter as requested
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF2C5364),
+                      Color(0xFF203A43),
+                      Color(0xFF0F2027),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.graphic_eq_rounded,
-                size: 120,
-                color: Colors.white24,
+                child: const Center(
+                  child: Icon(
+                    Icons.graphic_eq_rounded,
+                    size: 50,
+                    color: Colors.white24,
+                  ),
+                ),
               ),
             ),
           ),

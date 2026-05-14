@@ -12,6 +12,7 @@ import 'package:quranglow/features/downloads/presentation/widgets/AyahPickerShee
 import 'package:quranglow/features/player/presentation/widgets/reader_row.dart';
 import 'package:quranglow/features/player/presentation/widgets/track_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/transport_controls.dart';
+import 'package:quranglow/features/player/presentation/pages/favorites_page.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
@@ -199,10 +200,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 32),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+          leading: const SizedBox.shrink(), // Removed down arrow
           title: const Text(
             'قيد التشغيل الآن',
             style: TextStyle(
@@ -213,6 +211,14 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
             ),
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
+              tooltip: 'المفضلات',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FavoritesPage()),
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.library_music_rounded, color: Colors.white),
               onPressed: () => Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
