@@ -89,8 +89,16 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     );
 
     _activeUrl = nextUrl;
-    await _player.setUrl(nextUrl);
-    await play();
+    try {
+      await _player.setUrl(nextUrl);
+      await play();
+    } catch (e) {
+      if (e.toString().contains('abort') || e.toString().contains('interrupted')) {
+        // Expected if we call setUrl while another load is in progress
+        return;
+      }
+      rethrow;
+    }
   }
 
   void _broadcastPlaybackState() {

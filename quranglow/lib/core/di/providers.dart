@@ -409,15 +409,22 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         ),
       );
 
-      await _player.setAudioSource(
-        ConcatenatingAudioSource(
-          children: urls
-              .map((url) => AudioSource.uri(Uri.parse(url)))
-              .toList(growable: false),
-        ),
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-      );
+      try {
+        await _player.setAudioSource(
+          ConcatenatingAudioSource(
+            children: urls
+                .map((url) => AudioSource.uri(Uri.parse(url)))
+                .toList(growable: false),
+          ),
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+        );
+      } catch (e) {
+        if (e.toString().contains('abort') || e.toString().contains('interrupted')) {
+          return;
+        }
+        rethrow;
+      }
       
       if (_disposed || !mounted) return;
 
