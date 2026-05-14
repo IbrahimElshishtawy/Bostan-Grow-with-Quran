@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:quranglow/core/data/surah_names_ar.dart';
 import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/aya/aya.dart';
@@ -10,7 +11,6 @@ import 'package:quranglow/core/model/setting/reader_settings.dart';
 import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/features/downloads/presentation/widgets/AyahPickerSheet.dart';
 import 'package:quranglow/features/player/presentation/widgets/reader_row.dart';
-import 'package:quranglow/features/player/presentation/widgets/radio_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/track_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/transport_controls.dart';
 import 'package:quranglow/features/player/presentation/pages/favorites_page.dart';
@@ -31,11 +31,21 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   late final dynamic _trackingService;
   String? _forwardedUrl;
   bool _wasPlaying = false;
+  bool _isRadioMode = false;
 
   @override
   void initState() {
     super.initState();
     _trackingService = ref.read(trackingServiceProvider);
+
+    // Initial check for Radio Mode
+    if (isAudioHandlerReady) {
+      final activeMediaId = audioHandler.mediaItem.value?.id;
+      if (activeMediaId == 'https://stream.radiojar.com/8s5u5tpdtwzuv') {
+        _isRadioMode = true;
+      }
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await _trackingService.startSession();
@@ -181,6 +191,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final ctrl = ref.watch(playerControllerProvider);
     final ed = ref.watch(editionIdProvider);
     final ch = ref.watch(chapterProvider).clamp(1, 114);
@@ -189,7 +200,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     final surahs = AsyncValue.data(
       List<Surah>.generate(
         kSurahNamesAr.length,
-        (i) => Surah(number: i + 1, name: kSurahNamesAr[i], ayat: const <Aya>[]),
+        (i) =>
+            Surah(number: i + 1, name: kSurahNamesAr[i], ayat: const <Aya>[]),
         growable: false,
       ),
     );
@@ -202,9 +214,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
           elevation: 0,
           centerTitle: true,
           leading: const SizedBox.shrink(), // Removed down arrow
-          title: const Text(
-            'قيد التشغيل الآن',
-            style: TextStyle(
+          title: Text(
+            _isRadioMode ? 'بث مباشر الآن' : 'قيد التشغيل الآن',
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -212,6 +224,27 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
             ),
           ),
           actions: [
+            IconButton(
+              icon: Icon(
+                Icons.radio_rounded,
+                color: _isRadioMode ? cs.primary : Colors.white,
+              ),
+              tooltip: 'وضع الإذاعة',
+              onPressed: () async {
+                setState(() {
+                  _isRadioMode = !_isRadioMode;
+                });
+                if (_isRadioMode) {
+                  await audioHandler.playUri(
+                    Uri.parse('https://stream.radiojar.com/8s5u5tpdtwzuv'),
+                    title: 'إذاعة القرآن الكريم',
+                    artist: 'بث مباشر - القاهرة',
+                  );
+                } else {
+                  ref.read(playerControllerProvider.notifier).play();
+                }
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
               tooltip: 'المفضلات',
@@ -221,8 +254,12 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.library_music_rounded, color: Colors.white),
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
+              icon: const Icon(
+                Icons.library_music_rounded,
+                color: Colors.white,
+              ),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
             ),
             IconButton(
               icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
@@ -244,55 +281,177 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 8.0,
+              ),
               child: Column(
                 children: [
-                  // Sleek Reader Selector
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: ReaderRow(
-                      editions: editions,
-                      surahs: surahs,
-                      selectedEditionId: ed,
-                      selectedSurah: ch,
-                      onEditionChanged: (v) => ref
-                          .read(playerControllerProvider.notifier)
-                          .changeEdition(v),
-                      onChapterChanged: (v) => ref
-                          .read(playerControllerProvider.notifier)
-                          .changeChapter(v),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  // Main Player Content
-                  Expanded(
-                    child: ctrl.when(
-                      loading: () => const PlayerSkeleton(),
-                      error: (e, st) => Center(
-                        child: Text(
-                          'تعذر التحميل: $e',
-                          style: const TextStyle(color: Colors.redAccent),
-                        ),
+                  if (!_isRadioMode) ...[
+                    // Surah Mode UI
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                      data: (s) => SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            TrackCard(state: s),
-                            const SizedBox(height: 24),
-                            TransportControls(state: s),
-                            const SizedBox(height: 32),
-                            const RadioCard(), // New Radio Card
-                            const SizedBox(height: 32),
-                          ],
-                        ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: ReaderRow(
+                        editions: editions,
+                        surahs: surahs,
+                        selectedEditionId: ed,
+                        selectedSurah: ch,
+                        onEditionChanged: (v) => ref
+                            .read(playerControllerProvider.notifier)
+                            .changeEdition(v),
+                        onChapterChanged: (v) => ref
+                            .read(playerControllerProvider.notifier)
+                            .changeChapter(v),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 32),
+                    Expanded(
+                      child: ctrl.when(
+                        loading: () => const PlayerSkeleton(),
+                        error: (e, st) => Center(
+                          child: Text(
+                            'تعذر التحميل: $e',
+                            style: const TextStyle(color: Colors.redAccent),
+                          ),
+                        ),
+                        data: (s) => SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              TrackCard(state: s),
+                              const SizedBox(height: 24),
+                              TransportControls(state: s),
+                              const SizedBox(height: 32),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    // Radio Mode UI
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            height: 320,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cs.primary.withValues(alpha: 0.2),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                              image: const DecorationImage(
+                                image: NetworkImage(
+                                  'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1000&auto=format&fit=crop',
+                                ),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.6),
+                                  ],
+                                ),
+                              ),
+                              padding: const EdgeInsets.all(24),
+                              alignment: Alignment.bottomRight,
+                              child: const Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'إذاعة القرآن الكريم',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'بث مباشر من القاهرة',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 48),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.sensors_rounded,
+                                color: Colors.redAccent,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'مباشر الآن',
+                                style: TextStyle(
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 48),
+                          StreamBuilder<PlaybackState>(
+                            stream: audioHandler.playbackState,
+                            builder: (context, snapshot) {
+                              final playing = snapshot.data?.playing ?? false;
+                              return IconButton.filled(
+                                iconSize: 80,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: cs.primary,
+                                  padding: const EdgeInsets.all(20),
+                                ),
+                                icon: Icon(
+                                  playing
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                ),
+                                onPressed: () => playing
+                                    ? audioHandler.pause()
+                                    : audioHandler.play(),
+                              );
+                            },
+                          ),
+                          const Spacer(),
+                          const Text(
+                            'تواصل مع الروحانية من خلال البث المباشر',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white30,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -77,7 +77,12 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
 }
 
 // Helper building method exposed globally for uniform pills
-Widget _buildSkeletonPill({required double width, required double height, required Color color, double? radius}) {
+Widget _buildSkeletonPill({
+  required double width,
+  required double height,
+  required Color color,
+  double? radius,
+}) {
   return Container(
     width: width,
     height: height,
@@ -105,9 +110,14 @@ class MushafSkeleton extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Decorative Header Placeholder (Bismillah/Surah Title area)
-            _buildSkeletonPill(width: 160, height: 32, color: barColor, radius: 8),
+            _buildSkeletonPill(
+              width: 160,
+              height: 32,
+              color: barColor,
+              radius: 8,
+            ),
             const SizedBox(height: 40),
-            
+
             // Mimicking full justifies Quran lines
             Expanded(
               child: ListView.separated(
@@ -176,13 +186,13 @@ class PlayerSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Text Labels
             _buildSkeletonPill(width: 140, height: 16, color: barColor),
             const SizedBox(height: 12),
             _buildSkeletonPill(width: 220, height: 12, color: barColor),
             const SizedBox(height: 32),
-            
+
             // Transport Slider Placeholder
             Container(
               height: 8,
@@ -193,7 +203,7 @@ class PlayerSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            
+
             // Play/Pause Controls Row Placeholder
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -221,13 +231,18 @@ class PrayerPageSkeleton extends StatelessWidget {
 
     return ShimmerLoading(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 32),
+        padding: const EdgeInsets.only(
+          top: 40,
+          left: 16,
+          right: 16,
+          bottom: 32,
+        ),
         child: Column(
           children: [
             // Header date label
             _buildSkeletonPill(width: 180, height: 16, color: barColor),
             const SizedBox(height: 24),
-            
+
             // Circular Qibla Compass Placeholder
             Container(
               width: 220,
@@ -238,7 +253,7 @@ class PrayerPageSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            
+
             // Countdown Card
             Container(
               height: 100,
@@ -249,19 +264,22 @@ class PrayerPageSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Vertically stacked individual prayer card rows
-            ...List.generate(5, (i) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
-                height: 70,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: barColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
+            ...List.generate(
+              5,
+              (i) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  height: 70,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: barColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
-            )),
+            ),
           ],
         ),
       ),
@@ -292,7 +310,10 @@ class SurahListSkeleton extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: shapeColor.withValues(alpha: 0.2), width: 1.2),
+            border: Border.all(
+              color: shapeColor.withValues(alpha: 0.2),
+              width: 1.2,
+            ),
           ),
           child: Row(
             children: [
@@ -309,20 +330,30 @@ class SurahListSkeleton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 24),
-              
+
               // Text lines
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSkeletonPill(width: 120, height: 16, color: barColor, radius: 4),
+                    _buildSkeletonPill(
+                      width: 120,
+                      height: 16,
+                      color: barColor,
+                      radius: 4,
+                    ),
                     const SizedBox(height: 8),
-                    _buildSkeletonPill(width: 70, height: 10, color: barColor, radius: 3),
+                    _buildSkeletonPill(
+                      width: 70,
+                      height: 10,
+                      color: barColor,
+                      radius: 3,
+                    ),
                   ],
                 ),
               ),
-              
+
               // Tail arrow
               _buildSkeletonPill(width: 12, height: 12, color: shapeColor),
             ],
@@ -378,7 +409,11 @@ class PremiumSkeletonCard extends StatelessWidget {
                 color: containerColor,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: _buildSkeletonPill(width: 100, height: 24, color: barColor),
+              child: _buildSkeletonPill(
+                width: 100,
+                height: 24,
+                color: barColor,
+              ),
             ),
           ],
         ),
