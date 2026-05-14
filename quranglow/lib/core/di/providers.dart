@@ -346,9 +346,22 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   late final AudioPlayer _player;
   StreamSubscription<bool>? _playingSub;
   StreamSubscription<int?>? _indexSub;
-  List<String> _urls = const <String>[];
   String _reciterName = '';
+  List<String> _urls = [];
   bool _disposed = false;
+
+  // Local cache for common reciter names to avoid network calls
+  static const _kReciterNames = {
+    'ar.alafasy': 'مشاري العفاسي',
+    'ar.abdurrahmaansudais': 'عبد الرحمن السديس',
+    'ar.saoodshuraym': 'سعود الشريم',
+    'ar.minshawi': 'محمد صديق المنشاوي',
+    'ar.abdulbasitmurattal': 'عبد الباسط عبد الصمد',
+    'ar.husary': 'محمود خليل الحصري',
+    'ar.hudhaify': 'علي الحذيفي',
+    'ar.ghamadi': 'سعد الغامدي',
+    'ar.mahermuaiqly': 'ماهر المعيقلي',
+  };
 
   Future<void> _init() async {
     if (_disposed || !mounted) return;
@@ -366,21 +379,26 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     state = const AsyncValue.loading();
     try {
       final service = ref.read(quranServiceProvider);
+      
+      // 1. Get URLs (Checks local files first)
       final urls = await service.getSurahAudioUrls(editionId, chapter);
       if (_disposed || !mounted) return;
       if (urls.isEmpty) {
-        throw Exception('No audio URLs found');
+        throw Exception('لا توجد روابط صوتية متاحة');
       }
 
       _urls = urls;
-      _reciterName = await _resolveReciterName(editionId);
+      
+      // 2. Resolve Reciter Name (Use cache if possible)
+      _reciterName = _kReciterNames[editionId] ?? await _resolveReciterName(editionId);
+      
       final surahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
           ? kSurahNamesAr[chapter - 1]
           : 'سورة $chapter';
 
       if (_disposed || !mounted) return;
 
-      // Update AudioHandler metadata for the WHOLE surah
+      // Update AudioHandler metadata
       final handler = ref.read(audioHandlerProvider);
       handler.mediaItem.add(
         MediaItem(
@@ -388,12 +406,10 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           title: surahName,
           artist: _reciterName,
           album: 'القرآن الكريم',
-          duration: null, // Will be updated by just_audio
         ),
       );
 
       await _player.setAudioSource(
-        // ignore: deprecated_member_use
         ConcatenatingAudioSource(
           children: urls
               .map((url) => AudioSource.uri(Uri.parse(url)))
@@ -402,11 +418,11 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         initialIndex: 0,
         initialPosition: Duration.zero,
       );
+      
       if (_disposed || !mounted) return;
 
       if (autoPlay) {
         await _player.play();
-        if (_disposed || !mounted) return;
       }
 
       _emitState();
@@ -417,6 +433,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   }
 
   Future<String> _resolveReciterName(String editionId) async {
+    if (_kReciterNames.containsKey(editionId)) return _kReciterNames[editionId]!;
+    
     try {
       final editions = await ref.read(quranServiceProvider).listAudioEditions();
       for (final item in editions) {
@@ -427,7 +445,9 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           return (map['name'] ?? map['englishName'] ?? editionId).toString();
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // Offline fallback
+    }
     return editionId;
   }
 
