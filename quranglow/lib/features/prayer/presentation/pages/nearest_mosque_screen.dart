@@ -94,17 +94,17 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
   }
 
   Future<void> _fetchMosques(Position pos) async {
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
+
     try {
-      setState(() {
-        _isLoading = true;
-      });
-      
       final dio = Dio();
       final List<MosqueData> found = [];
-      
       bool googleSuccess = false;
 
-      // --- 1. PRIMARY PROVIDER: Google Places API ---
+      // --- 1. Google Places API ---
       try {
         const apiKey = 'AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao';
         final url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
@@ -114,8 +114,8 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
         final response = await dio.get(
           url,
           options: Options(
-            sendTimeout: const Duration(seconds: 15),
-            receiveTimeout: const Duration(seconds: 25),
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 10),
             validateStatus: (status) => true,
           ),
         );
@@ -128,46 +128,108 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
             if (loc == null) continue;
             double lat = loc['lat']?.toDouble() ?? 0.0;
             double lon = loc['lng']?.toDouble() ?? 0.0;
-            if (lat == 0.0 || lon == 0.0) continue;
-
-            String name = el['name'] ?? 'مسجد قريب';
-            double distance = Geolocator.distanceBetween(pos.latitude, pos.longitude, lat, lon);
-            
-            found.add(MosqueData(name: name, location: LatLng(lat, lon), distanceKm: distance / 1000.0));
+            if (lat == 0 || lon == 0) continue;
+            String name = el['name'] ?? 'مسجد';
+            double dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, lat, lon);
+            found.add(MosqueData(name: name, location: LatLng(lat, lon), distanceKm: dist / 1000.0));
           }
           googleSuccess = true;
-        } else {
-          debugPrint('Google API returned status: $status');
         }
       } catch (e) {
-        debugPrint('Google API network error: $e');
+        debugPrint('Google API failed: $e');
       }
 
-      if (!googleSuccess) {
-        throw Exception('تم رفض مفتاح جوجل (REQUEST_DENIED). يرجى تفعيل (Places API) للمفتاح من Google Cloud Console.');
+      // --- 2. Fallback: Parallel Race (Nominatim vs Overpass Mirror) ---
+      if (!googleSuccess || found.isEmpty) {
+        try {
+          debugPrint('Starting Parallel Race for fallback...');
+          
+          final nominatimUrl = 'https://nominatim.openstreetmap.org/search?q=mosque&format=json&lat=${pos.latitude}&lon=${pos.longitude}&limit=15';
+          final overpassUrl = 'https://lz4.overpass-api.de/api/interpreter';
+          final overpassData = 'data=${Uri.encodeQueryComponent('[out:json][timeout:10];node(around:5000,${pos.latitude},${pos.longitude})["amenity"="place_of_worship"]["religion"="muslim"];out body;')}' ;
+
+          final results = await Future.wait([
+            dio.get(nominatimUrl, options: Options(
+              sendTimeout: const Duration(seconds: 4),
+              receiveTimeout: const Duration(seconds: 8),
+              headers: {'User-Agent': 'QuranGlow_App/1.0'},
+            )).then((r) => _parseNominatim(r.data, pos)).catchError((_) => <MosqueData>[]),
+            
+            dio.post(overpassUrl, data: overpassData, options: Options(
+              sendTimeout: const Duration(seconds: 4),
+              receiveTimeout: const Duration(seconds: 8),
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'QuranGlow_App/1.0',
+              },
+            )).then((r) => _parseOverpass(r.data, pos)).catchError((_) => <MosqueData>[]),
+          ]);
+
+          final allFound = [...results[0], ...results[1]];
+          final seen = <String>{};
+          for (var m in allFound) {
+            if (seen.add('${m.location.latitude},${m.location.longitude}')) {
+              found.add(m);
+            }
+          }
+        } catch (e) {
+          debugPrint('Parallel Race failed: $e');
+        }
       }
 
       if (found.isEmpty) {
-        throw Exception('لا توجد مساجد في النطاق القريب.');
+        throw Exception('لم نتمكن من العثور على مساجد قريبة حالياً.');
       }
 
-      // Sort by distance
       found.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
-
       if (mounted) {
         setState(() {
           _mosques = found;
-          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _errorMsg = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }
     }
+  }
+
+  List<MosqueData> _parseNominatim(dynamic data, Position pos) {
+    final List<MosqueData> list = [];
+    if (data is List) {
+      for (var el in data) {
+        double lat = double.tryParse(el['lat']?.toString() ?? '') ?? 0.0;
+        double lon = double.tryParse(el['lon']?.toString() ?? '') ?? 0.0;
+        if (lat == 0 || lon == 0) continue;
+        String name = el['display_name']?.split(',').first ?? 'مسجد';
+        double dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, lat, lon);
+        list.add(MosqueData(name: name, location: LatLng(lat, lon), distanceKm: dist / 1000.0));
+      }
+    }
+    return list;
+  }
+
+  List<MosqueData> _parseOverpass(dynamic data, Position pos) {
+    final List<MosqueData> list = [];
+    if (data is Map && data['elements'] != null) {
+      final elements = data['elements'] as List<dynamic>;
+      for (var el in elements) {
+        double lat = el['lat']?.toDouble() ?? 0.0;
+        double lon = el['lon']?.toDouble() ?? 0.0;
+        String name = (el['tags']?['name:ar'] ?? el['tags']?['name'] ?? 'مسجد').toString();
+        double dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, lat, lon);
+        list.add(MosqueData(name: name, location: LatLng(lat, lon), distanceKm: dist / 1000.0));
+      }
+    }
+    return list;
   }
 
   void _navigateToMosque(MosqueData mosque) async {
@@ -365,11 +427,12 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
           ),
           children: [
             TileLayer(
-              urlTemplate: isDark 
-                  ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png'
-                  : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              subdomains: const ['a', 'b', 'c'],
+              urlTemplate: isDark
+                  ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                  : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+              subdomains: const ['a', 'b', 'c', 'd'],
               userAgentPackageName: 'com.quranglow.app',
+              retinaMode: RetinaMode.isHighDensity(context),
             ),
             MarkerLayer(markers: markers),
           ],

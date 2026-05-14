@@ -420,7 +420,13 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           initialPosition: Duration.zero,
         );
       } catch (e) {
-        if (e.toString().contains('abort') || e.toString().contains('interrupted')) {
+        // Handle interruptions and connection resets gracefully
+        final err = e.toString().toLowerCase();
+        if (err.contains('abort') || 
+            err.contains('interrupted') || 
+            err.contains('connection reset') ||
+            err.contains('10000000')) {
+          debugPrint('Audio loading was interrupted or aborted (handled): $e');
           return;
         }
         rethrow;
