@@ -10,6 +10,7 @@ import 'package:quranglow/core/model/setting/reader_settings.dart';
 import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/features/downloads/presentation/widgets/AyahPickerSheet.dart';
 import 'package:quranglow/features/player/presentation/widgets/reader_row.dart';
+import 'package:quranglow/features/player/presentation/widgets/radio_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/track_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/transport_controls.dart';
 import 'package:quranglow/features/player/presentation/pages/favorites_page.dart';
@@ -284,6 +285,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                             TrackCard(state: s),
                             const SizedBox(height: 24),
                             TransportControls(state: s),
+                            const SizedBox(height: 32),
+                            const RadioCard(), // New Radio Card
                             const SizedBox(height: 32),
                           ],
                         ),
