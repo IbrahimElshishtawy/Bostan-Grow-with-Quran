@@ -80,7 +80,7 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
       
       _currentPos = pos;
       
-      // 2. Fetch Mosques using OpenStreetMap Overpass API (Free, No API Keys!)
+      // 2. Fetch Mosques
       await _fetchMosques(pos);
 
     } catch (e) {
@@ -95,46 +95,60 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
 
   Future<void> _fetchMosques(Position pos) async {
     try {
+      setState(() {
+        _isLoading = true;
+      });
+      
       final dio = Dio();
-      // Radius: 5000 meters (5km)
-      final query = '''
-        [out:json][timeout:25];
-        (
-          node["amenity"="place_of_worship"]["religion"="muslim"](around:5000,${pos.latitude},${pos.longitude});
-          way["amenity"="place_of_worship"]["religion"="muslim"](around:5000,${pos.latitude},${pos.longitude});
-        );
-        out center;
-      ''';
-
-      final response = await dio.post(
-        'https://overpass-api.de/api/interpreter',
-        data: query,
-        options: Options(
-          sendTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 20),
-        ),
-      );
-
-      final elements = response.data['elements'] as List<dynamic>?;
-      if (elements == null) throw Exception('لا توجد مساجد في النطاق القريب.');
-
       final List<MosqueData> found = [];
-      for (var el in elements) {
-        double lat = el['lat'] ?? el['center']?['lat'] ?? 0.0;
-        double lon = el['lon'] ?? el['center']?['lon'] ?? 0.0;
-        if (lat == 0.0 || lon == 0.0) continue;
+      
+      bool googleSuccess = false;
 
-        String name = el['tags']?['name'] ?? el['tags']?['name:ar'] ?? 'مسجد قريب';
+      // --- 1. PRIMARY PROVIDER: Google Places API ---
+      try {
+        const apiKey = 'AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao';
+        final url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+            '?location=${pos.latitude},${pos.longitude}'
+            '&radius=5000&type=mosque&keyword=مسجد&language=ar&key=$apiKey';
 
-        double distance = Geolocator.distanceBetween(
-          pos.latitude, pos.longitude, lat, lon
+        final response = await dio.get(
+          url,
+          options: Options(
+            sendTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 25),
+            validateStatus: (status) => true,
+          ),
         );
 
-        found.add(MosqueData(
-          name: name,
-          location: LatLng(lat, lon),
-          distanceKm: distance / 1000.0,
-        ));
+        final status = response.data?['status'] as String?;
+        if (response.statusCode == 200 && (status == 'OK' || status == 'ZERO_RESULTS')) {
+          final results = response.data?['results'] as List<dynamic>? ?? [];
+          for (var el in results) {
+            final loc = el['geometry']?['location'];
+            if (loc == null) continue;
+            double lat = loc['lat']?.toDouble() ?? 0.0;
+            double lon = loc['lng']?.toDouble() ?? 0.0;
+            if (lat == 0.0 || lon == 0.0) continue;
+
+            String name = el['name'] ?? 'مسجد قريب';
+            double distance = Geolocator.distanceBetween(pos.latitude, pos.longitude, lat, lon);
+            
+            found.add(MosqueData(name: name, location: LatLng(lat, lon), distanceKm: distance / 1000.0));
+          }
+          googleSuccess = true;
+        } else {
+          debugPrint('Google API returned status: $status');
+        }
+      } catch (e) {
+        debugPrint('Google API network error: $e');
+      }
+
+      if (!googleSuccess) {
+        throw Exception('تم رفض مفتاح جوجل (REQUEST_DENIED). يرجى تفعيل (Places API) للمفتاح من Google Cloud Console.');
+      }
+
+      if (found.isEmpty) {
+        throw Exception('لا توجد مساجد في النطاق القريب.');
       }
 
       // Sort by distance
@@ -149,7 +163,7 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMsg = 'تعذر الاتصال بالخادم للبحث عن المساجد.';
+          _errorMsg = e.toString().replaceAll('Exception: ', '');
           _isLoading = false;
         });
       }

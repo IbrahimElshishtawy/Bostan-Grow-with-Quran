@@ -14,41 +14,36 @@ class TransportControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
     final speed = ref.watch(playbackSpeedProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        PositionBar(
-          timelineStream: state.timelineStream,
-          onSeek: ref.read(playerControllerProvider.notifier).seekTo,
-        ),
-        const SizedBox(height: 14),
+        // Ayah Indicator (Minimal)
         StreamBuilder<int?>(
           stream: state.indexStream,
           initialData: 0,
           builder: (_, indexSnap) {
             final currentAyah = (indexSnap.data ?? 0) + 1;
-            return Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.65),
-                ),
-              ),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.multitrack_audio_rounded, color: cs.primary),
-                  const SizedBox(width: 10),
                   Text(
-                    'الآية الحالية: $currentAyah من ${state.total}',
-                    style: TextStyle(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w700,
+                    'الآية $currentAyah',
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'مجموع الآيات: ${state.total}',
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -56,54 +51,72 @@ class TransportControls extends ConsumerWidget {
             );
           },
         ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _CircleAction(
-              tooltip: 'السابق',
-              icon: Icons.skip_previous_rounded,
-              onPressed: () =>
-                  ref.read(playerControllerProvider.notifier).previous(),
-            ),
-            const SizedBox(width: 12),
-            StreamBuilder<bool>(
-              stream: state.playingStream,
-              initialData: false,
-              builder: (_, snap) {
-                final playing = snap.data ?? false;
-                return FilledButton.tonalIcon(
-                  onPressed: () => playing
-                      ? ref.read(playerControllerProvider.notifier).pause()
-                      : ref.read(playerControllerProvider.notifier).play(),
-                  icon: Icon(
-                    playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    size: 30,
-                  ),
-                  label: Text(playing ? 'إيقاف مؤقت' : 'تشغيل'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(154, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(width: 12),
-            _CircleAction(
-              tooltip: 'التالي',
-              icon: Icons.skip_next_rounded,
-              onPressed: () => ref.read(playerControllerProvider.notifier).next(),
-            ),
-          ],
+        
+        // Progress Slider
+        PositionBar(
+          timelineStream: state.timelineStream,
+          onSeek: ref.read(playerControllerProvider.notifier).seekTo,
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 12,
-          runSpacing: 8,
+        const SizedBox(height: 24),
+        
+        // Main Transport Row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Shuffle/Repeat Left side
+            IconButton(
+              onPressed: () => ref.read(playerControllerProvider.notifier).toggleLoop(),
+              icon: const Icon(Icons.repeat_rounded),
+              color: Colors.white70,
+              iconSize: 26,
+            ),
+            
+            // Core Controls
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  onPressed: () => ref.read(playerControllerProvider.notifier).previous(),
+                  icon: const Icon(Icons.skip_previous_rounded),
+                  color: Colors.white,
+                  iconSize: 42,
+                ),
+                const SizedBox(width: 16),
+                StreamBuilder<bool>(
+                  stream: state.playingStream,
+                  initialData: false,
+                  builder: (_, snap) {
+                    final playing = snap.data ?? false;
+                    return Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        onPressed: () => playing
+                            ? ref.read(playerControllerProvider.notifier).pause()
+                            : ref.read(playerControllerProvider.notifier).play(),
+                        icon: Icon(
+                          playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        ),
+                        color: Colors.black,
+                        iconSize: 42,
+                        padding: const EdgeInsets.all(16),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  onPressed: () => ref.read(playerControllerProvider.notifier).next(),
+                  icon: const Icon(Icons.skip_next_rounded),
+                  color: Colors.white,
+                  iconSize: 42,
+                ),
+              ],
+            ),
+            
+            // Speed Menu Right side
             SpeedMenu(
               currentSpeed: speed,
               onSelect: (v) {
@@ -111,69 +124,9 @@ class TransportControls extends ConsumerWidget {
                 ref.read(playerControllerProvider.notifier).setSpeed(v);
               },
             ),
-            OutlinedButton.icon(
-              onPressed: () =>
-                  ref.read(playerControllerProvider.notifier).toggleLoop(),
-              icon: const Icon(Icons.repeat_rounded, size: 18),
-              label: const Text('تكرار السورة'),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: cs.outlineVariant),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-              ),
-            ),
-            OutlinedButton.icon(
-              onPressed: () =>
-                  ref.read(playerControllerProvider.notifier).toggleMute(),
-              icon: const Icon(Icons.volume_off_rounded, size: 18),
-              label: const Text('كتم الصوت'),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: cs.outlineVariant),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-              ),
-            ),
           ],
         ),
       ],
-    );
-  }
-}
-
-class _CircleAction extends StatelessWidget {
-  const _CircleAction({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      style: IconButton.styleFrom(
-        minimumSize: const Size(52, 52),
-        backgroundColor: cs.surfaceContainerLow,
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7)),
-      ),
-      icon: Icon(icon, size: 28, color: cs.primary),
     );
   }
 }

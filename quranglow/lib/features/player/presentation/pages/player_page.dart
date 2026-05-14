@@ -202,34 +202,58 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: _PlayerAppBar(
-          surahName: surahName,
-          onOpenLibrary: () =>
-              Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
-          onDownload: () => _downloadCurrent(context, ref),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 32),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: const Text(
+            'قيد التشغيل الآن',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.library_music_rounded, color: Colors.white),
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+              onPressed: () => _downloadCurrent(context, ref),
+            ),
+          ],
         ),
+        extendBodyBehindAppBar: true,
         body: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [cs.primary.withValues(alpha: 0.06), cs.surface],
+              colors: [
+                Color(0xFF1E3C40), // Deep Teal/Spotify-esque top color
+                Color(0xFF121212), // Pure dark bottom
+              ],
             ),
           ),
           child: SafeArea(
-            top: false,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  elevation: 0,
-                  color: cs.surfaceContainerHigh,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: cs.outlineVariant),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+              child: Column(
+                children: [
+                  // Sleek Reader Selector
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                     child: ReaderRow(
                       editions: editions,
                       surahs: surahs,
@@ -243,81 +267,31 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                           .changeChapter(v),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                ctrl.when(
-                  loading: () => const PlayerSkeleton(),
-                  error: (e, st) => Card(
-                    color: cs.errorContainer,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'تعذر التحميل: $e',
-                        style: TextStyle(color: cs.onErrorContainer),
+                  const SizedBox(height: 32),
+                  
+                  // Main Player Content
+                  Expanded(
+                    child: ctrl.when(
+                      loading: () => const PlayerSkeleton(),
+                      error: (e, st) => Center(
+                        child: Text(
+                          'تعذر التحميل: $e',
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
                       ),
-                    ),
-                  ),
-                  data: (s) => Column(
-                    children: [
-                      TrackCard(state: s),
-                      const SizedBox(height: 14),
-                      Row(
+                      data: (s) => Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () => _downloadCurrent(context, ref),
-                              icon: const Icon(Icons.download_rounded),
-                              label: Text(downloadLabel),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => Navigator.pushNamed(
-                                context,
-                                AppRoutes.downloadsLibrary,
-                              ),
-                              icon: const Icon(Icons.library_music),
-                              label: const Text('المكتبة'),
-                            ),
-                          ),
+                          TrackCard(state: s),
+                          const SizedBox(height: 24),
+                          TransportControls(state: s),
+                          const SizedBox(height: 32),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      if (settings != null)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            settings.audioDownloadMode ==
-                                    AudioDownloadMode.selectedAyat
-                                ? 'وضع التنزيل الحالي: اختيار آيات من الإعدادات'
-                                : 'وضع التنزيل الحالي: السورة كاملة من الإعدادات',
-                            style: TextStyle(
-                              color: cs.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      Card(
-                        elevation: 0,
-                        color: cs.surfaceContainerHigh,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          side: BorderSide(color: cs.outlineVariant),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: TransportControls(state: s),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
