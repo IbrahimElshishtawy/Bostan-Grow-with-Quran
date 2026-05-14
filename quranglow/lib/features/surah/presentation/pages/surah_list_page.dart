@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/core/data/surah_names_ar.dart';
 import 'package:quranglow/features/mushaf/presentation/pages/mushaf_page.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
@@ -191,63 +193,73 @@ class _SurahListPageState extends State<SurahListPage> {
             ),
           ],
         ),
-        body: _isLoading
-            ? const SurahListSkeleton()
-            : _filteredIndices.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.search_off_rounded,
-                      size: 64,
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'لم يتم العثور على نتائج',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: cs.onSurfaceVariant,
+        body: Column(
+          children: [
+            // 📻 Live Quran Radio Banner
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: _QuranRadioBanner(),
+            ),
+            
+            // Surahs List
+            Expanded(
+              child: _isLoading
+                  ? const SurahListSkeleton()
+                  : _filteredIndices.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off_rounded,
+                            size: 64,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'لم يتم العثور على نتائج',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 16),
-                itemCount: _filteredIndices.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, listIndex) {
-                  final originalIndex = _filteredIndices[listIndex];
-                  final surahNumber = originalIndex + 1;
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-
-                  // ✨ Ultra-Premium GREEN Palette and Theme Adaptive Variables
-                  final Color greenMain = cs.primary;
-                  final Color greenAccent = cs.primary.withValues(alpha: 0.85);
-                  final Color surfaceColor = isDark
-                      ? const Color(0xFF1C1C1E)
-                      : Colors.white;
-                  final Color textColorMain = isDark
-                      ? Colors.grey[200]!
-                      : const Color(0xFF2D3436);
-                  final Color textColorSub = isDark
-                      ? Colors.grey[500]!
-                      : const Color(0xFF636E72);
-
-                  return Container(
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: surfaceColor,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+                      itemCount: _filteredIndices.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, listIndex) {
+                        final originalIndex = _filteredIndices[listIndex];
+                        final surahNumber = originalIndex + 1;
+                        final isDark =
+                            Theme.of(context).brightness == Brightness.dark;
+      
+                        // ✨ Ultra-Premium GREEN Palette and Theme Adaptive Variables
+                        final Color greenMain = cs.primary;
+                        final Color greenAccent = cs.primary.withValues(alpha: 0.85);
+                        final Color surfaceColor = isDark
+                            ? const Color(0xFF1C1C1E)
+                            : Colors.white;
+                        final Color textColorMain = isDark
+                            ? Colors.grey[200]!
+                            : const Color(0xFF2D3436);
+                        final Color textColorSub = isDark
+                            ? Colors.grey[500]!
+                            : const Color(0xFF636E72);
+      
+                        return Container(
+                          margin: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
                           color: isDark
                               ? Colors.black.withValues(alpha: 0.3)
                               : greenMain.withValues(alpha: 0.08),
@@ -406,6 +418,9 @@ class _SurahListPageState extends State<SurahListPage> {
                   );
                 },
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -418,5 +433,102 @@ class _SurahListPageState extends State<SurahListPage> {
       b.write(d == null ? ch : east[d]);
     }
     return b.toString();
+  }
+}
+
+class _QuranRadioBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    if (!isAudioHandlerReady) return const SizedBox.shrink();
+
+    final cs = Theme.of(context).colorScheme;
+
+    return StreamBuilder<PlaybackState>(
+      stream: audioHandler.playbackState,
+      builder: (context, snapshot) {
+        final playing = snapshot.data?.playing ?? false;
+        
+        return InkWell(
+          onTap: () async {
+            if (playing) {
+              await audioHandler.pause();
+            } else {
+              await audioHandler.playUri(
+                Uri.parse('https://stream.radiojar.com/8s5u5tpdtwzuv'),
+                title: 'إذاعة القرآن الكريم',
+                artist: 'بث مباشر - القاهرة',
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  cs.primary,
+                  cs.tertiary,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: cs.primary.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    playing ? Icons.pause_rounded : Icons.radio_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'إذاعة القرآن الكريم',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        playing ? 'جاري البث الآن...' : 'بث مباشر من القاهرة',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (playing)
+                  const Icon(
+                    Icons.multitrack_audio_rounded,
+                    color: Colors.white,
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

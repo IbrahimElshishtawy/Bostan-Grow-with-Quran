@@ -179,17 +179,10 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final ctrl = ref.watch(playerControllerProvider);
     final ed = ref.watch(editionIdProvider);
     final ch = ref.watch(chapterProvider).clamp(1, 114);
     final editions = ref.watch(audioEditionsProvider);
-    final settings = ref.watch(settingsProvider).whenOrNull(data: (s) => s);
-    final surahName = kSurahNamesAr[ch - 1];
-    final downloadLabel =
-        settings?.audioDownloadMode == AudioDownloadMode.selectedAyat
-        ? 'اختيار آيات'
-        : 'تنزيل السورة';
 
     final surahs = AsyncValue.data(
       List<Surah>.generate(
@@ -296,142 +289,6 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PlayerAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _PlayerAppBar({
-    required this.surahName,
-    required this.onOpenLibrary,
-    required this.onDownload,
-  });
-
-  final String surahName;
-  final VoidCallback onOpenLibrary;
-  final VoidCallback onDownload;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(112);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return AppBar(
-      toolbarHeight: 112,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      backgroundColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      automaticallyImplyLeading: false,
-      titleSpacing: 16,
-      flexibleSpace: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [
-              cs.primary.withValues(alpha: 0.18),
-              cs.tertiary.withValues(alpha: 0.10),
-              cs.surface,
-            ],
-          ),
-          border: Border(
-            bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.55)),
-          ),
-        ),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
-                ),
-                child: Icon(Icons.graphic_eq_rounded, color: cs.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'المشغل',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$surahName • استماع، تقدم كامل، وتنزيل سريع',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(end: 8),
-          child: Row(
-            children: [
-              _PlayerAppBarAction(
-                tooltip: 'المكتبة الصوتية',
-                icon: Icons.library_music_rounded,
-                onPressed: onOpenLibrary,
-              ),
-              const SizedBox(width: 8),
-              _PlayerAppBarAction(
-                tooltip: 'تنزيل الصوت',
-                icon: Icons.download_rounded,
-                onPressed: onDownload,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PlayerAppBarAction extends StatelessWidget {
-  const _PlayerAppBarAction({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return IconButton.filledTonal(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      style: IconButton.styleFrom(
-        backgroundColor: cs.surface.withValues(alpha: 0.82),
-        foregroundColor: cs.primary,
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7)),
-      ),
-      icon: Icon(icon),
     );
   }
 }

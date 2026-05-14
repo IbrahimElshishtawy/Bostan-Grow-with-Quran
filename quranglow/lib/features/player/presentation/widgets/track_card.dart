@@ -8,7 +8,6 @@ class TrackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final surahLabel = state.surahName ?? 'سورة ${state.chapter}';
     final reciterLabel = state.reciterName ?? state.editionId;
 
