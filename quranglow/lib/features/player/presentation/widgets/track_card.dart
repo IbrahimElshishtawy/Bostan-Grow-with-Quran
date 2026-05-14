@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/features/player/presentation/providers/favorites_controller.dart';
 
-class TrackCard extends StatelessWidget {
+class TrackCard extends ConsumerWidget {
   const TrackCard({super.key, required this.state});
 
   final PlayerUiState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final surahLabel = state.surahName ?? 'سورة ${state.chapter}';
     final reciterLabel = state.reciterName ?? state.editionId;
+    final isFav = ref
+        .watch(favoritesControllerProvider.notifier)
+        .isFavorite(state.editionId, state.chapter);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,7 +28,11 @@ class TrackCard extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF2C5364), Color(0xFF203A43), Color(0xFF0F2027)],
+                colors: [
+                  Color(0xFF2C5364),
+                  Color(0xFF203A43),
+                  Color(0xFF0F2027),
+                ],
               ),
               boxShadow: [
                 BoxShadow(
@@ -79,8 +88,19 @@ class TrackCard extends StatelessWidget {
               ),
             ),
             IconButton(
-              onPressed: () {}, // Add to favorites placeholder
-              icon: const Icon(Icons.favorite_border_rounded, color: Colors.white70, size: 28),
+              onPressed: () => ref
+                  .read(favoritesControllerProvider.notifier)
+                  .toggleFavorite(
+                    editionId: state.editionId,
+                    chapter: state.chapter,
+                    surahName: surahLabel,
+                    reciterName: reciterLabel,
+                  ),
+              icon: Icon(
+                isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: isFav ? Colors.redAccent : Colors.white70,
+                size: 32,
+              ),
             ),
           ],
         ),

@@ -18,6 +18,7 @@ import 'package:quranglow/core/model/book/bookmark.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/core/model/setting/reader_settings.dart';
 import 'package:quranglow/core/model/setting/goal.dart';
+import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/core/service/audio/audio_service.dart';
 import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/core/service/quran/quran_service.dart';
@@ -52,11 +53,11 @@ final dioProvider = Provider<Dio>((ref) {
       validateStatus: (s) => s != null && s < 500,
     ),
   );
-  
+
   // Add the universal caching interceptor for instant speed!
   final cacheManager = ApiCacheManager(boxName: 'api_cache');
   dio.interceptors.add(ApiInterceptor(cacheManager: cacheManager));
-  
+
   return dio;
 });
 
@@ -80,7 +81,7 @@ final goalsServiceProvider = Provider<GoalsService>((ref) {
 });
 
 final audioHandlerProvider = Provider<MyAudioHandler>((ref) {
-  return MyAudioHandler();
+  return audioHandler;
 });
 
 final audioServiceProvider = Provider<MyAudioService>((ref) {
@@ -285,9 +286,9 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(prayerNotificationsEnabled: enabled));
-    await ref.read(settingsServiceProvider).setPrayerNotificationsEnabled(
-      enabled,
-    );
+    await ref
+        .read(settingsServiceProvider)
+        .setPrayerNotificationsEnabled(enabled);
   }
 }
 
@@ -326,9 +327,10 @@ class PlayerUiState extends PlaylistState {
 }
 
 final playerControllerProvider =
-    StateNotifierProvider.autoDispose<PlayerController, AsyncValue<PlayerUiState>>(
-      (ref) => PlayerController(ref),
-    );
+    StateNotifierProvider.autoDispose<
+      PlayerController,
+      AsyncValue<PlayerUiState>
+    >((ref) => PlayerController(ref));
 
 class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   PlayerController(this.ref) : super(const AsyncValue.loading()) {

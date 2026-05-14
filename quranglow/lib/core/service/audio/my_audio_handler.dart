@@ -19,9 +19,36 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
 
-    _player.playbackEventStream.listen((_) {
-      _broadcastPlaybackState();
+    // Handle audio focus and interruptions (e.g., phone call, other music app)
+    session.interruptionEventStream.listen((event) {
+      if (event.begin) {
+        switch (event.type) {
+          case AudioInterruptionType.duck:
+            _player.setVolume(0.5);
+            break;
+          case AudioInterruptionType.pause:
+          case AudioInterruptionType.unknown:
+            pause();
+            break;
+        }
+      } else {
+        switch (event.type) {
+          case AudioInterruptionType.duck:
+            _player.setVolume(1.0);
+            break;
+          case AudioInterruptionType.pause:
+            play();
+            break;
+          case AudioInterruptionType.unknown:
+            break;
+        }
+      }
     });
+
+    // Handle unplugging headphones (becoming noisy)
+    session.becomingNoisyEventStream.listen((_) => pause());
+
+    _player.playbackEventStream.listen((_) => _broadcastPlaybackState());
 
     _player.durationStream.listen((duration) {
       final currentItem = mediaItem.value;
@@ -50,12 +77,12 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     mediaItem.add(
       MediaItem(
         id: nextUrl,
-        title: title ?? 'تشغيل القرآن',
-        artist: artist,
-        album: album,
+        title: title ?? 'القرآن الكريم',
+        artist: artist ?? 'QuranGlow',
+        album: album ?? 'المصحف المرتل',
         artUri: artworkUri,
-        displayTitle: title ?? 'تشغيل القرآن',
-        displaySubtitle: artist,
+        displayTitle: title ?? 'القرآن الكريم',
+        displaySubtitle: artist ?? 'QuranGlow',
         displayDescription: album,
       ),
     );
@@ -69,11 +96,19 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     final playing = _player.playing;
     playbackState.add(
       playbackState.value.copyWith(
-        controls: playing
-            ? [MediaControl.pause, MediaControl.stop]
-            : [MediaControl.play, MediaControl.stop],
-        androidCompactActionIndices: const [0, 1],
-        systemActions: const {MediaAction.seek},
+        controls: [
+          MediaControl.skipToPrevious,
+          MediaControl.rewind,
+          if (playing) MediaControl.pause else MediaControl.play,
+          MediaControl.fastForward,
+          MediaControl.skipToNext,
+        ],
+        androidCompactActionIndices: const [0, 2, 4],
+        systemActions: const {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
         processingState: const {
           ProcessingState.idle: AudioProcessingState.idle,
           ProcessingState.loading: AudioProcessingState.loading,
@@ -95,7 +130,7 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       final bytes = await rootBundle.load('assets/iosn/icongrowquran.jpg');
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/quranglow_now_playing.jpg');
+      final file = File('${dir.path}/quranglow_now_playing_v2.jpg');
       await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
       _artworkUri = Uri.file(file.path);
       return _artworkUri;
@@ -119,4 +154,20 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
+
+  @override
+  Future<void> fastForward() => _player.seek(_player.position + const Duration(seconds: 10));
+
+  @override
+  Future<void> rewind() => _player.seek(_player.position - const Duration(seconds: 10));
+
+  @override
+  Future<void> skipToNext() async {
+    // Custom logic can be added here if needed
+  }
+
+  @override
+  Future<void> skipToPrevious() async {
+    // Custom logic can be added here if needed
+  }
 }
