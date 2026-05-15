@@ -163,39 +163,44 @@ class PlayerSkeleton extends StatelessWidget {
 
     return ShimmerLoading(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 25.0),
         child: Column(
           children: [
-            // Upper Selector Row Placeholder
-            Container(
-              height: 70,
-              decoration: BoxDecoration(
-                color: panelColor,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Main Artwork Big Box
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: panelColor,
-                  borderRadius: BorderRadius.circular(24),
+            // Main Artwork Big Box (Matching the new 1.1 AspectRatio)
+            Center(
+              child: AspectRatio(
+                aspectRatio: 1.1,
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: panelColor,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Text Labels
-            _buildSkeletonPill(width: 140, height: 16, color: barColor),
-            const SizedBox(height: 12),
-            _buildSkeletonPill(width: 220, height: 12, color: barColor),
             const SizedBox(height: 32),
 
-            // Transport Slider Placeholder
+            // Title and Subtitle Skeletons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSkeletonPill(width: 180, height: 28, color: barColor),
+                    const SizedBox(height: 12),
+                    _buildSkeletonPill(width: 120, height: 16, color: barColor),
+                  ],
+                ),
+                _buildSkeletonPill(width: 40, height: 40, color: barColor),
+              ],
+            ),
+            const Spacer(),
+
+            // Progress Slider Placeholder
             Container(
-              height: 8,
+              height: 6,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: barColor.withValues(alpha: 0.5),
@@ -204,15 +209,25 @@ class PlayerSkeleton extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // Play/Pause Controls Row Placeholder
+            // Transport Slider Placeholder (Next/Prev/Play)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildSkeletonPill(width: 40, height: 40, color: barColor),
-                _buildSkeletonPill(width: 64, height: 64, color: barColor),
-                _buildSkeletonPill(width: 40, height: 40, color: barColor),
+                _buildSkeletonPill(width: 30, height: 30, color: barColor),
+                _buildSkeletonPill(width: 44, height: 44, color: barColor),
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    color: barColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                _buildSkeletonPill(width: 44, height: 44, color: barColor),
+                _buildSkeletonPill(width: 30, height: 30, color: barColor),
               ],
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

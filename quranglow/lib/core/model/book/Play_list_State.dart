@@ -13,6 +13,7 @@ class PlaylistState {
   final Stream<bool> playingStream;
   final Stream<LoopMode> loopModeStream;
   final Stream<double> volumeStream;
+  final Stream<ProcessingState> processingStateStream;
 
   const PlaylistState({
     required this.editionId,
@@ -26,5 +27,6 @@ class PlaylistState {
     required this.playingStream,
     required this.loopModeStream,
     required this.volumeStream,
+    required this.processingStateStream,
   });
 }

@@ -1,5 +1,5 @@
 // lib/core/di/providers.dart
-// ignore_for_file: experimental_member_use, implementation_imports, unnecessary_this
+// ignore_for_file: unused_local_variable, experimental_member_use, implementation_imports, unnecessary_this
 
 import 'dart:async';
 
@@ -320,6 +320,7 @@ class PlayerUiState extends PlaylistState {
     required super.playingStream,
     required super.loopModeStream,
     required super.volumeStream,
+    required super.processingStateStream,
 
     this.totalDurationOverride,
     this.isPlaying,
@@ -445,12 +446,13 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         // SEAMLESS PLAYBACK: Use a single full surah file for 100% gapless experience
         final fullSurahUrl = service.getSurahFullAudioUrl(editionId, chapter);
         _urls = [fullSurahUrl]; // Only one item in the playlist
-        
+
         _ayahOffsets = [];
         Duration cumulative = Duration.zero;
         for (final a in allAyat) {
           _ayahOffsets.add(cumulative);
-          cumulative += verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
+          cumulative +=
+              verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
         }
         _totalDuration = cumulative;
 
@@ -469,7 +471,6 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           preload: true,
         );
       } catch (e) {
-
         final err = e.toString().toLowerCase();
         if (err.contains('abort') ||
             err.contains('interrupted') ||
@@ -524,7 +525,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
 
     final editionId = ref.read(editionIdProvider);
     final chapter = ref.read(chapterProvider).clamp(1, 114);
-    
+
     // Manually calculate the current ayah index based on playback position
     int ayahIndex = 0;
     final pos = _player.position;
@@ -552,6 +553,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
+        processingStateStream: _player.processingStateStream,
         totalDurationOverride: _totalDuration,
         isPlaying: _player.playing,
         currentUrl: _urls.first,

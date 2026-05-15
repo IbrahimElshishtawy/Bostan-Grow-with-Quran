@@ -93,34 +93,61 @@ class TransportControls extends ConsumerWidget {
                     iconSize: 36,
                   ),
                   const SizedBox(width: 12),
-                  StreamBuilder<bool>(
-                    stream: state.playingStream,
-                    initialData: false,
-                    builder: (_, snap) {
-                      final playing = snap.data ?? false;
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              blurRadius: 15,
-                              spreadRadius: 2,
+                  StreamBuilder<ProcessingState>(
+                    stream: state.processingStateStream,
+                    initialData: ProcessingState.idle,
+                    builder: (context, processSnap) {
+                      final pState = processSnap.data ?? ProcessingState.idle;
+                      final isLoading = pState == ProcessingState.buffering || 
+                                       pState == ProcessingState.loading;
+
+                      return StreamBuilder<bool>(
+                        stream: state.playingStream,
+                        initialData: false,
+                        builder: (_, snap) {
+                          final playing = snap.data ?? false;
+                          
+                          return Container(
+                            width: 76,
+                            height: 76,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  blurRadius: 15,
+                                  spreadRadius: 2,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: IconButton(
-                          onPressed: () => playing
-                              ? ref.read(playerControllerProvider.notifier).pause()
-                              : ref.read(playerControllerProvider.notifier).play(),
-                          icon: Icon(
-                            playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                          ),
-                          color: Colors.black,
-                          iconSize: 38,
-                          padding: const EdgeInsets.all(14),
-                        ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (isLoading)
+                                  const SizedBox(
+                                    width: 76,
+                                    height: 76,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.tealAccent,
+                                      strokeWidth: 3,
+                                    ),
+                                  ),
+                                IconButton(
+                                  onPressed: () => playing
+                                      ? ref.read(playerControllerProvider.notifier).pause()
+                                      : ref.read(playerControllerProvider.notifier).play(),
+                                  icon: Icon(
+                                    playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                  ),
+                                  color: Colors.black,
+                                  iconSize: 38,
+                                  padding: const EdgeInsets.all(14),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
