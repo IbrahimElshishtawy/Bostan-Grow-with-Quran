@@ -424,6 +424,8 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                       listenProgress: listenProgress,
                       readProgress: readProgress,
                     ),
+
+                    // Removed Quick Access Spiritual Hub based on user request
                   ],
                 ),
               ),
@@ -587,3 +589,4 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
   }
 }
+

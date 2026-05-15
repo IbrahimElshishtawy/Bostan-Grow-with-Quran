@@ -227,6 +227,12 @@ class AppDrawer extends StatelessWidget {
                             route: AppRoutes.bookmarks,
                           ),
                           tile(
+                            icon: Icons.spa_rounded,
+                            title: 'الأذكار',
+                            subtitle: 'حصن المسلم والورد اليومي',
+                            route: AppRoutes.azkar,
+                          ),
+                          tile(
                             icon: Icons.menu_book_outlined,
                             title: 'التفسير',
                             subtitle: 'فهم المعنى أثناء القراءة',
@@ -309,14 +315,12 @@ class AppDrawer extends StatelessWidget {
                               color: cs.primary,
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'الإصدار 1.0.0',
-                                style: TextStyle(
-                                  color: cs.onSurfaceVariant,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            Text(
+                              'الإصدار 1.0.0',
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                             Text(
