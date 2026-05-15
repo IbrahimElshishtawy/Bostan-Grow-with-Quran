@@ -170,7 +170,6 @@ class _ActionIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = const Color(0xFFD4AF37);
 
     return InkWell(

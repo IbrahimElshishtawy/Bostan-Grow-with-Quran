@@ -209,6 +209,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                           isHifzMode: widget.isHifzMode,
                           revealedWords: widget.revealedWords,
                           mistakenWords: widget.mistakenWords,
+                          fontSize: widget.fontSize,
                         ),
                       ),
 

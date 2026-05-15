@@ -15,6 +15,11 @@ import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/aya/aya.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/features/mushaf/presentation/pages/paged_mushaf.dart';
+import 'package:quranglow/features/mushaf/presentation/widgets/ayah_actions_sheet.dart';
+import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_top_bar.dart';
+import 'package:quranglow/features/mushaf/presentation/widgets/position_store.dart';
+import 'package:quranglow/features/mushaf/presentation/widgets/selected_ayah_panel.dart';
+import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_audio_bar.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_card.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
@@ -399,7 +404,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         onAyahChanged: (nextAyahNumber) {
           setState(() => _lastAyahNumber = nextAyahNumber);
         },
-        onPlayAyah: (ayat, num) => _playAyahAudio(ayat, num, singleOnly: true),
+        onPlayAyah: (ayat, ayahNum) => _playAyahAudio(ayat, ayahNum, singleOnly: true),
         onOpenTafsir: (currentAyahNumber) {
           Navigator.pop(ctx);
           _openTafsirForAyah(currentAyahNumber);
@@ -551,6 +556,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                   isHifzMode: _voiceReciteMode,
                   revealedWords: _revealedWords,
                   mistakenWords: _mistakenWords,
+                  fontSize: _fontSize,
                 ),
               ),
 
