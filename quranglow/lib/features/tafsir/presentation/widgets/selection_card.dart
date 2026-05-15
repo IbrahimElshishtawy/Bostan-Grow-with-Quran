@@ -28,107 +28,127 @@ class SelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final Color primaryColor = const Color(0xFF1B4D3E); // Deep Teal
+    final Color accentColor = const Color(0xFFD4AF37); // Gold
 
     final fieldDecoration = InputDecoration(
       filled: true,
-      fillColor: cs.surface,
+      fillColor: isDark ? Colors.black26 : Colors.white70,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: cs.outlineVariant),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: accentColor.withValues(alpha: 0.3)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7)),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: accentColor.withValues(alpha: 0.15)),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       isDense: true,
+      labelStyle: TextStyle(
+        color: isDark ? Colors.white70 : primaryColor,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        fontFamily: 'Tajawal',
+      ),
     );
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
+        color: isDark ? const Color(0xFF0F2921) : const Color(0xFFF9FBF9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accentColor.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'اختيارات التفسير',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'اختر المصدر والسورة والآية للوصول السريع إلى التفسير المطلوب.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: cs.onSurfaceVariant,
-              height: 1.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
-          editions.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('خطأ في التفاسير: $e'),
-            data: (list) => DropdownButtonFormField<String>(
-              initialValue: editionId,
-              decoration: fieldDecoration.copyWith(labelText: 'مصدر التفسير'),
-              items: list
-                  .map(
-                    (m) => DropdownMenuItem(
-                      value: m['id']!,
-                      child: Text(m['name']!),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                if (v == null) return;
-                final m = list.firstWhere((e) => e['id'] == v);
-                onEditionChange(v, m['name']!);
-              },
-            ),
+          Row(
+            children: [
+              Icon(Icons.settings_suggest_outlined, color: accentColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'تخصيص العرض',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : primaryColor,
+                  fontFamily: 'Tajawal',
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          quranAll.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('خطأ في تحميل السور: $e'),
-            data: (all) {
-              final fixedSurah = surah.clamp(1, all.length);
-              final maxAyat = all[fixedSurah - 1].ayat.length;
-              return Column(
-                children: [
-                  DropdownButtonFormField<int>(
-                    initialValue: fixedSurah,
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: editions.when(
+                  loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+                  error: (e, _) => const Icon(Icons.error_outline, color: Colors.red),
+                  data: (list) => DropdownButtonFormField<String>(
+                    value: editionId,
+                    decoration: fieldDecoration.copyWith(labelText: 'المصدر'),
+                    style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87, fontFamily: 'Tajawal'),
+                    items: list.map((m) => DropdownMenuItem(value: m['id']!, child: Text(m['name']!, overflow: TextOverflow.ellipsis))).toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      final m = list.firstWhere((e) => e['id'] == v);
+                      onEditionChange(v, m['name']!);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: quranAll.when(
+                  loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+                  error: (e, _) => const Icon(Icons.error_outline, color: Colors.red),
+                  data: (all) => DropdownButtonFormField<int>(
+                    value: surah.clamp(1, all.length),
                     decoration: fieldDecoration.copyWith(labelText: 'السورة'),
+                    style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87, fontFamily: 'Tajawal'),
                     isExpanded: true,
                     items: [
                       for (int i = 0; i < all.length; i++)
-                        DropdownMenuItem(
-                          value: i + 1,
-                          child: Text('${all[i].name} • ${i + 1}'),
-                        ),
+                        DropdownMenuItem(value: i + 1, child: Text(all[i].name)),
                     ],
                     onChanged: (v) {
                       if (v == null) return;
                       onSurahChange(v, all[v - 1].ayat.length);
                     },
                   ),
-                  const SizedBox(height: 12),
-                  AyahPicker(
-                    maxAyat: maxAyat,
-                    ayah: ayah.clamp(1, maxAyat),
-                    onAyahChange: onAyahChange,
-                  ),
-                ],
-              );
-            },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
+                child: quranAll.maybeWhen(
+                  data: (all) {
+                    final fixedSurah = surah.clamp(1, all.length);
+                    final maxAyat = all[fixedSurah - 1].ayat.length;
+                    return AyahPicker(
+                      maxAyat: maxAyat,
+                      ayah: ayah.clamp(1, maxAyat),
+                      onAyahChange: onAyahChange,
+                    );
+                  },
+                  orElse: () => const SizedBox.shrink(),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 }
+

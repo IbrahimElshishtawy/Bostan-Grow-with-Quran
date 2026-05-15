@@ -1,8 +1,8 @@
+// ignore_for_file: duplicate_ignore, unused_result
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/di/providers.dart';
-import 'package:quranglow/core/di/tafsir_providers.dart'
-    hide quranAllProvider, tafsirForAyahProvider;
 import 'package:quranglow/core/model/aya/aya.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/selection_card.dart';
@@ -12,7 +12,8 @@ class TafsirIntegratedView extends ConsumerStatefulWidget {
   const TafsirIntegratedView({super.key});
 
   @override
-  ConsumerState<TafsirIntegratedView> createState() => _TafsirIntegratedViewState();
+  ConsumerState<TafsirIntegratedView> createState() =>
+      _TafsirIntegratedViewState();
 }
 
 class _TafsirIntegratedViewState extends ConsumerState<TafsirIntegratedView> {
@@ -68,6 +69,7 @@ class _TafsirIntegratedViewState extends ConsumerState<TafsirIntegratedView> {
               _editionId = id;
               _editionName = name;
             });
+            // ignore: unused_result
             ref.refresh(tafsirForAyahProvider((_surah, _ayah, id)).future);
           },
           onSurahChange: (v, _) {
@@ -76,9 +78,7 @@ class _TafsirIntegratedViewState extends ConsumerState<TafsirIntegratedView> {
               _ayah = 1;
             });
             if (_editionId != null) {
-              ref.refresh(
-                tafsirForAyahProvider((v, 1, _editionId!)).future,
-              );
+              ref.refresh(tafsirForAyahProvider((v, 1, _editionId!)).future);
             }
           },
           onAyahChange: (v) {

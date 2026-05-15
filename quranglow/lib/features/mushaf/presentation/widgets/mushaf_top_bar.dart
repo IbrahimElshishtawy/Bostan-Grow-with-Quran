@@ -16,6 +16,8 @@ class MushafTopBar extends StatelessWidget {
     this.onPrev,
     this.onNext,
     this.onSave,
+    this.onZoomIn,
+    this.onZoomOut,
     this.onTafsir,
     this.onVoiceRecite,
     this.onPlayAll,
@@ -28,6 +30,8 @@ class MushafTopBar extends StatelessWidget {
   final VoidCallback? onPrev;
   final VoidCallback? onNext;
   final VoidCallback? onSave;
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
   final VoidCallback? onTafsir;
   final VoidCallback? onVoiceRecite;
   final VoidCallback? onPlayAll;
@@ -107,6 +111,16 @@ class MushafTopBar extends StatelessWidget {
                         Row(
                           children: [
                             const SizedBox(width: 4),
+                            IconButton(
+                              icon: Icon(Icons.zoom_in_rounded, color: titleColor),
+                              onPressed: onZoomIn,
+                              tooltip: 'تكبير الخط',
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.zoom_out_rounded, color: titleColor),
+                              onPressed: onZoomOut,
+                              tooltip: 'تصغير الخط',
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: AnimatedSwitcher(

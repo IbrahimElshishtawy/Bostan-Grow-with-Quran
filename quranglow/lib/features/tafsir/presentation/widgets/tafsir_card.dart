@@ -21,31 +21,29 @@ class TafsirCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Premium Indigo/Blue palette for Tafsir
-    final Color indigoBg = isDark
-        ? const Color(0xFF1A1F3D)
-        : const Color(0xFFF0F2FF);
-    final Color indigoAccent = isDark
-        ? const Color(0xFF3F51B5)
-        : const Color(0xFF3949AB);
-    final Color indigoText = isDark ? Colors.white : const Color(0xFF1A237E);
+    // Premium Deep Teal/Gold palette for Tafsir
+    final Color primaryBg = isDark
+        ? const Color(0xFF0F2921)
+        : const Color(0xFFF6FAF7);
+    final Color accentColor = const Color(0xFFD4AF37); // Gold
+    final Color primaryText = isDark ? Colors.white : const Color(0xFF1B4D3E);
 
     return tafsir.when(
       loading: () => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: indigoBg.withValues(alpha: 0.5),
+          color: primaryBg.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: indigoAccent.withValues(alpha: 0.1)),
+          border: Border.all(color: accentColor.withValues(alpha: 0.1)),
         ),
         child: Column(
           children: [
-            const LinearProgressIndicator(minHeight: 2),
+            const LinearProgressIndicator(minHeight: 2, color: Color(0xFFD4AF37)),
             const SizedBox(height: 12),
             Text(
-              'جارٍ جلب التفسير من المصادر...',
+              'جارٍ جلب التفسير...',
               style: TextStyle(
-                color: indigoText.withValues(alpha: 0.6),
+                color: primaryText.withValues(alpha: 0.6),
                 fontSize: 12,
                 fontFamily: 'Tajawal',
               ),
@@ -56,12 +54,12 @@ class TafsirCard extends StatelessWidget {
       error: (e, _) => ErrorCard(msg: 'خطأ في جلب التفسير: $e'),
       data: (text) => Container(
         decoration: BoxDecoration(
-          color: indigoBg,
+          color: primaryBg,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: indigoAccent.withValues(alpha: 0.15)),
+          border: Border.all(color: accentColor.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: indigoAccent.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -77,12 +75,12 @@ class TafsirCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: indigoAccent.withValues(alpha: 0.12),
+                      color: accentColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       Icons.auto_stories_rounded,
-                      color: indigoAccent,
+                      color: accentColor,
                       size: 22,
                     ),
                   ),
@@ -92,9 +90,9 @@ class TafsirCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'التفسير الميسّر',
+                          'التفسير',
                           style: TextStyle(
-                            color: indigoText,
+                            color: primaryText,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                             fontFamily: 'Tajawal',
@@ -103,7 +101,7 @@ class TafsirCard extends StatelessWidget {
                         Text(
                           editionName ?? 'المصدر الحالي',
                           style: TextStyle(
-                            color: indigoText.withValues(alpha: 0.6),
+                            color: primaryText.withValues(alpha: 0.6),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -119,7 +117,7 @@ class TafsirCard extends StatelessWidget {
                         SnackBar(
                           content: const Text('تم نسخ نص التفسير'),
                           behavior: SnackBarBehavior.floating,
-                          backgroundColor: indigoAccent,
+                          backgroundColor: accentColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -150,7 +148,7 @@ class TafsirCard extends StatelessWidget {
                   style: theme.textTheme.bodyLarge?.copyWith(
                     height: 1.8,
                     fontSize: 17,
-                    color: indigoText.withValues(alpha: 0.9),
+                    color: primaryText.withValues(alpha: 0.9),
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Tajawal',
                   ),
@@ -173,7 +171,7 @@ class _ActionIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? const Color(0xFF3F51B5) : const Color(0xFF3949AB);
+    final accent = const Color(0xFFD4AF37);
 
     return InkWell(
       onTap: onTap,
@@ -189,3 +187,4 @@ class _ActionIcon extends StatelessWidget {
     );
   }
 }
+

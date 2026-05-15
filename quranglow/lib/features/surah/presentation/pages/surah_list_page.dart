@@ -22,8 +22,8 @@ class _SurahListPageState extends State<SurahListPage> {
     // Initialize with all indices
     _filteredIndices = List.generate(kSurahNamesAr.length, (i) => i);
 
-    // Artificial delay so user sees the gorgeous skeleton loader requested
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    // Reduced delay for a snappier feel
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -84,7 +84,11 @@ class _SurahListPageState extends State<SurahListPage> {
           scrolledUnderElevation: 0,
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
-          automaticallyImplyLeading: false,
+          automaticallyImplyLeading: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => Navigator.pop(context),
+          ),
           flexibleSpace: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(

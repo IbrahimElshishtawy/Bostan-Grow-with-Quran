@@ -15,13 +15,8 @@ import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/aya/aya.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/features/mushaf/presentation/pages/paged_mushaf.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/ayah_actions_sheet.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_top_bar.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/position_store.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/selected_ayah_panel.dart';
-import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_audio_bar.dart';
-import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_args.dart';
-import 'package:quranglow/features/ui/routes/app_routes.dart';
+import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
+import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_card.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
 final surahProvider = FutureProvider.autoDispose
@@ -58,6 +53,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   bool _uiVisible = false;
   late int _chapter;
   int? _lastAyahNumber;
+  double _fontSize = 24.0; // Default font size
   bool _trackingSessionStarted = false;
   late final dynamic _trackingService;
   DateTime? _listeningStartedAt;
@@ -185,11 +181,89 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     ).showSnackBar(const SnackBar(content: Text('تم حفظ موضع القراءة')));
   }
 
+  void _zoomIn() {
+    setState(() {
+      if (_fontSize < 45) _fontSize += 2.0;
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      if (_fontSize > 16) _fontSize -= 2.0;
+    });
+  }
+
   void _openTafsirForAyah(int ayahNumber) {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.tafsirReader,
-      arguments: TafsirArgs(chapter: _chapter, ayah: ayahNumber),
+    final asyncSurah = ref.read(surahProvider((_chapter, widget.editionId)));
+    final surah = asyncSurah.valueOrNull;
+    if (surah == null) return;
+
+    final ayahText = surah.ayat[ayahNumber - 1].text;
+    final surahName = surah.name;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF0F172A)
+              : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Consumer(
+                builder: (context, ref, child) {
+                  // Use a fixed edition for quick view, or allow settings
+                  const editionId = 'ar.jalalayn'; // Common default
+                  final tafsir = ref.watch(tafsirForAyahProvider((_chapter, ayahNumber, editionId)));
+                  
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      Text(
+                        'تفسير الآية $ayahNumber - $surahName',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Tajawal',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      AyahCard(
+                        surahName: surahName,
+                        ayah: ayahNumber,
+                        ayahText: ayahText,
+                      ),
+                      const SizedBox(height: 16),
+                      TafsirCard(
+                        tafsir: tafsir,
+                        editionName: 'تفسير الجلالين',
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -202,7 +276,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     ).showSnackBar(const SnackBar(content: Text('تم نسخ الآية')));
   }
 
-  Future<void> _playAyahAudio(List<Aya> allAyat, int startAyahNumber) async {
+  Future<void> _playAyahAudio(List<Aya> allAyat, int startAyahNumber, {bool singleOnly = false}) async {
     try {
       final audioEdition = _audioEditionId();
       final audioAsync = ref.read(audioMapProvider((audioEdition, _chapter)));
@@ -216,71 +290,74 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         return;
       }
 
-      // 1. Check if we already have a playlist loaded for this Surah
-      final currentSource = _ayahPreviewPlayer.audioSource;
-      bool needsNewSource = true;
+      // 1. Prepare source(s)
+      final service = ref.read(quranServiceProvider);
+      final verseDurations = await service.getVerseDurations(_audioEditionId(), _chapter);
 
-      // Check if we already have the correct source loaded
-      if (currentSource is AudioSource && currentSource is! ConcatenatingAudioSource) {
-        if (_ayahPreviewPlayer.audioSource?.toString().contains('surah/$_audioEditionId()/$_chapter.mp3') ?? false) {
-          needsNewSource = false;
-        }
-      }
-
-      if (needsNewSource) {
-        final List<AudioSource> sources = [];
-        final service = ref.read(quranServiceProvider);
-        
-        // Fetch explicit durations to fix the timer issue and enable gapless preloading
-        final verseDurations = await service.getVerseDurations(_audioEditionId(), _chapter);
-
-        for (int i = 0; i < allAyat.length; i++) {
-          final a = allAyat[i];
-          String? url = a.audioUrl ?? audioMap[a.numberInSurah];
-          if (url != null && url.trim().isNotEmpty) {
-            sources.add(
-              ProgressiveAudioSource(
-                Uri.parse(url),
-                duration: verseDurations[a.numberInSurah], // Crucial for immediate total time
-                tag: MediaItem(
-                  id: 'ayah_${a.number}',
-                  title: 'الآية ${a.numberInSurah}',
-                  album: 'سورة ${allAyat.first.surah}',
-                  duration: verseDurations[a.numberInSurah],
-                ),
+      if (singleOnly) {
+        // Single Ayah playback
+        final a = allAyat[startAyahNumber - 1];
+        String? url = a.audioUrl ?? audioMap[startAyahNumber];
+        if (url != null && url.trim().isNotEmpty) {
+          await _ayahPreviewPlayer.setAudioSource(
+            ProgressiveAudioSource(
+              Uri.parse(url),
+              duration: verseDurations[startAyahNumber],
+              tag: MediaItem(
+                id: 'ayah_${a.number}',
+                title: 'الآية ${a.numberInSurah}',
+                album: 'سورة ${allAyat.first.surah}',
+                duration: verseDurations[startAyahNumber],
               ),
-            );
+            ),
+          );
+          await _ayahPreviewPlayer.setLoopMode(LoopMode.off);
+          await _ayahPreviewPlayer.play();
+        }
+      } else {
+        // Continuous playback (Existing logic)
+        final currentSource = _ayahPreviewPlayer.audioSource;
+        bool needsNewSource = true;
+        if (currentSource is AudioSource && currentSource is! ConcatenatingAudioSource) {
+          if (_ayahPreviewPlayer.audioSource?.toString().contains('surah/$_audioEditionId()/$_chapter.mp3') ?? false) {
+            needsNewSource = false;
           }
         }
 
-        if (sources.isEmpty) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('لا يوجد ملفات صوتية متاحة')),
+        if (needsNewSource) {
+          final List<AudioSource> sources = [];
+          for (int i = 0; i < allAyat.length; i++) {
+            final a = allAyat[i];
+            String? url = a.audioUrl ?? audioMap[a.numberInSurah];
+            if (url != null && url.trim().isNotEmpty) {
+              sources.add(
+                ProgressiveAudioSource(
+                  Uri.parse(url),
+                  duration: verseDurations[a.numberInSurah],
+                  tag: MediaItem(
+                    id: 'ayah_${a.number}',
+                    title: 'الآية ${a.numberInSurah}',
+                    album: 'سورة ${allAyat.first.surah}',
+                    duration: verseDurations[a.numberInSurah],
+                  ),
+                ),
+              );
+            }
+          }
+          if (sources.isEmpty) return;
+          await _ayahPreviewPlayer.setAudioSource(
+            ConcatenatingAudioSource(children: sources, useLazyPreparation: false),
+            initialIndex: (startAyahNumber - 1).clamp(0, sources.length - 1),
+            preload: true,
           );
-          return;
+          await _ayahPreviewPlayer.setLoopMode(LoopMode.off);
         }
 
-        // Use ConcatenatingAudioSource with preloading and explicit durations
-        await _ayahPreviewPlayer.setAudioSource(
-          ConcatenatingAudioSource(
-            children: sources,
-            useLazyPreparation: false, // Preload for zero gaps
-          ),
-          initialIndex: (startAyahNumber - 1).clamp(0, sources.length - 1),
-          preload: true,
-        );
-        await _ayahPreviewPlayer.setLoopMode(LoopMode.off);
-      }
-
-      // 2. Seek to the target Ayah and play
-      final targetIndex = startAyahNumber - 1;
-      if (targetIndex >= 0 && targetIndex < allAyat.length) {
-        // Seek first to the specific Ayah in the playlist
-        await _ayahPreviewPlayer.seek(Duration.zero, index: targetIndex);
-        
-        // Ensure it's playing
-        await _ayahPreviewPlayer.play();
+        final targetIndex = startAyahNumber - 1;
+        if (targetIndex >= 0 && targetIndex < allAyat.length) {
+          await _ayahPreviewPlayer.seek(Duration.zero, index: targetIndex);
+          await _ayahPreviewPlayer.play();
+        }
       }
 
       if (!mounted) return;
@@ -322,7 +399,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         onAyahChanged: (nextAyahNumber) {
           setState(() => _lastAyahNumber = nextAyahNumber);
         },
-        onPlayAyah: _playAyahAudio,
+        onPlayAyah: (ayat, num) => _playAyahAudio(ayat, num, singleOnly: true),
         onOpenTafsir: (currentAyahNumber) {
           Navigator.pop(ctx);
           _openTafsirForAyah(currentAyahNumber);
@@ -485,6 +562,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 onPrev: _chapter > 1 ? _goPrev : null,
                 onNext: _chapter < 114 ? _goNext : null,
                 onSave: _saveCurrentPosition,
+                onZoomIn: _zoomIn,
+                onZoomOut: _zoomOut,
                 onTafsir: () => _openTafsirForAyah(_lastAyahNumber ?? 1),
                 onPlayAll: () {
                   final surah = asyncSurah.valueOrNull;
@@ -545,9 +624,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                       final ayahNum = _lastAyahNumber;
                       final surah = asyncSurah.valueOrNull;
                       if (ayahNum == null || surah == null) return;
-                      final idx = ayahNum - 1;
-                      if (idx < 0 || idx >= surah.ayat.length) return;
-                      _playAyahAudio(surah.ayat, ayahNum);
+                      _playAyahAudio(surah.ayat, ayahNum, singleOnly: true);
                     },
                     onCopy: () {
                       final text = selectedAyahText;
