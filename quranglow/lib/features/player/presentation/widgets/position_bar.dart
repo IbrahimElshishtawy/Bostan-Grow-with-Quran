@@ -29,16 +29,15 @@ class PositionBar extends ConsumerWidget {
             snap.data ??
             CombinedPositionData(Duration.zero, Duration.zero, Duration.zero);
         
-        // Always check for the total duration override from the controller
         final playerState = ref.watch(playerControllerProvider).asData?.value;
         final totalOverride = playerState?.totalDurationOverride ?? Duration.zero;
         
-        // Prioritize the pre-calculated total surah duration
         final total = (totalOverride > timeline.total) ? totalOverride : timeline.total;
         final position = timeline.position > total ? total : timeline.position;
-        final buffered = timeline.bufferedPosition > total
-            ? total
-            : timeline.bufferedPosition;
+        
+        // Custom buffering logic for "YouTube-style" bar across multiple ayahs
+        final bufferedVal = playerState?.bufferedPercent ?? 0.0;
+        final bufferedMs = (bufferedVal * total.inMilliseconds).toDouble();
             
         final sliderMax = total.inMilliseconds <= 0
             ? 1.0
@@ -58,9 +57,7 @@ class PositionBar extends ConsumerWidget {
                 min: 0,
                 max: sliderMax,
                 value: position.inMilliseconds.clamp(0, sliderMax).toDouble(),
-                secondaryTrackValue: buffered.inMilliseconds
-                    .clamp(0, sliderMax)
-                    .toDouble(),
+                secondaryTrackValue: bufferedMs.clamp(0, sliderMax).toDouble(),
                 onChanged: total.inMilliseconds <= 0
                     ? null
                     : (value) => onSeek(Duration(milliseconds: value.round())),

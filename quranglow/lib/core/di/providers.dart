@@ -301,6 +301,7 @@ final editionIdProvider = StateProvider<String>((ref) => 'ar.alafasy');
 final chapterProvider = StateProvider<int>((ref) => 1);
 
 class PlayerUiState extends PlaylistState {
+  final double? bufferedPercent;
   final Duration? totalDurationOverride;
   final bool? isPlaying;
   final String? currentUrl;
@@ -320,6 +321,7 @@ class PlayerUiState extends PlaylistState {
     required super.playingStream,
     required super.loopModeStream,
     required super.volumeStream,
+    this.bufferedPercent,
     this.totalDurationOverride,
     this.isPlaying,
     this.currentUrl,
@@ -445,10 +447,11 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         for (final a in allAyat) {
           final url = audioMap[a.numberInSurah];
           if (url != null) {
+            // ignore: deprecated_member_use
             sources.add(
-              ProgressiveAudioSource(
+              LockCachingAudioSource(
+
                 Uri.parse(url),
-                duration: verseDurations[a.numberInSurah], // Provide duration upfront
                 tag: MediaItem(
                   id: 'ayah_${a.number}',
                   title: 'الآية ${a.numberInSurah}',
@@ -469,7 +472,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         await _player.setAudioSource(
           ConcatenatingAudioSource(
             children: sources,
-            useLazyPreparation: false, // Preload metadata for all items
+            useLazyPreparation: true, // Only prepare items as they are needed to save RAM/CPU
           ),
           initialIndex: 0,
           initialPosition: Duration.zero,
@@ -521,6 +524,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     return editionId;
   }
 
+  int _bufferedCount = 0;
+
   /// Background task to warm up the network cache for upcoming ayahs
   void _warmUpCache(Map<int, String> audioMap, {required int initialIndex, bool aggressive = false}) {
     final dio = ref.read(dioProvider);
@@ -529,11 +534,20 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     final depth = aggressive ? audioMap.length : 10;
     final end = (start + depth).clamp(0, audioMap.length);
     
+    _bufferedCount = initialIndex; // Assume current and previous are buffered
+    
     for (int i = start; i <= end; i++) {
       final url = audioMap[i];
       if (url != null && url.startsWith('http')) {
         // We don't await this, just fire and forget to trigger CDN/Network caching
-        dio.get(url, options: Options(responseType: ResponseType.bytes)).catchError((_) => Response(requestOptions: RequestOptions()));
+        dio.get(url, options: Options(responseType: ResponseType.bytes)).then((_) {
+           _bufferedCount++;
+           _emitState(); // Update UI with new buffer progress
+        }).catchError((_) {
+           _bufferedCount++; // Skip on error so the bar doesn't get stuck
+           _emitState();
+           return null;
+        });
       }
     }
   }
@@ -550,6 +564,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         ? kSurahNamesAr[chapter - 1]
         : 'سورة $chapter';
 
+    final bufferedPercent = _urls.isEmpty ? 0.0 : (_bufferedCount / _urls.length).clamp(0.0, 1.0);
+
     state = AsyncValue.data(
       PlayerUiState(
         editionId: editionId,
@@ -563,12 +579,13 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
+        bufferedPercent: bufferedPercent,
         totalDurationOverride: _totalDuration,
         isPlaying: _player.playing,
         currentUrl: _urls[safeIndex],
         surahName: surahName,
         reciterName: _reciterName,
-        currentAyah: safeIndex + 1,
+        currentAyah: safeIndex,
       ),
     );
   }
@@ -599,6 +616,10 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
 
   Future<void> seekTo(Duration position) async {
     await _player.seek(position);
+  }
+
+  Future<void> seekToIndex(int index) async {
+    await _player.seek(Duration.zero, index: index);
   }
 
   Future<void> setSpeed(double speed) async {

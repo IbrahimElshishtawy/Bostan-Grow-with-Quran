@@ -14,8 +14,10 @@ import 'package:quranglow/features/player/presentation/widgets/reader_row.dart';
 import 'package:quranglow/features/player/presentation/widgets/track_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/transport_controls.dart';
 import 'package:quranglow/features/player/presentation/pages/favorites_page.dart';
+import 'package:quranglow/features/player/presentation/widgets/player_lyrics_sheet.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
+
 
 class PlayerPage extends ConsumerStatefulWidget {
   const PlayerPage({super.key});
@@ -264,6 +266,18 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
             IconButton(
               icon: const Icon(Icons.download_for_offline_rounded, color: Colors.white),
               onPressed: () => _downloadCurrent(context, ref),
+            ),
+            IconButton(
+              icon: const Icon(Icons.lyrics_rounded, color: Colors.tealAccent),
+              tooltip: 'الكلمات',
+              onPressed: () {
+                 showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (ctx) => const PlayerLyricsSheet(),
+                 );
+              },
             ),
           ],
         ),
