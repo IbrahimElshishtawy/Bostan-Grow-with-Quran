@@ -44,7 +44,7 @@ class ReaderRow extends StatelessWidget {
               error: (_, _) => 'خطأ',
             ),
             icon: Icons.person_outline_rounded,
-            onTap: () => _showSelectionSheet(
+            onTap: () => showSelectionSheet(
               context,
               title: 'اختر القارئ',
               items: editions.maybeWhen(
@@ -75,7 +75,7 @@ class ReaderRow extends StatelessWidget {
               orElse: () => 'سورة $selectedSurah',
             ),
             icon: Icons.auto_stories_outlined,
-            onTap: () => _showSelectionSheet(
+            onTap: () => showSelectionSheet(
               context,
               title: 'اختر السورة',
               items: surahs.maybeWhen(
@@ -99,7 +99,7 @@ class ReaderRow extends StatelessWidget {
     );
   }
 
-  void _showSelectionSheet(
+  void showSelectionSheet(
     BuildContext context, {
     required String title,
     required List<Map<String, dynamic>> items,
@@ -113,7 +113,7 @@ class ReaderRow extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => _SelectionSheet(
+      builder: (context) => SelectionSheet(
         title: title,
         items: items,
         selectedId: selectedId,
@@ -121,6 +121,29 @@ class ReaderRow extends StatelessWidget {
       ),
     );
   }
+}
+
+void showSelectionSheet(
+  BuildContext context, {
+  required String title,
+  required List<Map<String, dynamic>> items,
+  required dynamic selectedId,
+  required ValueChanged<dynamic> onSelected,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: const Color(0xFF1A1A1A),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) => SelectionSheet(
+      title: title,
+      items: items,
+      selectedId: selectedId,
+      onSelected: onSelected,
+    ),
+  );
 }
 
 class _SelectionButton extends StatelessWidget {
@@ -187,8 +210,9 @@ class _SelectionButton extends StatelessWidget {
   }
 }
 
-class _SelectionSheet extends StatefulWidget {
-  const _SelectionSheet({
+class SelectionSheet extends StatefulWidget {
+  const SelectionSheet({
+    super.key,
     required this.title,
     required this.items,
     required this.selectedId,
@@ -201,10 +225,10 @@ class _SelectionSheet extends StatefulWidget {
   final ValueChanged<dynamic> onSelected;
 
   @override
-  State<_SelectionSheet> createState() => _SelectionSheetState();
+  State<SelectionSheet> createState() => _SelectionSheetState();
 }
 
-class _SelectionSheetState extends State<_SelectionSheet> {
+class _SelectionSheetState extends State<SelectionSheet> {
   late List<Map<String, dynamic>> filteredItems = widget.items;
   final TextEditingController _searchController = TextEditingController();
 

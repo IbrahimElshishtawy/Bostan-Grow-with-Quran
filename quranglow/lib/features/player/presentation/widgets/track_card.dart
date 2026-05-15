@@ -5,6 +5,11 @@ import 'package:quranglow/features/player/presentation/providers/favorites_contr
 
 import 'package:quranglow/features/player/presentation/widgets/embedded_player_lyrics.dart';
 
+import 'package:quranglow/core/data/surah_names_ar.dart';
+import 'package:quranglow/core/model/aya/aya.dart';
+import 'package:quranglow/core/model/book/surah.dart';
+import 'package:quranglow/features/player/presentation/widgets/reader_row.dart';
+
 class TrackCard extends ConsumerWidget {
   const TrackCard({super.key, required this.state, required this.showLyrics});
 
@@ -18,6 +23,15 @@ class TrackCard extends ConsumerWidget {
     final isFav = ref
         .watch(favoritesControllerProvider.notifier)
         .isFavorite(state.editionId, state.chapter);
+        
+    final editions = ref.watch(audioEditionsProvider);
+    final ch = ref.watch(chapterProvider).clamp(1, 114);
+    final ed = ref.watch(editionIdProvider);
+    final surahs = List<Surah>.generate(
+      kSurahNamesAr.length,
+      (i) => Surah(number: i + 1, name: kSurahNamesAr[i], ayat: const <Aya>[]),
+      growable: false,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,7 +41,7 @@ class TrackCard extends ConsumerWidget {
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 1,
             child: AspectRatio(
-              aspectRatio: 1.6, // Wider and shorter as requested
+              aspectRatio: 1.1, // Enlarged and taller rectangle
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
                 decoration: BoxDecoration(
@@ -58,7 +72,7 @@ class TrackCard extends ConsumerWidget {
                       : const Center(
                           child: Icon(
                             Icons.graphic_eq_rounded,
-                            size: 50,
+                            size: 80,
                             color: Colors.white24,
                           ),
                         ),
@@ -78,28 +92,96 @@ class TrackCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    surahLabel,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Tajawal',
+                  GestureDetector(
+                    onTap: () {
+                      showSelectionSheet(
+                        context,
+                        title: 'اختر السورة',
+                        items: surahs
+                            .map((s) => {
+                                  'id': s.number,
+                                  'name': s.name,
+                                  'subtitle': 'سورة رقم ${s.number}',
+                                })
+                            .toList(),
+                        selectedId: ch,
+                        onSelected: (id) => ref
+                            .read(playerControllerProvider.notifier)
+                            .changeChapter(id as int),
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            surahLabel,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Tajawal',
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white70,
+                          size: 24,
+                        ),
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    reciterLabel,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Tajawal',
+                  GestureDetector(
+                    onTap: () {
+                      showSelectionSheet(
+                        context,
+                        title: 'اختر القارئ',
+                        items: editions.maybeWhen(
+                          data: (list) => list
+                              .whereType<Map>()
+                              .map((m) => {
+                                    'id': (m['identifier'] ?? '').toString(),
+                                    'name': (m['name'] ?? m['englishName'] ?? '')
+                                        .toString(),
+                                  })
+                              .toList(),
+                          orElse: () => [],
+                        ),
+                        selectedId: ed,
+                        onSelected: (id) => ref
+                            .read(playerControllerProvider.notifier)
+                            .changeEdition(id as String),
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            reciterLabel,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Tajawal',
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white.withValues(alpha: 0.5),
+                          size: 20,
+                        ),
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
