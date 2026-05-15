@@ -410,19 +410,46 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       );
 
       try {
-        // Use the single full surah URL for correct total duration reporting
-        final fullSurahUrl = service.getSurahFullAudioUrl(editionId, chapter);
+        final audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
+        final surahData = await service.getSurahText('quran-uthmani', chapter);
+        final allAyat = surahData.ayat;
         
+        // Fetch explicit durations for perfect timer reporting and gapless preloading
+        final verseDurations = await service.getVerseDurations(editionId, chapter);
+        
+        // Calculate total surah duration upfront for UI override
+        _totalDuration = verseDurations.values.fold(Duration.zero, (a, b) => a + b);
+        _emitState();
+        
+        final List<AudioSource> sources = [];
+        for (final a in allAyat) {
+          final url = audioMap[a.numberInSurah];
+          if (url != null) {
+            sources.add(
+              ProgressiveAudioSource(
+                Uri.parse(url),
+                duration: verseDurations[a.numberInSurah], // Provide duration upfront
+                tag: MediaItem(
+                  id: 'ayah_${a.number}',
+                  title: 'الآية ${a.numberInSurah}',
+                  album: 'سورة $surahName',
+                  artist: _reciterName,
+                  duration: verseDurations[a.numberInSurah],
+                ),
+              ),
+            );
+          }
+        }
+
+        if (sources.isEmpty) {
+          throw Exception('لم يتم العثور على روابط صوتية لهذه السورة');
+        }
+
+        // Use ConcatenatingAudioSource with preloading and explicit durations
         await _player.setAudioSource(
-          AudioSource.uri(
-            Uri.parse(fullSurahUrl),
-            headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'},
-            tag: MediaItem(
-              id: 'surah_$chapter',
-              title: surahName,
-              artist: _reciterName,
-              album: 'القرآن الكريم',
-            ),
+          ConcatenatingAudioSource(
+            children: sources,
+            useLazyPreparation: false, // Preload for zero gaps
           ),
           initialIndex: 0,
           initialPosition: Duration.zero,
@@ -433,41 +460,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           debugPrint('Audio loading was interrupted (handled): $e');
           return;
         }
-
-        // Fallback to individual ayah playlist if full surah file is missing or fails
-        debugPrint('Full surah file failed, falling back to ayah playlist: $e');
-        try {
-          final audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
-          final surahData = await service.getSurahText('quran-uthmani', chapter);
-          final allAyat = surahData.ayat;
-          
-          final List<AudioSource> sources = [];
-          for (final a in allAyat) {
-            final url = audioMap[a.numberInSurah];
-            if (url != null) {
-              sources.add(
-                AudioSource.uri(
-                  Uri.parse(url),
-                  tag: MediaItem(
-                    id: 'ayah_${a.number}',
-                    title: 'الآية ${a.numberInSurah}',
-                    album: 'سورة $surahName',
-                    artist: _reciterName,
-                  ),
-                ),
-              );
-            }
-          }
-
-          if (sources.isNotEmpty) {
-            await _player.setAudioSource(
-              ConcatenatingAudioSource(children: sources, useLazyPreparation: false),
-            );
-          }
-        } catch (fallbackError) {
-          debugPrint('Fallback also failed: $fallbackError');
-          rethrow;
-        }
+        debugPrint('Error loading audio playlist: $e');
+        rethrow;
       }
       
       if (_disposed || !mounted) return;
@@ -590,6 +584,20 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     ref.read(editionIdProvider.notifier).state = editionId;
     final chapter = ref.read(chapterProvider).clamp(1, 114);
     await _loadSurah(editionId: editionId, chapter: chapter, autoPlay: false);
+  }
+
+  Duration _totalDuration = Duration.zero;
+  Duration get totalDuration => _totalDuration;
+
+  Future<void> playSurah(int chapter, {int? startAyah}) async {
+    final safeChapter = chapter.clamp(1, 114);
+    ref.read(chapterProvider.notifier).state = safeChapter;
+    final editionId = ref.read(editionIdProvider);
+    await _loadSurah(
+      editionId: editionId,
+      chapter: safeChapter,
+      autoPlay: true,
+    );
   }
 
   Future<void> changeChapter(int chapter) async {

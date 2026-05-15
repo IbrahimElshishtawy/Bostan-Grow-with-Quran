@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/features/player/presentation/widgets/CombinedPositionData.dart';
 
-class MushafAudioBar extends StatelessWidget {
+class MushafAudioBar extends ConsumerWidget {
   const MushafAudioBar({
     super.key,
     required this.visible,
@@ -17,7 +19,7 @@ class MushafAudioBar extends StatelessWidget {
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SafeArea(
@@ -27,115 +29,113 @@ class MushafAudioBar extends StatelessWidget {
           offset: visible ? Offset.zero : const Offset(0, 1.2),
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF1B4D3E), const Color(0xFF112D25)]
-                    : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
+                colors:
+                    isDark
+                        ? [const Color(0xFF1B4D3E), const Color(0xFF112D25)]
+                        : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Material(
               color: Colors.transparent,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Header with Reciter & Surah
                     Row(
                       children: [
-                        // Play/Pause button
-                        StreamBuilder<PlayerState>(
-                          stream: player.playerStateStream,
-                          builder: (context, snapshot) {
-                            final state = snapshot.data;
-                            final playing = state?.playing ?? false;
-                            final processing =
-                                state?.processingState ?? ProcessingState.idle;
-
-                            if (processing == ProcessingState.loading ||
-                                processing == ProcessingState.buffering) {
-                              return const SizedBox(
-                                width: 44,
-                                height: 44,
-                                child: Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    color: Colors.amber,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            return IconButton(
-                              icon: Icon(
-                                playing
-                                    ? Icons.pause_circle_filled_rounded
-                                    : Icons.play_circle_filled_rounded,
-                                size: 40,
-                                color: isDark
-                                    ? Colors.amber
-                                    : const Color(0xFF2E7D32),
-                              ),
-                              onPressed: () {
-                                if (playing) {
-                                  player.pause();
-                                } else {
-                                  player.play();
-                                }
-                              },
-                            );
-                          },
+                        const SizedBox(width: 16),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.05),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.mic_none_rounded,
+                            size: 18,
+                            color: isDark ? Colors.amber : Colors.green[800],
+                          ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 surahName,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: isDark ? Colors.white : Colors.black87,
                                 ),
                               ),
-                              StreamBuilder<int?>(
-                                stream: player.currentIndexStream,
-                                builder: (context, snapshot) {
-                                  final idx = snapshot.data;
-                                  return Text(
-                                    idx != null
-                                        ? 'الآية ${idx + 1}'
-                                        : 'جاري التحميل...',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.black54,
-                                    ),
-                                  );
-                                },
+                              Text(
+                                'جاري التشغيل...',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: (isDark ? Colors.white : Colors.black)
+                                      .withValues(alpha: 0.5),
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        // Close button
+                        StreamBuilder<PlayerState>(
+                          stream: player.playerStateStream,
+                          builder: (context, snapshot) {
+                            final playerState = snapshot.data;
+                            final processingState =
+                                playerState?.processingState;
+                            final playing = playerState?.playing;
+                            if (processingState == ProcessingState.loading ||
+                                processingState ==
+                                    ProcessingState.buffering) {
+                              return Container(
+                                margin: const EdgeInsets.all(8.0),
+                                width: 24.0,
+                                height: 24.0,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            } else if (playing != true) {
+                              return IconButton(
+                                icon: const Icon(Icons.play_arrow_rounded),
+                                iconSize: 28.0,
+                                onPressed: player.play,
+                              );
+                            } else if (processingState !=
+                                ProcessingState.completed) {
+                              return IconButton(
+                                icon: const Icon(Icons.pause_rounded),
+                                iconSize: 28.0,
+                                onPressed: player.pause,
+                              );
+                            } else {
+                              return IconButton(
+                                icon: const Icon(Icons.replay_rounded),
+                                iconSize: 28.0,
+                                onPressed: () => player.seek(Duration.zero),
+                              );
+                            }
+                          },
+                        ),
                         IconButton(
                           icon: const Icon(Icons.close_rounded, size: 20),
                           onPressed: onClose,
@@ -157,17 +157,21 @@ class MushafAudioBar extends StatelessWidget {
                         final total = timeline.total;
                         final pos = timeline.position;
 
-                        // If total is 0 (not loaded), fallback to ayah-based progress
+                        // Use the controller's pre-calculated total duration if the player hasn't loaded it yet
+                        final controller = ref.watch(playerControllerProvider.notifier);
+                        final totalOverride = controller.totalDuration;
+                        
+                        final displayTotal = total == Duration.zero ? totalOverride : total;
+                        final useTimeMode = displayTotal.inMilliseconds > 0;
+
+                        double sliderValue = pos.inMilliseconds.toDouble();
+                        double sliderMax = displayTotal.inMilliseconds.toDouble();
+
                         final currentIndex = player.currentIndex ?? 0;
                         final totalVerses = player.sequence.length;
 
-                        double sliderValue = pos.inMilliseconds.toDouble();
-                        double sliderMax = total.inMilliseconds.toDouble();
-
-                        bool useTimeMode = total.inMilliseconds > 0;
-
                         if (!useTimeMode) {
-                          // Fallback to verse-based progress if durations aren't loaded
+                          // Fallback to verse-based progress if durations aren't loaded at all
                           sliderValue = currentIndex.toDouble();
                           sliderMax = totalVerses.toDouble();
                         }
@@ -210,9 +214,10 @@ class MushafAudioBar extends StatelessWidget {
                                     );
                                   }
                                 },
-                                activeColor: isDark
-                                    ? Colors.amber
-                                    : const Color(0xFF2E7D32),
+                                activeColor:
+                                    isDark
+                                        ? Colors.amber
+                                        : const Color(0xFF2E7D32),
                                 inactiveColor:
                                     (isDark ? Colors.white : Colors.black)
                                         .withValues(alpha: 0.1),
@@ -237,7 +242,7 @@ class MushafAudioBar extends StatelessWidget {
                                   ),
                                   Text(
                                     useTimeMode
-                                        ? '${((sliderValue / sliderMax) * 100).toInt()}%'
+                                        ? '${((sliderValue / (sliderMax > 0 ? sliderMax : 1.0)) * 100).toInt()}%'
                                         : 'الآية ${currentIndex + 1} / $totalVerses',
                                     style: TextStyle(
                                       fontSize: 10,
@@ -247,7 +252,7 @@ class MushafAudioBar extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    formatDuration(total),
+                                    formatDuration(displayTotal),
                                     style: TextStyle(
                                       fontSize: 10,
                                       color:

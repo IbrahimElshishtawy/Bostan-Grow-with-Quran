@@ -228,66 +228,48 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       }
 
       if (needsNewSource) {
-        // Use the single full surah URL for correct total duration reporting
+        final List<AudioSource> sources = [];
         final service = ref.read(quranServiceProvider);
-        final fullSurahUrl = service.getSurahFullAudioUrl(_audioEditionId(), _chapter);
         
-        try {
-          await _ayahPreviewPlayer.setAudioSource(
-            AudioSource.uri(
-              Uri.parse(fullSurahUrl),
-              headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'},
-              tag: MediaItem(
-                id: 'surah_$_chapter',
-                title: 'سورة ${allAyat.first.surah}',
-                album: 'القرآن الكريم',
-                artist: _audioEditionId(),
-              ),
-            ),
-            preload: true,
-          );
+        // Fetch explicit durations to fix the timer issue and enable gapless preloading
+        final verseDurations = await service.getVerseDurations(_audioEditionId(), _chapter);
 
-          if (startAyahNumber > 1) {
-            // Estimate start position based on character count
-            int totalChars = allAyat.fold(0, (sum, a) => sum + a.text.length);
-            int charsBefore = allAyat.take(startAyahNumber - 1).fold(0, (sum, a) => sum + a.text.length);
-            
-            _ayahPreviewPlayer.durationStream.firstWhere((d) => d != null).then((d) {
-              if (d != null) {
-                final startPos = Duration(
-                  milliseconds: (d.inMilliseconds * charsBefore / totalChars).toInt(),
-                );
-                _ayahPreviewPlayer.seek(startPos);
-              }
-            });
-          }
-        } catch (e) {
-          debugPrint('Full surah file failed in MushafPage, falling back to playlist: $e');
-          final List<AudioSource> sources = [];
-          for (int i = 0; i < allAyat.length; i++) {
-            final a = allAyat[i];
-            String? url = a.audioUrl ?? audioMap[a.numberInSurah];
-            if (url != null && url.trim().isNotEmpty) {
-              sources.add(
-                AudioSource.uri(
-                  Uri.parse(url),
-                  tag: MediaItem(
-                    id: 'ayah_${a.number}',
-                    title: 'الآية ${a.numberInSurah}',
-                    album: 'سورة ${allAyat.first.surah}',
-                  ),
+        for (int i = 0; i < allAyat.length; i++) {
+          final a = allAyat[i];
+          String? url = a.audioUrl ?? audioMap[a.numberInSurah];
+          if (url != null && url.trim().isNotEmpty) {
+            sources.add(
+              ProgressiveAudioSource(
+                Uri.parse(url),
+                duration: verseDurations[a.numberInSurah], // Crucial for immediate total time
+                tag: MediaItem(
+                  id: 'ayah_${a.number}',
+                  title: 'الآية ${a.numberInSurah}',
+                  album: 'سورة ${allAyat.first.surah}',
+                  duration: verseDurations[a.numberInSurah],
                 ),
-              );
-            }
-          }
-
-          if (sources.isNotEmpty) {
-            await _ayahPreviewPlayer.setAudioSource(
-              ConcatenatingAudioSource(children: sources, useLazyPreparation: false),
-              initialIndex: (startAyahNumber - 1).clamp(0, sources.length - 1),
+              ),
             );
           }
         }
+
+        if (sources.isEmpty) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('لا يوجد ملفات صوتية متاحة')),
+          );
+          return;
+        }
+
+        // Use ConcatenatingAudioSource with preloading and explicit durations
+        await _ayahPreviewPlayer.setAudioSource(
+          ConcatenatingAudioSource(
+            children: sources,
+            useLazyPreparation: false, // Preload for zero gaps
+          ),
+          initialIndex: (startAyahNumber - 1).clamp(0, sources.length - 1),
+          preload: true,
+        );
         await _ayahPreviewPlayer.setLoopMode(LoopMode.off);
       }
 
