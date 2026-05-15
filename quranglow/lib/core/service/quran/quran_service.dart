@@ -282,24 +282,35 @@ class QuranService {
   }
 
   Future<List<String>> getSurahAudioUrls(String editionId, int surah) async {
+    // 1. Get the full list of URLs from the cloud
+    final map = await cloud.getSurahAudio(editionId, surah);
+    final ayahs = _extractAudioAyahs(map);
+    if (ayahs.isEmpty) {
+      throw Exception('No ayah audio URLs found for $editionId in surah $surah');
+    }
+
+    final urls = ayahs
+        .map(_readAudioUrl)
+        .whereType<String>()
+        .where((url) => url.trim().isNotEmpty)
+        .toList();
+
+    // 2. Check for local files and override specific indices
     final localFiles = await _getLocalDownloadedSurahAudioFiles(
       editionId,
       surah,
     );
     if (localFiles.isNotEmpty) {
-      return localFiles.map((file) => Uri.file(file.path).toString()).toList();
+      for (final file in localFiles) {
+        final ayahNumber = int.tryParse(p.basenameWithoutExtension(file.path));
+        // ayahNumber is 1-based, index is 0-based
+        if (ayahNumber != null && ayahNumber > 0 && ayahNumber <= urls.length) {
+          urls[ayahNumber - 1] = Uri.file(file.path).toString();
+        }
+      }
     }
 
-    final map = await cloud.getSurahAudio(editionId, surah);
-    final ayahs = _extractAudioAyahs(map);
-    if (ayahs.isNotEmpty) {
-      return ayahs
-          .map(_readAudioUrl)
-          .whereType<String>()
-          .where((url) => url.trim().isNotEmpty)
-          .toList(growable: false);
-    }
-    throw Exception('No ayah audio URLs found for $editionId in surah $surah');
+    return urls;
   }
 
   /// Returns the URL for a single audio file containing the entire Surah.
@@ -336,29 +347,11 @@ class QuranService {
     String editionId,
     int surah,
   ) async {
-    final localFiles = await _getLocalDownloadedSurahAudioFiles(
-      editionId,
-      surah,
-    );
-    if (localFiles.isNotEmpty) {
-      final out = <int, String>{};
-      for (final file in localFiles) {
-        final ayahNumber = int.tryParse(p.basenameWithoutExtension(file.path));
-        if (ayahNumber == null) continue;
-        out[ayahNumber] = Uri.file(file.path).toString();
-      }
-      if (out.isNotEmpty) {
-        return out;
-      }
-    }
-
+    // 1. Fetch the full map from the cloud first
     final map = await cloud.getSurahAudio(editionId, surah);
     final ayahs = _extractAudioAyahs(map);
-    if (ayahs.isEmpty) {
-      return <int, String>{};
-    }
-
     final out = <int, String>{};
+
     for (final item in ayahs) {
       final rawAyahNumber =
           item['numberInSurah'] ??
@@ -378,6 +371,21 @@ class QuranService {
       }
       out[ayahNumber] = audio;
     }
+
+    // 2. Override with local files if they exist
+    final localFiles = await _getLocalDownloadedSurahAudioFiles(
+      editionId,
+      surah,
+    );
+    if (localFiles.isNotEmpty) {
+      for (final file in localFiles) {
+        final ayahNumber = int.tryParse(p.basenameWithoutExtension(file.path));
+        if (ayahNumber != null) {
+          out[ayahNumber] = Uri.file(file.path).toString();
+        }
+      }
+    }
+
     return out;
   }
 

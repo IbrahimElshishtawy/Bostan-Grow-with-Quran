@@ -340,7 +340,24 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     final handler = ref.read(audioHandlerProvider);
     _player = handler.player;
     _playingSub = _player.playingStream.listen((_) => _emitState());
-    _indexSub = _player.currentIndexStream.listen((_) => _emitState());
+    _indexSub = _player.currentIndexStream.listen((index) {
+      if (index != null) {
+        // Fetch URLs map from service and warm up next 10
+        final editionId = ref.read(editionIdProvider);
+        final chapter = ref.read(chapterProvider);
+        ref.read(quranServiceProvider).getSurahAudioUrlMap(editionId, chapter).then((map) {
+          _warmUpCache(map, initialIndex: index);
+        });
+      }
+      _emitState();
+    });
+
+    // Auto-skip failed ayahs to prevent playback reset
+    _player.playbackEventStream.listen((_) {}, onError: (error) {
+      debugPrint('Playback error detected: $error. Skipping to next...');
+      _player.seekToNext();
+    });
+
     _init();
   }
 
@@ -411,8 +428,9 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         ),
       );
 
+      final Map<int, String> audioMap;
       try {
-        final audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
+        audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
         final surahData = await service.getSurahText('quran-uthmani', chapter);
         final allAyat = surahData.ayat;
         
@@ -470,7 +488,11 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       if (_disposed || !mounted) return;
 
       if (autoPlay) {
+        await _player.setLoopMode(LoopMode.off); // Ensure sequential, non-repeating playback
         await _player.play();
+        
+        // Smart Pre-buffer: Warm up the ENTIRE surah immediately (YouTube-like buffering)
+        _warmUpCache(audioMap, initialIndex: 0, aggressive: true);
       }
 
       _emitState();
@@ -497,6 +519,23 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       // Offline fallback
     }
     return editionId;
+  }
+
+  /// Background task to warm up the network cache for upcoming ayahs
+  void _warmUpCache(Map<int, String> audioMap, {required int initialIndex, bool aggressive = false}) {
+    final dio = ref.read(dioProvider);
+    // Warm up the next 10 ayahs (or whole surah if aggressive)
+    final start = initialIndex + 1;
+    final depth = aggressive ? audioMap.length : 10;
+    final end = (start + depth).clamp(0, audioMap.length);
+    
+    for (int i = start; i <= end; i++) {
+      final url = audioMap[i];
+      if (url != null && url.startsWith('http')) {
+        // We don't await this, just fire and forget to trigger CDN/Network caching
+        dio.get(url, options: Options(responseType: ResponseType.bytes)).catchError((_) => Response(requestOptions: RequestOptions()));
+      }
+    }
   }
 
   void _emitState() {
