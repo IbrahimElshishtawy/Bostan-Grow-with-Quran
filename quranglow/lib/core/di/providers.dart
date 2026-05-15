@@ -410,26 +410,64 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       );
 
       try {
+        // Use the single full surah URL for correct total duration reporting
+        final fullSurahUrl = service.getSurahFullAudioUrl(editionId, chapter);
+        
         await _player.setAudioSource(
-          ConcatenatingAudioSource(
-            children: urls
-                .map((url) => AudioSource.uri(Uri.parse(url)))
-                .toList(growable: false),
+          AudioSource.uri(
+            Uri.parse(fullSurahUrl),
+            headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'},
+            tag: MediaItem(
+              id: 'surah_$chapter',
+              title: surahName,
+              artist: _reciterName,
+              album: 'القرآن الكريم',
+            ),
           ),
           initialIndex: 0,
           initialPosition: Duration.zero,
         );
       } catch (e) {
-        // Handle interruptions and connection resets gracefully
         final err = e.toString().toLowerCase();
-        if (err.contains('abort') || 
-            err.contains('interrupted') || 
-            err.contains('connection reset') ||
-            err.contains('10000000')) {
-          debugPrint('Audio loading was interrupted or aborted (handled): $e');
+        if (err.contains('abort') || err.contains('interrupted') || err.contains('10000000')) {
+          debugPrint('Audio loading was interrupted (handled): $e');
           return;
         }
-        rethrow;
+
+        // Fallback to individual ayah playlist if full surah file is missing or fails
+        debugPrint('Full surah file failed, falling back to ayah playlist: $e');
+        try {
+          final audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
+          final surahData = await service.getSurahText('quran-uthmani', chapter);
+          final allAyat = surahData.ayat;
+          
+          final List<AudioSource> sources = [];
+          for (final a in allAyat) {
+            final url = audioMap[a.numberInSurah];
+            if (url != null) {
+              sources.add(
+                AudioSource.uri(
+                  Uri.parse(url),
+                  tag: MediaItem(
+                    id: 'ayah_${a.number}',
+                    title: 'الآية ${a.numberInSurah}',
+                    album: 'سورة $surahName',
+                    artist: _reciterName,
+                  ),
+                ),
+              );
+            }
+          }
+
+          if (sources.isNotEmpty) {
+            await _player.setAudioSource(
+              ConcatenatingAudioSource(children: sources, useLazyPreparation: false),
+            );
+          }
+        } catch (fallbackError) {
+          debugPrint('Fallback also failed: $fallbackError');
+          rethrow;
+        }
       }
       
       if (_disposed || !mounted) return;

@@ -302,6 +302,35 @@ class QuranService {
     throw Exception('No ayah audio URLs found for $editionId in surah $surah');
   }
 
+  /// Returns the URL for a single audio file containing the entire Surah.
+  /// This is useful for continuous playback with correct total duration.
+  String getSurahFullAudioUrl(String editionId, int surah) {
+    // Map AlQuran.cloud edition IDs to Quran.com reciter IDs
+    final Map<String, int> reciterMap = {
+      'ar.alafasy': 7,
+      'ar.abdulsamad': 1,
+      'ar.abdullahbasfar': 3,
+      'ar.abdurrahmaansudais': 4,
+      'ar.ahmedajamy': 5,
+      'ar.alajmy': 5,
+      'ar.hanirifai': 6,
+      'ar.hudhaify': 8,
+      'ar.husary': 9,
+      'ar.minshawi': 10,
+      'ar.mahermuaiqly': 11,
+      'ar.saoodshuraym': 12,
+    };
+
+    final reciterId = reciterMap[editionId];
+    if (reciterId != null) {
+      // Use Quran.com CDN (Very reliable, supports range requests, gapless)
+      return 'https://audio.qurancdn.com/reciters/$reciterId/chapters/$surah.mp3';
+    }
+
+    // Fallback to Islamic Network CDN with User-Agent headers (handled in player)
+    return 'https://cdn.islamic.network/quran/audio-surah/128/$editionId/$surah.mp3';
+  }
+
   Future<Map<int, String>> getSurahAudioUrlMap(
     String editionId,
     int surah,

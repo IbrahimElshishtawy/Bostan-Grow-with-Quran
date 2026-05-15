@@ -372,8 +372,8 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
       ..._mosques.map((m) {
         return Marker(
           point: m.location,
-          width: 50,
-          height: 50,
+          width: 60,
+          height: 80, // Increased height to prevent overflow
           alignment: Alignment.topCenter,
           child: GestureDetector(
             onTap: () => _navigateToMosque(m),
@@ -387,24 +387,41 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
-                      BoxShadow(color: cs.shadow.withValues(alpha: 0.4), blurRadius: 6, offset: const Offset(0, 3)),
+                      BoxShadow(
+                        color: cs.shadow.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
                     ],
                   ),
                   child: const Icon(Icons.mosque_rounded, color: Colors.white, size: 18),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  constraints: const BoxConstraints(maxWidth: 60),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(6),
                     boxShadow: [
-                      BoxShadow(color: cs.shadow.withValues(alpha: 0.2), blurRadius: 2),
+                      BoxShadow(
+                        color: cs.shadow.withValues(alpha: 0.2),
+                        blurRadius: 2,
+                      ),
                     ],
                   ),
                   child: Text(
-                    m.name.length > 12 ? '${m.name.substring(0, 10)}..' : m.name,
-                    style: const TextStyle(fontSize: 9, color: Colors.black, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+                    m.name,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 8,
+                      color: Colors.black,
+                      height: 1.1,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Tajawal',
+                    ),
                   ),
                 ),
               ],

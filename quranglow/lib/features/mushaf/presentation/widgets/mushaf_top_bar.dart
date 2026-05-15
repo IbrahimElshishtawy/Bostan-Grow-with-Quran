@@ -18,6 +18,7 @@ class MushafTopBar extends StatelessWidget {
     this.onSave,
     this.onTafsir,
     this.onVoiceRecite,
+    this.onPlayAll,
   });
 
   final bool visible;
@@ -29,6 +30,7 @@ class MushafTopBar extends StatelessWidget {
   final VoidCallback? onSave;
   final VoidCallback? onTafsir;
   final VoidCallback? onVoiceRecite;
+  final VoidCallback? onPlayAll;
 
   @override
   Widget build(BuildContext context) {
@@ -191,6 +193,14 @@ class MushafTopBar extends StatelessWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           itemBuilder: (context) => [
                             const PopupMenuItem(
+                              value: 7,
+                              child: ListTile(
+                                leading: Icon(Icons.play_circle_fill_rounded, color: Colors.green),
+                                title: Text('تشغيل السورة كاملة', style: TextStyle(fontSize: 14)),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            const PopupMenuItem(
                               value: 6,
                               child: ListTile(
                                 leading: Icon(Icons.cloud_download_outlined, color: Colors.amber),
@@ -253,6 +263,10 @@ class MushafTopBar extends StatelessWidget {
                               case 3: onTafsir?.call(); break;
                               case 4: onNext?.call(); break;
                               case 5: onPrev?.call(); break;
+                              case 7: onPlayAll?.call(); break;
+                              case 6: 
+                                // Trigger download logic (might need a callback)
+                                break;
                             }
                           },
                         ),
