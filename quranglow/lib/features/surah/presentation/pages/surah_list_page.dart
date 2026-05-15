@@ -174,21 +174,7 @@ class _SurahListPageState extends State<SurahListPage> {
                   },
                 ),
               ),
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 12),
-              child: IconButton.filledTonal(
-                tooltip: 'رجوع',
-                onPressed: () => Navigator.pop(context),
-                style: IconButton.styleFrom(
-                  backgroundColor: cs.surface.withValues(alpha: 0.82),
-                  foregroundColor: cs.primary,
-                  side: BorderSide(
-                    color: cs.outlineVariant.withValues(alpha: 0.7),
-                  ),
-                ),
-                icon: const Icon(Icons.arrow_forward_rounded),
-              ),
-            ),
+
           ],
         ),
         body: Column(

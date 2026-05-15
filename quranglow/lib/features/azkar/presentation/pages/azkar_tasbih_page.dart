@@ -37,6 +37,7 @@ class _AzkarTasbihPageState extends State<AzkarTasbihPage> with SingleTickerProv
         appBar: const ProAppBar(
           title: 'الروحانيات والتذكير',
           subtitle: 'أذكار، تفسير، تسبيح، وتنبيهات مخصصة',
+          showBack: false,
         ),
         body: Column(
           children: [
@@ -121,26 +122,7 @@ class _AzkarTasbihPageState extends State<AzkarTasbihPage> with SingleTickerProv
   }
 
   Widget _buildTasbihTab(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      physics: const BouncingScrollPhysics(),
-      children: [
-        _buildSectionTitle('المسبحة الإلكترونية', Icons.bubble_chart_rounded),
-        const SizedBox(height: 12),
-        // Tasbih Widget inside a card to limit its height
-        Container(
-          height: 400,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: const TasbihCounter(),
-        ),
-      ],
-    );
+    return const TasbihCounter();
   }
 
   Widget _buildTafsirTab(BuildContext context) {

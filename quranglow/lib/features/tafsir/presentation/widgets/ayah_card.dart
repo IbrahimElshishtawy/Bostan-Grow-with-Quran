@@ -16,51 +16,75 @@ class AyahCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color cardBg = isDark ? const Color(0xFF1E2F26) : const Color(0xFFF6FAF7);
+    final Color borderColor = isDark ? Colors.white10 : const Color(0xFFD4AF37).withValues(alpha: 0.2);
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            cs.primary.withValues(alpha: 0.14),
-            cs.surfaceContainerHigh,
-            cs.surface,
-          ],
-        ),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                '$surahName • الآية $ayah',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: cs.primary,
-                  fontWeight: FontWeight.w800,
+      child: Stack(
+        children: [
+          // Subtle Islamic corner decoration could go here if assets exist
+          Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.2)),
+                      ),
+                      child: Text(
+                        '$surahName • الآية $ayah',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFF1D486) : const Color(0xFF996515),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          fontFamily: 'Tajawal',
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.format_quote_rounded,
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                      size: 28,
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 18),
+                Text(
+                  ayahText.isEmpty ? 'لا يوجد نص للآية.' : ayahText,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    height: 1.8,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'KFGQPC Uthmanic Script', // Using the Quran font
+                    color: isDark ? Colors.white.withValues(alpha: 0.95) : const Color(0xFF1B3B2B),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            Text(
-              ayahText.isEmpty ? 'لا يوجد نص للآية.' : ayahText,
-              textAlign: TextAlign.right,
-              style: theme.textTheme.titleMedium?.copyWith(
-                height: 1.95,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
