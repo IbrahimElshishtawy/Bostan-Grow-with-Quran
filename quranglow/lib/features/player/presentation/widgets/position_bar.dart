@@ -34,10 +34,9 @@ class PositionBar extends ConsumerWidget {
         
         final total = (totalOverride > timeline.total) ? totalOverride : timeline.total;
         final position = timeline.position > total ? total : timeline.position;
+        final bufferedPosition = timeline.bufferedPosition > total ? total : timeline.bufferedPosition;
         
-        // Custom buffering logic for "YouTube-style" bar across multiple ayahs
-        final bufferedVal = playerState?.bufferedPercent ?? 0.0;
-        final bufferedMs = (bufferedVal * total.inMilliseconds).toDouble();
+        final bufferedMs = bufferedPosition.inMilliseconds.toDouble();
             
         final sliderMax = total.inMilliseconds <= 0
             ? 1.0

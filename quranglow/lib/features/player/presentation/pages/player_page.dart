@@ -14,7 +14,6 @@ import 'package:quranglow/features/player/presentation/widgets/reader_row.dart';
 import 'package:quranglow/features/player/presentation/widgets/track_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/transport_controls.dart';
 import 'package:quranglow/features/player/presentation/pages/favorites_page.dart';
-import 'package:quranglow/features/player/presentation/widgets/player_lyrics_sheet.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
@@ -34,6 +33,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   String? _forwardedUrl;
   bool _wasPlaying = false;
   bool _isRadioMode = false;
+  bool _showLyrics = false;
+
 
   @override
   void initState() {
@@ -268,18 +269,19 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               onPressed: () => _downloadCurrent(context, ref),
             ),
             IconButton(
-              icon: const Icon(Icons.lyrics_rounded, color: Colors.tealAccent),
+              icon: Icon(
+                _showLyrics ? Icons.lyrics_rounded : Icons.lyrics_outlined,
+                color: _showLyrics ? Colors.tealAccent : Colors.white,
+              ),
               tooltip: 'الكلمات',
               onPressed: () {
-                 showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (ctx) => const PlayerLyricsSheet(),
-                 );
+                 setState(() {
+                   _showLyrics = !_showLyrics;
+                 });
               },
             ),
           ],
+
         ),
         extendBodyBehindAppBar: true,
         body: Container(
@@ -338,7 +340,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                         data: (s) => SingleChildScrollView(
                           child: Column(
                             children: [
-                              TrackCard(state: s),
+                              TrackCard(state: s, showLyrics: _showLyrics),
                               const SizedBox(height: 24),
                               TransportControls(state: s),
                               const SizedBox(height: 32),

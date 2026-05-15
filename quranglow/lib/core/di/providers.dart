@@ -1,5 +1,5 @@
 // lib/core/di/providers.dart
-// ignore_for_file: implementation_imports, unnecessary_this
+// ignore_for_file: experimental_member_use, implementation_imports, unnecessary_this
 
 import 'dart:async';
 
@@ -301,7 +301,6 @@ final editionIdProvider = StateProvider<String>((ref) => 'ar.alafasy');
 final chapterProvider = StateProvider<int>((ref) => 1);
 
 class PlayerUiState extends PlaylistState {
-  final double? bufferedPercent;
   final Duration? totalDurationOverride;
   final bool? isPlaying;
   final String? currentUrl;
@@ -321,7 +320,7 @@ class PlayerUiState extends PlaylistState {
     required super.playingStream,
     required super.loopModeStream,
     required super.volumeStream,
-    this.bufferedPercent,
+
     this.totalDurationOverride,
     this.isPlaying,
     this.currentUrl,
@@ -332,10 +331,9 @@ class PlayerUiState extends PlaylistState {
 }
 
 final playerControllerProvider =
-    StateNotifierProvider.autoDispose<
-      PlayerController,
-      AsyncValue<PlayerUiState>
-    >((ref) => PlayerController(ref));
+    StateNotifierProvider<PlayerController, AsyncValue<PlayerUiState>>(
+      (ref) => PlayerController(ref),
+    );
 
 class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   PlayerController(this.ref) : super(const AsyncValue.loading()) {
@@ -343,22 +341,17 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     _player = handler.player;
     _playingSub = _player.playingStream.listen((_) => _emitState());
     _indexSub = _player.currentIndexStream.listen((index) {
-      if (index != null) {
-        // Fetch URLs map from service and warm up next 10
-        final editionId = ref.read(editionIdProvider);
-        final chapter = ref.read(chapterProvider);
-        ref.read(quranServiceProvider).getSurahAudioUrlMap(editionId, chapter).then((map) {
-          _warmUpCache(map, initialIndex: index);
-        });
-      }
       _emitState();
     });
 
     // Auto-skip failed ayahs to prevent playback reset
-    _player.playbackEventStream.listen((_) {}, onError: (error) {
-      debugPrint('Playback error detected: $error. Skipping to next...');
-      _player.seekToNext();
-    });
+    _player.playbackEventStream.listen(
+      (_) {},
+      onError: (error) {
+        debugPrint('Playback error detected: $error. Skipping to next...');
+        _player.seekToNext();
+      },
+    );
 
     _init();
   }
@@ -400,7 +393,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     state = const AsyncValue.loading();
     try {
       final service = ref.read(quranServiceProvider);
-      
+
       // 1. Get URLs (Checks local files first)
       final urls = await service.getSurahAudioUrls(editionId, chapter);
       if (_disposed || !mounted) return;
@@ -409,10 +402,11 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       }
 
       _urls = urls;
-      
+
       // 2. Resolve Reciter Name (Use cache if possible)
-      _reciterName = _kReciterNames[editionId] ?? await _resolveReciterName(editionId);
-      
+      _reciterName =
+          _kReciterNames[editionId] ?? await _resolveReciterName(editionId);
+
       final surahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
           ? kSurahNamesAr[chapter - 1]
           : 'سورة $chapter';
@@ -435,22 +429,27 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
         final surahData = await service.getSurahText('quran-uthmani', chapter);
         final allAyat = surahData.ayat;
-        
+
         // Fetch explicit durations for perfect timer reporting and gapless preloading
-        final verseDurations = await service.getVerseDurations(editionId, chapter);
-        
+        final verseDurations = await service.getVerseDurations(
+          editionId,
+          chapter,
+        );
+
         // Calculate total surah duration upfront for UI override
-        _totalDuration = verseDurations.values.fold(Duration.zero, (a, b) => a + b);
+        _totalDuration = verseDurations.values.fold(
+          Duration.zero,
+          (a, b) => a + b,
+        );
         _emitState();
-        
+
         final List<AudioSource> sources = [];
         for (final a in allAyat) {
           final url = audioMap[a.numberInSurah];
           if (url != null) {
-            // ignore: deprecated_member_use
+            // ignore: deprecated_member_use,
             sources.add(
               LockCachingAudioSource(
-
                 Uri.parse(url),
                 tag: MediaItem(
                   id: 'ayah_${a.number}',
@@ -472,7 +471,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         await _player.setAudioSource(
           ConcatenatingAudioSource(
             children: sources,
-            useLazyPreparation: true, // Only prepare items as they are needed to save RAM/CPU
+            useLazyPreparation:
+                true, // Only prepare items as they are needed to save RAM/CPU
           ),
           initialIndex: 0,
           initialPosition: Duration.zero,
@@ -480,22 +480,23 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         );
       } catch (e) {
         final err = e.toString().toLowerCase();
-        if (err.contains('abort') || err.contains('interrupted') || err.contains('10000000')) {
+        if (err.contains('abort') ||
+            err.contains('interrupted') ||
+            err.contains('10000000')) {
           debugPrint('Audio loading was interrupted (handled): $e');
           return;
         }
         debugPrint('Error loading audio playlist: $e');
         rethrow;
       }
-      
+
       if (_disposed || !mounted) return;
 
       if (autoPlay) {
-        await _player.setLoopMode(LoopMode.off); // Ensure sequential, non-repeating playback
+        await _player.setLoopMode(
+          LoopMode.off,
+        ); // Ensure sequential, non-repeating playback
         await _player.play();
-        
-        // Smart Pre-buffer: Warm up the ENTIRE surah immediately (YouTube-like buffering)
-        _warmUpCache(audioMap, initialIndex: 0, aggressive: true);
       }
 
       _emitState();
@@ -506,8 +507,9 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   }
 
   Future<String> _resolveReciterName(String editionId) async {
-    if (_kReciterNames.containsKey(editionId)) return _kReciterNames[editionId]!;
-    
+    if (_kReciterNames.containsKey(editionId))
+      return _kReciterNames[editionId]!;
+
     try {
       final editions = await ref.read(quranServiceProvider).listAudioEditions();
       for (final item in editions) {
@@ -524,34 +526,6 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     return editionId;
   }
 
-  int _bufferedCount = 0;
-
-  /// Background task to warm up the network cache for upcoming ayahs
-  void _warmUpCache(Map<int, String> audioMap, {required int initialIndex, bool aggressive = false}) {
-    final dio = ref.read(dioProvider);
-    // Warm up the next 10 ayahs (or whole surah if aggressive)
-    final start = initialIndex + 1;
-    final depth = aggressive ? audioMap.length : 10;
-    final end = (start + depth).clamp(0, audioMap.length);
-    
-    _bufferedCount = initialIndex; // Assume current and previous are buffered
-    
-    for (int i = start; i <= end; i++) {
-      final url = audioMap[i];
-      if (url != null && url.startsWith('http')) {
-        // We don't await this, just fire and forget to trigger CDN/Network caching
-        dio.get(url, options: Options(responseType: ResponseType.bytes)).then((_) {
-           _bufferedCount++;
-           _emitState(); // Update UI with new buffer progress
-        }).catchError((_) {
-           _bufferedCount++; // Skip on error so the bar doesn't get stuck
-           _emitState();
-           return null;
-        });
-      }
-    }
-  }
-
   void _emitState() {
     if (_disposed || !mounted) return;
     if (_urls.isEmpty) return;
@@ -563,8 +537,6 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     final surahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
         ? kSurahNamesAr[chapter - 1]
         : 'سورة $chapter';
-
-    final bufferedPercent = _urls.isEmpty ? 0.0 : (_bufferedCount / _urls.length).clamp(0.0, 1.0);
 
     state = AsyncValue.data(
       PlayerUiState(
@@ -579,7 +551,6 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
-        bufferedPercent: bufferedPercent,
         totalDurationOverride: _totalDuration,
         isPlaying: _player.playing,
         currentUrl: _urls[safeIndex],

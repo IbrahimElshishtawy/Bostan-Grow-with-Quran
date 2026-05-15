@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/features/player/presentation/providers/favorites_controller.dart';
 
+import 'package:quranglow/features/player/presentation/widgets/embedded_player_lyrics.dart';
+
 class TrackCard extends ConsumerWidget {
-  const TrackCard({super.key, required this.state});
+  const TrackCard({super.key, required this.state, required this.showLyrics});
 
   final PlayerUiState state;
+  final bool showLyrics;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,7 +28,8 @@ class TrackCard extends ConsumerWidget {
             width: MediaQuery.of(context).size.width * 1,
             child: AspectRatio(
               aspectRatio: 1.6, // Wider and shorter as requested
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   gradient: const LinearGradient(
@@ -45,11 +49,19 @@ class TrackCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.graphic_eq_rounded,
-                    size: 50,
-                    color: Colors.white24,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: showLyrics 
+                      ? const EmbeddedPlayerLyrics()
+                      : const Center(
+                          child: Icon(
+                            Icons.graphic_eq_rounded,
+                            size: 50,
+                            color: Colors.white24,
+                          ),
+                        ),
                   ),
                 ),
               ),
