@@ -192,7 +192,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     ).showSnackBar(const SnackBar(content: Text('تم نسخ الآية')));
   }
 
-  Future<void> _playAyahAudio(Aya aya, int ayahNumber) async {
+  Future<void> _playAyahAudio(List<Aya> allAyat, int startAyahNumber) async {
     final isActuallyPlaying =
         _ayahPreviewPlayer.playing &&
         _ayahPreviewPlayer.processingState != ProcessingState.completed;
@@ -201,54 +201,60 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       await _ayahPreviewPlayer.stop();
       return;
     }
-    try {
-      String? url = aya.audioUrl;
-      if (url == null || url.trim().isEmpty) {
-        final service = ref.read(quranServiceProvider);
-        final audioMap = await service.getSurahAudioUrlMap(
-          _audioEditionId(),
-          _chapter,
-        );
-        url = audioMap[ayahNumber];
 
+    try {
+      final startIndex = startAyahNumber - 1;
+      if (startIndex < 0 || startIndex >= allAyat.length) return;
+
+      final service = ref.read(quranServiceProvider);
+      final audioEdition = _audioEditionId();
+
+      // 1. Get all URLs for the Surah to build a playlist
+      final audioMap = await service.getSurahAudioUrlMap(
+        audioEdition,
+        _chapter,
+      );
+
+      final List<AudioSource> sources = [];
+      for (int i = startIndex; i < allAyat.length; i++) {
+        final a = allAyat[i];
+        String? url = a.audioUrl ?? audioMap[a.numberInSurah];
+        
         if (url == null || url.trim().isEmpty) {
-          final urls = await service.getSurahAudioUrls(
-            _audioEditionId(),
-            _chapter,
-          );
-          final idx = ayahNumber - 1;
-          if (idx >= 0 && idx < urls.length) {
-            url = urls[idx];
-          }
+          // Final fallback check
+          final urls = await service.getSurahAudioUrls(audioEdition, _chapter);
+          if (i < urls.length) url = urls[i];
+        }
+
+        if (url != null && url.trim().isNotEmpty) {
+          sources.add(AudioSource.uri(Uri.parse(url)));
         }
       }
 
-      if (url == null || url.trim().isEmpty) {
+      if (sources.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا يوجد ملف صوت متاح لهذه الآية')),
+          const SnackBar(content: Text('لا يوجد ملفات صوت متاحة لهذه السورة')),
         );
         return;
       }
 
-      await _ayahPreviewPlayer.setUrl(url);
+      // 2. Set the concatenating source for continuous play
+      await _ayahPreviewPlayer.setAudioSource(
+        ConcatenatingAudioSource(children: sources),
+      );
       await _ayahPreviewPlayer.play();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('يتم تشغيل الآية $ayahNumber'),
-          duration: const Duration(seconds: 1),
+          content: Text('بدء تشغيل السورة من الآية $startAyahNumber'),
+          duration: const Duration(seconds: 2),
         ),
       );
     } on PlayerInterruptedException {
-      // 🤫 User tapped another Ayah before the previous one finished loading!
-      // This is perfectly expected, so we stay completely silent.
-      debugPrint(
-        'Audio loading was interrupted by user action (swapping tracks).',
-      );
+      debugPrint('Audio loading interrupted.');
     } on PlayerException catch (e) {
-      // A real just_audio error (network fail, source not found etc.)
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -256,16 +262,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
           backgroundColor: Colors.redAccent,
         ),
       );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تعذر تشغيل الآية: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
     }
   }
+
 
   Future<void> _openAyahActions({
     required int ayahNumber,
@@ -496,7 +495,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                       if (ayahNum == null || surah == null) return;
                       final idx = ayahNum - 1;
                       if (idx < 0 || idx >= surah.ayat.length) return;
-                      _playAyahAudio(surah.ayat[idx], ayahNum);
+                      _playAyahAudio(surah.ayat, ayahNum);
                     },
                     onCopy: () {
                       final text = selectedAyahText;

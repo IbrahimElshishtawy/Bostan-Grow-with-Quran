@@ -262,7 +262,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                   Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
             ),
             IconButton(
-              icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+              icon: const Icon(Icons.download_for_offline_rounded, color: Colors.white),
               onPressed: () => _downloadCurrent(context, ref),
             ),
           ],

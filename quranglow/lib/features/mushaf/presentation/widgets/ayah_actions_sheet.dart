@@ -15,7 +15,7 @@ class AyahActionsSheet extends StatefulWidget {
   final List<Aya> ayat;
   final int initialAyahNumber;
   final ValueChanged<int> onAyahChanged;
-  final Future<void> Function(Aya aya, int ayahNumber) onPlayAyah;
+  final Future<void> Function(List<Aya> ayat, int ayahNumber) onPlayAyah;
   final ValueChanged<int> onOpenTafsir;
   final void Function(int ayahNumber, String ayahText) onCopyAyah;
 
@@ -110,7 +110,7 @@ class _AyahActionsSheetState extends State<AyahActionsSheet> {
                 Expanded(
                   child: FilledButton.icon(
                     onPressed: () async {
-                      await widget.onPlayAyah(currentAyah, currentAyahNumber);
+                      await widget.onPlayAyah(widget.ayat, currentAyahNumber);
                     },
                     icon: const Icon(Icons.play_arrow_rounded),
                     label: const Text('تشغيل الآية'),

@@ -66,14 +66,17 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     String? album,
   }) async {
     final nextUrl = uri.toString();
+    // 1. If already loading/playing this exact URL, don't interrupt it
     if (_activeUrl == nextUrl &&
-        _player.processingState != ProcessingState.idle) {
+        _player.processingState != ProcessingState.idle &&
+        _player.processingState != ProcessingState.completed) {
       if (!_player.playing) {
         await _player.play();
       }
       return;
     }
 
+    // 2. Resolve metadata
     final artworkUri = await _resolveArtworkUri();
     mediaItem.add(
       MediaItem(
@@ -88,13 +91,21 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
       ),
     );
 
+    // 3. Update intent and load
     _activeUrl = nextUrl;
     try {
+      // Small pause to allow the engine to settle if switching rapidly
+      await _player.stop(); 
       await _player.setUrl(nextUrl);
       await play();
     } catch (e) {
-      if (e.toString().contains('abort') || e.toString().contains('interrupted')) {
-        // Expected if we call setUrl while another load is in progress
+      // just_audio throws this if a new setUrl/load is called before this one finishes.
+      // We can safely ignore it as the new request will take over.
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('abort') || 
+          errorStr.contains('interrupted') ||
+          errorStr.contains('1001') || // Common code for interruption
+          errorStr.contains('loading interrupted')) {
         return;
       }
       rethrow;

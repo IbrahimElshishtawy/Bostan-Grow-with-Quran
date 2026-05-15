@@ -427,10 +427,7 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
           ),
           children: [
             TileLayer(
-              urlTemplate: isDark
-                  ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                  : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-              subdomains: const ['a', 'b', 'c', 'd'],
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.quranglow.app',
               retinaMode: RetinaMode.isHighDensity(context),
             ),

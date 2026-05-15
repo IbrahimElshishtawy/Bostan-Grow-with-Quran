@@ -183,14 +183,22 @@ class MushafTopBar extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         
-                        // 🔮 THE NEW PREMIUM MENU!
                         PopupMenuButton<int>(
-                          icon: Icon(Icons.more_vert, color: titleColor),
+                          icon: Icon(Icons.download_rounded, color: titleColor),
                           tooltip: 'المزيد من الخيارات',
                           color: isDark ? const Color(0xFF113D25).withOpacity(0.98) : Colors.white,
                           elevation: 8,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 6,
+                              child: ListTile(
+                                leading: Icon(Icons.cloud_download_outlined, color: Colors.amber),
+                                title: Text('تحميل السورة للاستماع أوفلاين', style: TextStyle(fontSize: 14)),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            const PopupMenuDivider(),
                             PopupMenuItem(
                               value: 1,
                               enabled: onVoiceRecite != null,
