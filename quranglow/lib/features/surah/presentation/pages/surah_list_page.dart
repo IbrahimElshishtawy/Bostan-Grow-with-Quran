@@ -84,11 +84,7 @@ class _SurahListPageState extends State<SurahListPage> {
           scrolledUnderElevation: 0,
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
-          automaticallyImplyLeading: true,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => Navigator.pop(context),
-          ),
+          automaticallyImplyLeading: false,
           flexibleSpace: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(

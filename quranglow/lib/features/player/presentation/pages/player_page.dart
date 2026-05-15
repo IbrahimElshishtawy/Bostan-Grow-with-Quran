@@ -201,8 +201,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
           leading: const SizedBox.shrink(), // Removed down arrow
           title: Text(
             _isRadioMode ? 'بث مباشر الآن' : 'قيد التشغيل الآن',
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: cs.onSurface.withValues(alpha: 0.7),
               fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
@@ -212,7 +212,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
             IconButton(
               icon: Icon(
                 Icons.radio_rounded,
-                color: _isRadioMode ? cs.primary : Colors.white,
+                color: _isRadioMode ? cs.primary : cs.onSurface,
               ),
               tooltip: 'وضع الإذاعة',
               onPressed: () async {
@@ -239,24 +239,24 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               ),
             ),
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.library_music_rounded,
-                color: Colors.white,
+                color: cs.onSurface,
               ),
               onPressed: () =>
                   Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
             ),
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.download_for_offline_rounded,
-                color: Colors.white,
+                color: cs.onSurface,
               ),
               onPressed: () => _downloadCurrent(context, ref),
             ),
             IconButton(
               icon: Icon(
                 _showLyrics ? Icons.lyrics_rounded : Icons.lyrics_outlined,
-                color: _showLyrics ? Colors.tealAccent : Colors.white,
+                color: _showLyrics ? Colors.teal : cs.onSurface,
               ),
               tooltip: 'الكلمات',
               onPressed: () {
@@ -269,14 +269,19 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
         ),
         extendBodyBehindAppBar: true,
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF1E3C40), // Deep Teal/Spotify-esque top color
-                Color(0xFF121212), // Pure dark bottom
-              ],
+              colors: Theme.of(context).brightness == Brightness.dark
+                  ? [
+                      const Color(0xFF1E3C40),
+                      const Color(0xFF121212),
+                    ]
+                  : [
+                      cs.surfaceVariant,
+                      cs.surface,
+                    ],
             ),
           ),
           child: SafeArea(
@@ -350,14 +355,14 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               ),
                               padding: const EdgeInsets.all(24),
                               alignment: Alignment.bottomRight,
-                              child: const Column(
+                              child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     'إذاعة القرآن الكريم',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontSize: 28,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -365,7 +370,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                   Text(
                                     'بث مباشر من القاهرة',
                                     style: TextStyle(
-                                      color: Colors.white70,
+                                      color: cs.onSurface.withValues(alpha: 0.7),
                                       fontSize: 16,
                                     ),
                                   ),

@@ -33,16 +33,16 @@ class TransportControls extends ConsumerWidget {
                 children: [
                   Text(
                     'الآية $currentAyah',
-                    style: const TextStyle(
-                      color: Colors.white54,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     'مجموع الآيات: ${state.total}',
-                    style: const TextStyle(
-                      color: Colors.white54,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -76,7 +76,7 @@ class TransportControls extends ConsumerWidget {
                   return IconButton(
                     onPressed: () => ref.read(playerControllerProvider.notifier).toggleLoop(),
                     icon: Icon(isLooping ? Icons.repeat_one_rounded : Icons.repeat_rounded),
-                    color: isLooping ? Colors.tealAccent : Colors.white70,
+                    color: isLooping ? Colors.teal : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     iconSize: 22,
                   );
                 }
@@ -89,7 +89,7 @@ class TransportControls extends ConsumerWidget {
                   IconButton(
                     onPressed: () => ref.read(playerControllerProvider.notifier).previous(),
                     icon: const Icon(Icons.skip_previous_rounded),
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     iconSize: 36,
                   ),
                   const SizedBox(width: 12),
@@ -111,11 +111,11 @@ class TransportControls extends ConsumerWidget {
                             width: 76,
                             height: 76,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onSurface,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
                                   blurRadius: 15,
                                   spreadRadius: 2,
                                 ),
@@ -129,7 +129,7 @@ class TransportControls extends ConsumerWidget {
                                     width: 76,
                                     height: 76,
                                     child: CircularProgressIndicator(
-                                      color: Colors.tealAccent,
+                                      color: Colors.teal,
                                       strokeWidth: 3,
                                     ),
                                   ),
@@ -140,7 +140,7 @@ class TransportControls extends ConsumerWidget {
                                   icon: Icon(
                                     playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
                                   ),
-                                  color: Colors.black,
+                                  color: Theme.of(context).colorScheme.surface,
                                   iconSize: 38,
                                   padding: const EdgeInsets.all(14),
                                 ),
@@ -155,7 +155,7 @@ class TransportControls extends ConsumerWidget {
                   IconButton(
                     onPressed: () => ref.read(playerControllerProvider.notifier).next(),
                     icon: const Icon(Icons.skip_next_rounded),
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     iconSize: 36,
                   ),
                 ],

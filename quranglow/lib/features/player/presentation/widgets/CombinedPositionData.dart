@@ -55,5 +55,5 @@ Stream<CombinedPositionData> combinedPositionStream(AudioPlayer player) {
       return true; // Suppress small backward jumps (likely transition flicker)
     }
     return false;
-  });
+  }).asBroadcastStream();
 }

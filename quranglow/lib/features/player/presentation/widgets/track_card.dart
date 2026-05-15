@@ -18,6 +18,7 @@ class TrackCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
     final surahLabel = state.surahName ?? 'سورة ${state.chapter}';
     final reciterLabel = state.reciterName ?? state.editionId;
     final isFav = ref
@@ -46,14 +47,20 @@ class TrackCard extends ConsumerWidget {
                 duration: const Duration(milliseconds: 400),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF2C5364),
-                      Color(0xFF203A43),
-                      Color(0xFF0F2027),
-                    ],
+                    colors: Theme.of(context).brightness == Brightness.dark
+                        ? [
+                            const Color(0xFF2C5364),
+                            const Color(0xFF203A43),
+                            const Color(0xFF0F2027),
+                          ]
+                        : [
+                            cs.primaryContainer,
+                            cs.secondaryContainer,
+                            cs.surfaceVariant,
+                          ],
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -116,8 +123,8 @@ class TrackCard extends ConsumerWidget {
                         Flexible(
                           child: Text(
                             surahLabel,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: cs.onSurface,
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
                               fontFamily: 'Tajawal',
@@ -127,9 +134,9 @@ class TrackCard extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(
+                        Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white70,
+                          color: cs.onSurface.withValues(alpha: 0.7),
                           size: 24,
                         ),
                       ],
@@ -165,7 +172,7 @@ class TrackCard extends ConsumerWidget {
                           child: Text(
                             reciterLabel,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
+                              color: cs.onSurface.withValues(alpha: 0.7),
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               fontFamily: 'Tajawal',
@@ -177,7 +184,7 @@ class TrackCard extends ConsumerWidget {
                         const SizedBox(width: 4),
                         Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: cs.onSurface.withValues(alpha: 0.5),
                           size: 20,
                         ),
                       ],
@@ -197,7 +204,7 @@ class TrackCard extends ConsumerWidget {
                   ),
               icon: Icon(
                 isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: isFav ? Colors.redAccent : Colors.white70,
+                color: isFav ? Colors.redAccent : cs.onSurface.withValues(alpha: 0.7),
                 size: 32,
               ),
             ),

@@ -352,9 +352,9 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   PlayerController(this.ref) : super(const AsyncValue.loading()) {
     final handler = ref.read(audioHandlerProvider);
     _player = handler.player;
-    _playingSub = _player.playingStream.listen((_) => _emitState());
-    _posSub = _player.positionStream.listen((_) => _emitState());
-
+    // 3. Initialize streams
+    _timelineStream = combinedPositionStream(_player).asBroadcastStream();
+    
     // Auto-skip failed ayahs to prevent playback reset
     _player.playbackEventStream.listen(
       (_) {},
@@ -369,6 +369,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
 
   final Ref ref;
   late final AudioPlayer _player;
+  late final Stream<CombinedPositionData> _timelineStream;
   StreamSubscription<bool>? _playingSub;
   StreamSubscription<Duration>? _posSub;
   String _reciterName = '';
@@ -557,18 +558,18 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         editionId: editionId,
         chapter: chapter,
         total: _ayahOffsets.length,
-        timelineStream: combinedPositionStream(_player),
+        timelineStream: _timelineStream,
         durationStream: _player.durationStream,
         positionStream: _player.positionStream,
         bufferedStream: _player.bufferedPositionStream,
-        indexStream: Stream.value(ayahIndex), // Mocked for compatibility
+        indexStream: _player.currentIndexStream.map((idx) => idx).asBroadcastStream(),
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
         processingStateStream: _player.processingStateStream,
         totalDurationOverride: _totalDuration,
         isPlaying: _player.playing,
-        currentUrl: _urls.first,
+        currentUrl: _urls.isNotEmpty ? _urls.first : '',
         surahName: surahName,
         reciterName: _reciterName,
         currentAyah: ayahIndex,

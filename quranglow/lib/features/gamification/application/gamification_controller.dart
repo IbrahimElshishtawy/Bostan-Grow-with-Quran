@@ -105,8 +105,6 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         await repository.setUserProfile(userId, updatedProfile);
       }
       
-      _updateHomeWidget(updatedStreak);
-
       final gameState = GameState(
         userProfile: updatedProfile,
         levels: levels,
@@ -116,6 +114,8 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       );
 
       state = AsyncValue.data(gameState);
+      
+      _updateHomeWidget(gameState);
       
       // Catch up and start heartbeat ticker
       await _processHeartsRegeneration();
@@ -193,9 +193,26 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
     await initialize();
   }
 
-  Future<void> _updateHomeWidget(int streak) async {
+  Future<void> _updateHomeWidget(GameState gameState) async {
     try {
-      await HomeWidget.saveWidgetData<String>('streak_value', streak.toString());
+      final profile = gameState.userProfile;
+      final levels = gameState.levels;
+      
+      // Find current active level
+      final currentLevel = levels.firstWhere(
+        (l) => !l.isCompleted && l.isUnlocked, 
+        orElse: () => levels.last,
+      );
+
+      await HomeWidget.saveWidgetData<String>('streak_value', profile.currentStreak.toString());
+      await HomeWidget.saveWidgetData<String>('level_value', profile.currentLevel.toString());
+      await HomeWidget.saveWidgetData<String>('station_title', currentLevel.title);
+      await HomeWidget.saveWidgetData<String>('task_listen', currentLevel.isListenCompleted ? '1' : '0');
+      await HomeWidget.saveWidgetData<String>('task_read', currentLevel.isReadCompleted ? '1' : '0');
+      await HomeWidget.saveWidgetData<String>('task_write', currentLevel.isWriteCompleted ? '1' : '0');
+      await HomeWidget.saveWidgetData<String>('task_memorize', currentLevel.isMemorizeCompleted ? '1' : '0');
+      await HomeWidget.saveWidgetData<String>('task_quiz', currentLevel.isQuizCompleted ? '1' : '0');
+
       await HomeWidget.updateWidget(
         androidName: 'LearningWidgetProvider',
         iOSName: 'LearningWidgetProvider',
@@ -405,15 +422,16 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       // 🌟 PERFORMANCE OPTIMIZATION: OPTIMISTIC UI UPDATE! 🌟
       // We push the state to UI immediately so it feels instantaneous (0ms lag)
       // ---------------------------------------------------------
-      state = AsyncValue.data(GameState(
+      final newState = GameState(
         userProfile: finalProfile,
         levels: updatedLevels,
         isLoading: false,
         error: null,
         dailyMissions: updatedMissions,
-      ));
+      );
+      state = AsyncValue.data(newState);
       
-      _updateHomeWidget(newStreak);
+      _updateHomeWidget(newState);
 
       // ---------------------------------------------------------
       // 💾 ATOMIC DISK PERSISTENCE: SAVE ALL UPDATED MEMORY DATA DIRECTLY

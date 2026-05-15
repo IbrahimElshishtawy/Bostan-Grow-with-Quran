@@ -110,6 +110,11 @@ class MushafTopBar extends StatelessWidget {
                         ),
                         Row(
                           children: [
+                            IconButton(
+                              icon: Icon(Icons.arrow_back_rounded, color: titleColor),
+                              onPressed: onBack,
+                              tooltip: 'رجوع',
+                            ),
                             const SizedBox(width: 4),
                             IconButton(
                               icon: Icon(Icons.zoom_in_rounded, color: titleColor),
