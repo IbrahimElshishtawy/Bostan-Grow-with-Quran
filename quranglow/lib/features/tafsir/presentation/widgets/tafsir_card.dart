@@ -19,12 +19,15 @@ class TafsirCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
     // Premium Indigo/Blue palette for Tafsir
-    final Color indigoBg = isDark ? const Color(0xFF1A1F3D) : const Color(0xFFF0F2FF);
-    final Color indigoAccent = isDark ? const Color(0xFF3F51B5) : const Color(0xFF3949AB);
+    final Color indigoBg = isDark
+        ? const Color(0xFF1A1F3D)
+        : const Color(0xFFF0F2FF);
+    final Color indigoAccent = isDark
+        ? const Color(0xFF3F51B5)
+        : const Color(0xFF3949AB);
     final Color indigoText = isDark ? Colors.white : const Color(0xFF1A237E);
 
     return tafsir.when(
@@ -77,7 +80,11 @@ class TafsirCard extends StatelessWidget {
                       color: indigoAccent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(Icons.auto_stories_rounded, color: indigoAccent, size: 22),
+                    child: Icon(
+                      Icons.auto_stories_rounded,
+                      color: indigoAccent,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -113,7 +120,9 @@ class TafsirCard extends StatelessWidget {
                           content: const Text('تم نسخ نص التفسير'),
                           behavior: SnackBarBehavior.floating,
                           backgroundColor: indigoAccent,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       );
                     },
@@ -130,7 +139,9 @@ class TafsirCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.6),
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.white.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: Text(

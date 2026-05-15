@@ -192,43 +192,50 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
 
             const SizedBox(height: 28),
 
-            // Dhikr Selection Area
+            // Professional manual selection area
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.02)
-                    : cs.primary.withValues(alpha: 0.02),
-                borderRadius: BorderRadius.circular(20),
+                color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+                borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.06)
-                      : cs.primary.withValues(alpha: 0.06),
+                  color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
                 ),
+                boxShadow: [
+                  if (!isDark)
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        color: cs.primary,
-                        size: 18,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.touch_app_rounded, color: cs.primary, size: 18),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       Text(
-                        'بدّل الذكر يدوياً',
+                        'تبديل الذكر يدوياً',
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
                           fontFamily: 'Tajawal',
                           color: cs.onSurface,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
                   DhikrQuickList(
                     selectedItem: DhikrQuickList.items[_selectedDhikrIndex],
                     onTapItem: (item) {

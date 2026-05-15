@@ -15,11 +15,14 @@ class AyahCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color cardBg = isDark ? const Color(0xFF1E2F26) : const Color(0xFFF6FAF7);
-    final Color borderColor = isDark ? Colors.white10 : const Color(0xFFD4AF37).withValues(alpha: 0.2);
+    final Color cardBg = isDark
+        ? const Color(0xFF1E2F26)
+        : const Color(0xFFF6FAF7);
+    final Color borderColor = isDark
+        ? Colors.white10
+        : const Color(0xFFD4AF37).withValues(alpha: 0.2);
 
     return Container(
       decoration: BoxDecoration(
@@ -46,16 +49,23 @@ class AyahCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.2)),
+                        border: Border.all(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Text(
                         '$surahName • الآية $ayah',
                         style: TextStyle(
-                          color: isDark ? const Color(0xFFF1D486) : const Color(0xFF996515),
+                          color: isDark
+                              ? const Color(0xFFF1D486)
+                              : const Color(0xFF996515),
                           fontWeight: FontWeight.w900,
                           fontSize: 13,
                           fontFamily: 'Tajawal',
@@ -77,8 +87,11 @@ class AyahCard extends StatelessWidget {
                     height: 1.8,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'KFGQPC Uthmanic Script', // Using the Quran font
-                    color: isDark ? Colors.white.withValues(alpha: 0.95) : const Color(0xFF1B3B2B),
+                    fontFamily:
+                        'KFGQPC Uthmanic Script', // Using the Quran font
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.95)
+                        : const Color(0xFF1B3B2B),
                   ),
                 ),
               ],

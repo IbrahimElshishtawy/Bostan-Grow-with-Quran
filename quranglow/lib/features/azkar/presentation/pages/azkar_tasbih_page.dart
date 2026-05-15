@@ -3,7 +3,7 @@ import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/features/azkar/presentation/pages/zikr_reader_page.dart';
 import 'package:quranglow/features/azkar/presentation/widgets/reminder_list.dart';
 import 'package:quranglow/features/azkar/presentation/widgets/tasbih_counter.dart';
-import 'package:quranglow/features/ui/routes/app_routes.dart';
+import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_integrated_view.dart';
 
 class AzkarTasbihPage extends StatefulWidget {
   const AzkarTasbihPage({super.key});
@@ -29,49 +29,55 @@ class _AzkarTasbihPageState extends State<AzkarTasbihPage> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: const ProAppBar(
-          title: 'الروحانيات والتذكير',
-          subtitle: 'أذكار، تفسير، تسبيح، وتنبيهات مخصصة',
+          title: 'الواحة الروحانية',
+          subtitle: 'سكينة للقلب، طمأنينة للروح، ورفيق للذكر',
           showBack: false,
         ),
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Container(
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : cs.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
                 ),
                 child: TabBar(
                   controller: _tab,
-                  labelColor: cs.onPrimary,
+                  labelColor: Colors.white,
                   unselectedLabelColor: cs.onSurfaceVariant,
                   indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorPadding: const EdgeInsets.all(4),
                   indicator: BoxDecoration(
-                    color: cs.primary,
-                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [cs.primary, cs.primary.withValues(alpha: 0.8)],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: cs.primary.withValues(alpha: 0.3),
-                        blurRadius: 8,
+                        color: cs.primary.withValues(alpha: 0.25),
+                        blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   dividerColor: Colors.transparent,
+                  labelStyle: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.w900, fontSize: 13),
+                  unselectedLabelStyle: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
                   tabs: const [
-                    Tab(child: Text('الأذكار', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold))),
-                    Tab(child: Text('التسبيح', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold))),
-                    Tab(child: Text('التفسير', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold))),
-                    Tab(child: Text('التنبيهات', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold))),
+                    Tab(text: 'الأذكار'),
+                    Tab(text: 'التسبيح'),
+                    Tab(text: 'التفسير'),
+                    Tab(text: 'التنبيهات'),
                   ],
                 ),
               ),
@@ -83,8 +89,8 @@ class _AzkarTasbihPageState extends State<AzkarTasbihPage> with SingleTickerProv
                 children: [
                   _buildAzkarTab(context),
                   _buildTasbihTab(context),
-                  _buildTafsirTab(context),
-                  const ReminderList(), // Uses existing ReminderList
+                  const TafsirIntegratedView(), // Full Tafsir explorer directly in the tab
+                  const ReminderList(),
                 ],
               ),
             ),
@@ -96,25 +102,25 @@ class _AzkarTasbihPageState extends State<AzkarTasbihPage> with SingleTickerProv
 
   Widget _buildAzkarTab(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       physics: const BouncingScrollPhysics(),
       children: [
-        _buildSectionTitle('الورد اليومي', Icons.wb_sunny_rounded),
-        const SizedBox(height: 12),
+        _buildSectionTitle('الورد والذكر اليومي', Icons.auto_awesome_mosaic_rounded),
+        const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.15,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 1.1,
           children: [
-            _buildCategoryCard(context, 'أذكار الصباح', Icons.wb_sunny_rounded, Colors.orange),
-            _buildCategoryCard(context, 'أذكار المساء', Icons.nights_stay_rounded, Colors.indigo),
-            _buildCategoryCard(context, 'أذكار النوم', Icons.bedtime_rounded, Colors.purple),
-            _buildCategoryCard(context, 'أذكار الاستيقاظ', Icons.wb_twilight_rounded, Colors.amber),
-            _buildCategoryCard(context, 'أذكار بعد الصلاة', Icons.mosque_rounded, Colors.teal),
-            _buildCategoryCard(context, 'تسابيح منوعة', Icons.bubble_chart_rounded, Colors.blueGrey),
+            _buildCategoryCard(context, 'أذكار الصباح', Icons.wb_sunny_rounded, const Color(0xFFF97316)),
+            _buildCategoryCard(context, 'أذكار المساء', Icons.nights_stay_rounded, const Color(0xFF6366F1)),
+            _buildCategoryCard(context, 'أذكار النوم', Icons.bedtime_rounded, const Color(0xFFA855F7)),
+            _buildCategoryCard(context, 'أذكار الاستيقاظ', Icons.wb_twilight_rounded, const Color(0xFFEAB308)),
+            _buildCategoryCard(context, 'أذكار الصلاة', Icons.mosque_rounded, const Color(0xFF10B981)),
+            _buildCategoryCard(context, 'تسابيح منوعة', Icons.star_rounded, const Color(0xFF64748B)),
           ],
         ),
       ],
@@ -125,83 +131,17 @@ class _AzkarTasbihPageState extends State<AzkarTasbihPage> with SingleTickerProv
     return const TasbihCounter();
   }
 
-  Widget _buildTafsirTab(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      physics: const BouncingScrollPhysics(),
-      children: [
-        // Tafsir Banner
-        InkWell(
-          onTap: () => Navigator.pushNamed(context, AppRoutes.tafsir),
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.indigo.shade700, Colors.blue.shade900],
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.indigo.withValues(alpha: 0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 36),
-                ),
-                const SizedBox(width: 20),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'مستكشف التفسير',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Tajawal',
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'تصفح معاني وتفسير الآيات بعمق وسهولة',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_left_rounded, color: Colors.white),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSectionTitle(String title, IconData icon) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Icon(icon, size: 22),
+        Icon(icon, size: 20, color: cs.primary),
         const SizedBox(width: 8),
         Text(
           title,
           style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
             fontFamily: 'Tajawal',
           ),
         ),
@@ -210,13 +150,20 @@ class _AzkarTasbihPageState extends State<AzkarTasbihPage> with SingleTickerProv
   }
 
   Widget _buildCategoryCard(BuildContext context, String title, IconData icon, Color color) {
-    final cs = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 0,
-      color: cs.surfaceContainerHigh,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: color.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+        ],
       ),
       child: InkWell(
         onTap: () {
@@ -227,25 +174,25 @@ class _AzkarTasbihPageState extends State<AzkarTasbihPage> with SingleTickerProv
             ),
           );
         },
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(26),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 32),
+              child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
                 fontFamily: 'Tajawal',
               ),
             ),
