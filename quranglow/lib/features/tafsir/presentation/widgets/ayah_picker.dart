@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class AyahPicker extends StatefulWidget {
+class AyahPicker extends StatelessWidget {
   const AyahPicker({
     super.key,
     required this.maxAyat,
@@ -13,61 +13,46 @@ class AyahPicker extends StatefulWidget {
   final void Function(int ayah) onAyahChange;
 
   @override
-  State<AyahPicker> createState() => _AyahPickerState();
-}
-
-class _AyahPickerState extends State<AyahPicker> {
-  late int _localAyah;
-
-  @override
-  void initState() {
-    super.initState();
-    _localAyah = widget.ayah;
-  }
-
-  @override
-  void didUpdateWidget(covariant AyahPicker oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.ayah != widget.ayah) _localAyah = widget.ayah;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Slider(
-            value: _localAyah.toDouble(),
-            min: 1,
-            max: widget.maxAyat.toDouble(),
-            divisions: widget.maxAyat - 1,
-            label: 'آية $_localAyah من ${widget.maxAyat}',
-            onChanged: (x) => setState(() => _localAyah = x.round()),
-            onChangeEnd: (x) => widget.onAyahChange(x.round()),
-          ),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    // Using the same design as SelectionCard for consistency
+    final Color primaryColor = const Color(0xFF1B4D3E);
+    final Color accentColor = const Color(0xFFD4AF37);
+
+    return DropdownButtonFormField<int>(
+      value: ayah.clamp(1, maxAyat),
+      isExpanded: true,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: isDark ? Colors.black26 : Colors.white70,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: accentColor.withValues(alpha: 0.3)),
         ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 64,
-          child: TextFormField(
-            key: ValueKey('ayah_${widget.maxAyat}'),
-            initialValue: _localAyah.toString(),
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'الآية',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-            onFieldSubmitted: (v) {
-              final n = int.tryParse(v) ?? _localAyah;
-              final clamped = n.clamp(1, widget.maxAyat);
-              setState(() => _localAyah = clamped);
-              widget.onAyahChange(clamped);
-            },
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: accentColor.withValues(alpha: 0.15)),
         ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        isDense: true,
+        labelText: 'الآية',
+        labelStyle: TextStyle(
+          color: isDark ? Colors.white70 : primaryColor,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Tajawal',
+        ),
+      ),
+      style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87, fontFamily: 'Tajawal'),
+      items: [
+        for (int i = 1; i <= maxAyat; i++)
+          DropdownMenuItem(value: i, child: Text(i.toString())),
       ],
+      onChanged: (v) {
+        if (v != null) onAyahChange(v);
+      },
     );
   }
 }

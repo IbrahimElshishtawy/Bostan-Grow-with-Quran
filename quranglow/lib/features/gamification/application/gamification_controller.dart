@@ -82,8 +82,30 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         await prefs.setInt('quran_levels_data_version', currentTargetVersion);
       }
 
+      // ✨ DYNAMIC STREAK CALCULATION: Handle commitment and negative streaks!
+      final now = DateTime.now();
+      final lastActive = profile.lastActiveDate;
+      int updatedStreak = profile.currentStreak;
+
+      if (lastActive != null) {
+        final daysDifference = now.difference(DateTime(lastActive.year, lastActive.month, lastActive.day)).inDays;
+        
+        if (daysDifference > 1) {
+          // User missed days! Count them as negative to remind them of the gap.
+          updatedStreak = -(daysDifference - 1);
+        } else if (daysDifference == 1) {
+          // If they were active yesterday, they are on track. 
+          // If streak was negative, it stays negative until they complete a task today.
+        }
+      }
+
+      final updatedProfile = profile.copyWith(currentStreak: updatedStreak);
+      if (updatedStreak != profile.currentStreak) {
+        await repository.setUserProfile(userId, updatedProfile);
+      }
+
       final gameState = GameState(
-        userProfile: profile,
+        userProfile: updatedProfile,
         levels: levels,
         isLoading: false,
         error: null,
@@ -332,16 +354,24 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       if (lastActive == null) {
         newStreak = 1;
       } else {
-        final daysDifference = now.difference(lastActive).inDays;
+        final lastActiveDateOnly = DateTime(lastActive.year, lastActive.month, lastActive.day);
+        final nowDateOnly = DateTime(now.year, now.month, now.day);
+        final daysDifference = nowDateOnly.difference(lastActiveDateOnly).inDays;
+
         if (daysDifference == 1) {
-          newStreak = updatedProfile.currentStreak + 1;
+          // Active today after being active yesterday
+          newStreak = (updatedProfile.currentStreak < 0) ? 1 : updatedProfile.currentStreak + 1;
         } else if (daysDifference > 1) {
+          // Returning after a gap
           if (freezesLeft > 0) {
             freezesLeft--;
-            newStreak = updatedProfile.currentStreak; // Freeze saved it!
+            newStreak = (updatedProfile.currentStreak < 0) ? 1 : updatedProfile.currentStreak + 1;
           } else {
-            newStreak = 1;
+            newStreak = 1; // Restart the positive journey
           }
+        } else if (daysDifference == 0) {
+          // Already active today, just maintain current streak if it was already updated to positive
+          newStreak = (updatedProfile.currentStreak < 0) ? 1 : updatedProfile.currentStreak;
         }
       }
 

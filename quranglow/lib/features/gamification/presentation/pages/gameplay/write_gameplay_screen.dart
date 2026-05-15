@@ -132,37 +132,83 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
   }
 
   void _showRefillPrompt() {
+    final cs = Theme.of(context).colorScheme;
+    final List<String> spiritualQuotes = [
+      "'{وَمَنْ يَتَّقِ اللَّهَ يَجْعَلْ لَهُ مَخْرَجًا}' - سورة الطلاق",
+      "'{وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ}' - سورة البقرة",
+      "'{أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ}' - سورة الرعد",
+      "'{إِنَّ مَعَ الْعُسْرِ يُسْرًا}' - سورة الشرح",
+      "قَالَ رَسُولُ اللَّهِ ﷺ: 'اسْتَعِنْ بِاللَّهِ وَلَا تَعْجَزْ'",
+    ];
+    final String randomQuote = spiritualQuotes[DateTime.now().second % spiritualQuotes.length];
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (c) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('نفذت المحاولات! 💔', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text(
-          'يمكنك الانتظار لإعادة الشحن، أو مشاهدة فيديو لاستعادة المحاولات فوراً والاستمرار!',
-          textAlign: TextAlign.center,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        backgroundColor: Theme.of(context).cardColor,
+        title: Column(
+          children: [
+            const Icon(Icons.auto_awesome, color: Colors.amber, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'تذكر واستعن بالله',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              randomQuote,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'KFGQPC Uthmanic Script',
+                fontSize: 18,
+                color: cs.primary,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'الخطأ هو طريق التعلم، لا تحزن.. استمر في رحلتك وسيعينك الله.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
         ),
         actionsAlignment: MainAxisAlignment.center,
+        actionsPadding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
         actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _refillHeartsFreely(c),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              icon: const Icon(Icons.favorite_rounded),
+              label: const Text(
+                'استمر بنور الله',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Exit screen
+              Navigator.pop(c);
+              Navigator.pop(context);
             },
-            child: const Text('خروج'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => _simulateWatchAd(c),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue[600],
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            icon: const Icon(Icons.play_circle_fill_rounded),
-            label: const Text(
-              'مشاهدة إعلان واستعادة المحاولات 🎁',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            child: Text(
+              'خروج مؤقت',
+              style: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
             ),
           ),
         ],
@@ -170,65 +216,44 @@ class _WriteGameplayScreenState extends ConsumerState<WriteGameplayScreen> {
     );
   }
 
-  /// 🎬 SIMULATED AD EXPERIENCE!
-  Future<void> _simulateWatchAd(BuildContext dialogContext) async {
-    // 1. Close the existing prompt dialog
+  Future<void> _refillHeartsFreely(BuildContext dialogContext) async {
     Navigator.pop(dialogContext);
-
-    // 2. Show a cool 'Ad Player' simulation overlay!
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => WillPopScope(
-        onWillPop: () async => false, // Force watch!
-        child: Dialog.fullscreen(
-          backgroundColor: Colors.black87,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(color: Colors.white),
-                const SizedBox(height: 24),
-                const Icon(Icons.movie_creation_rounded, size: 50, color: Colors.blueAccent),
-                const SizedBox(height: 16),
-                const Text(
-                  'جاري تشغيل الفيديو المكافيء...',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'استعادة المحاولات في غضون ثوانٍ معدودة',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                ),
-              ],
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 24),
+            Text(
+              'جاري تجديد العزم...',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
+          ],
         ),
       ),
     );
 
-    // 3. Wait 2 seconds for realism!
-    await Future.delayed(const Duration(milliseconds: 2500));
-
-    // 4. Remove simulator and award hearts!
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
     if (mounted) {
-      Navigator.pop(context); // Close Ad simulator
-      
-      final success = await ref.read(gamificationControllerProvider.notifier).grantRewardAdHearts();
+      Navigator.pop(context);
+      final success = await ref
+          .read(gamificationControllerProvider.notifier)
+          .grantRewardAdHearts();
       
       if (success && mounted) {
         PremiumFeedbackService.grandCelebration();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('تمت استعادة +3 محاولات بنجاح! 🎉', textAlign: TextAlign.center),
+            content: Text('تمت استعادة المحاولات، انطلق ببركة الله! ✨', textAlign: TextAlign.center),
             backgroundColor: Colors.green,
-          )
+          ),
         );
-
-        // ✨ Resume load cascade if were not loaded!
-        if (_ayahs.isEmpty) {
-          _loadLevelData();
-        }
+        if (_ayahs.isEmpty) _loadLevelData();
       }
     }
   }

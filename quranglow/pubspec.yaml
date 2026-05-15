@@ -53,6 +53,7 @@ dependencies:
   intl: ^0.20.2
   scrollable_positioned_list: ^0.3.8
   speech_to_text: ^7.0.0
+  home_widget: ^0.4.2
 
 dev_dependencies:
   flutter_test:

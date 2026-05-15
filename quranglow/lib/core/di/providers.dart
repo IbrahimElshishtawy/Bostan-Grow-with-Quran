@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:quran/quran.dart' as quran;
 import 'package:quranglow/core/api/api_cache_manager.dart';
 import 'package:quranglow/core/api/api_interceptor.dart';
 import 'package:quranglow/core/api/alquran_cloud_source.dart';
@@ -145,6 +146,17 @@ final quranAllProvider = FutureProvider.autoDispose.family<List<Surah>, String>(
     return service.getQuranAllText(editionId);
   },
 );
+
+final quranMetadataProvider = Provider<List<({int number, String name, int ayatCount})>>((ref) {
+  return List.generate(114, (i) {
+    final s = i + 1;
+    return (
+      number: s,
+      name: kSurahNamesAr[i],
+      ayatCount: quran.getVerseCount(s),
+    );
+  });
+});
 
 final settingsProvider =
     StateNotifierProvider<SettingsController, AsyncValue<AppSettings>>(

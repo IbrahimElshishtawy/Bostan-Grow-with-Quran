@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/di/providers.dart';
-import 'package:quranglow/core/model/aya/aya.dart';
+import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/selection_card.dart';
@@ -60,21 +60,17 @@ class _TafsirExplorerPageState extends ConsumerState<TafsirExplorerPage> {
         ? const AsyncValue<String>.loading()
         : ref.watch(tafsirForAyahProvider((_surah, _ayah, _editionId!)));
 
-    // سورة واحدة فقط
-    final quranAll = ref.watch(quranAllProvider('quran-uthmani'));
+    final quranMetadata = ref.watch(quranMetadataProvider);
+    final AsyncValue<Surah> selectedSurah = ref.watch(quranSurahProvider((_surah, 'quran-uthmani')));
 
-    String surahName = 'سورة $_surah';
+    final meta = quranMetadata[_surah - 1];
+    String surahName = meta.name;
+    int maxAyat = meta.ayatCount;
     String ayahText = '';
-    int maxAyat = 286; // افتراضي
-    quranAll.whenData((all) {
-      if (_surah >= 1 && _surah <= all.length) {
-        final s = all[_surah - 1];
-        surahName = s.name;
-        maxAyat = s.ayat.length;
-        if (_ayah >= 1 && _ayah <= s.ayat.length) {
-          final Aya a = s.ayat[_ayah - 1];
-          ayahText = a.text;
-        }
+
+    selectedSurah.whenData((s) {
+      if (_ayah >= 1 && _ayah <= s.ayat.length) {
+        ayahText = s.ayat[_ayah - 1].text;
       }
     });
 
@@ -90,10 +86,11 @@ class _TafsirExplorerPageState extends ConsumerState<TafsirExplorerPage> {
           children: [
             SelectionCard(
               editions: editions,
-              quranAll: quranAll,
+              quranMetadata: quranMetadata,
               editionId: _editionId,
               surah: _surah,
               ayah: _ayah,
+              ayahText: ayahText,
               onEditionChange: (id, name) {
                 setState(() {
                   _editionId = id;
