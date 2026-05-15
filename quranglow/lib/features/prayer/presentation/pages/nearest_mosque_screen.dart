@@ -29,6 +29,9 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
   bool _isLoading = true;
   String? _errorMsg;
   List<MosqueData> _mosques = [];
+  List<LatLng> _routePoints = [];
+  bool _isFetchingRoute = false;
+  MosqueData? _selectedMosque;
   
   late AnimationController _pulseController;
 
@@ -109,7 +112,7 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
         const apiKey = 'AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao';
         final url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
             '?location=${pos.latitude},${pos.longitude}'
-            '&radius=5000&type=mosque&keyword=مسجد&language=ar&key=$apiKey';
+            '&radius=10000&type=mosque&keyword=مسجد|masjid|prayer|مصلى|زاوية&language=ar&key=$apiKey';
 
         final response = await dio.get(
           url,
@@ -144,9 +147,10 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
         try {
           debugPrint('Starting Parallel Race for fallback...');
           
-          final nominatimUrl = 'https://nominatim.openstreetmap.org/search?q=mosque&format=json&lat=${pos.latitude}&lon=${pos.longitude}&limit=15';
+          final nominatimUrl = 'https://nominatim.openstreetmap.org/search?q=mosque+masjid+مصلى&format=json&lat=${pos.latitude}&lon=${pos.longitude}&limit=30';
           final overpassUrl = 'https://lz4.overpass-api.de/api/interpreter';
-          final overpassData = 'data=${Uri.encodeQueryComponent('[out:json][timeout:10];node(around:5000,${pos.latitude},${pos.longitude})["amenity"="place_of_worship"]["religion"="muslim"];out body;')}' ;
+          // Search for nodes, ways, and relations (nwr) and include both amenity=mosque and religion=muslim
+          final overpassData = 'data=${Uri.encodeQueryComponent('[out:json][timeout:15];nwr(around:10000,${pos.latitude},${pos.longitude})["amenity"~"place_of_worship|mosque"]["religion"="muslim"];out center;')}' ;
 
           final results = await Future.wait([
             dio.get(nominatimUrl, options: Options(
@@ -222,8 +226,11 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
     if (data is Map && data['elements'] != null) {
       final elements = data['elements'] as List<dynamic>;
       for (var el in elements) {
-        double lat = el['lat']?.toDouble() ?? 0.0;
-        double lon = el['lon']?.toDouble() ?? 0.0;
+        // Use center if it's a way/relation, otherwise lat/lon
+        double lat = (el['lat'] ?? el['center']?['lat'])?.toDouble() ?? 0.0;
+        double lon = (el['lon'] ?? el['center']?['lng'] ?? el['center']?['lon'])?.toDouble() ?? 0.0;
+        if (lat == 0 || lon == 0) continue;
+        
         String name = (el['tags']?['name:ar'] ?? el['tags']?['name'] ?? 'مسجد').toString();
         double dist = Geolocator.distanceBetween(pos.latitude, pos.longitude, lat, lon);
         list.add(MosqueData(name: name, location: LatLng(lat, lon), distanceKm: dist / 1000.0));
@@ -232,15 +239,66 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
     return list;
   }
 
+  Future<void> _getRoute(LatLng destination) async {
+    if (_currentPos == null) return;
+    
+    setState(() {
+      _isFetchingRoute = true;
+      _routePoints = [];
+    });
+    
+    try {
+      final dio = Dio();
+      // Use OSRM for free walking route
+      final url = 'https://router.project-osrm.org/route/v1/walking/'
+          '${_currentPos!.longitude},${_currentPos!.latitude};'
+          '${destination.longitude},${destination.latitude}'
+          '?overview=full&geometries=geojson';
+      
+      final response = await dio.get(url);
+      
+      if (response.statusCode == 200 && response.data['routes'] != null) {
+        final List<dynamic> coords = response.data['routes'][0]['geometry']['coordinates'];
+        final points = coords.map((c) => LatLng(c[1].toDouble(), c[0].toDouble())).toList();
+        
+        setState(() {
+          _routePoints = points;
+        });
+
+        // Fit map to show both user and mosque
+        if (points.isNotEmpty) {
+          final bounds = LatLngBounds.fromPoints([
+            LatLng(_currentPos!.latitude, _currentPos!.longitude),
+            destination,
+            ...points,
+          ]);
+          _mapController.fitCamera(CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)));
+        }
+      }
+    } catch (e) {
+      debugPrint('Route fetch failed: $e');
+    } finally {
+      setState(() => _isFetchingRoute = false);
+    }
+  }
+
   void _navigateToMosque(MosqueData mosque) async {
     HapticFeedback.selectionClick();
-    // Launch Google Maps App externally for routing
+    
+    // If route isn't shown yet, show it first
+    if (_routePoints.isEmpty || _selectedMosque != mosque) {
+      _selectedMosque = mosque;
+      await _getRoute(mosque.location);
+      return;
+    }
+
+    // If route is already shown, open external maps for real turn-by-turn
     final uri = Uri.parse('google.navigation:q=${mosque.location.latitude},${mosque.location.longitude}&mode=w');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       // Fallback to browser mapping if no maps app
-      final fallbackUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${mosque.location.latitude},${mosque.location.longitude}&travelmode=walking');
+      final fallbackUri = Uri.parse('https://www.google.com/maps/dir/?api=1&origin=${_currentPos?.latitude},${_currentPos?.longitude}&destination=${mosque.location.latitude},${mosque.location.longitude}&travelmode=walking');
       await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
     }
   }
@@ -448,6 +506,18 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
               userAgentPackageName: 'com.quranglow.app',
               retinaMode: RetinaMode.isHighDensity(context),
             ),
+            PolylineLayer(
+              polylines: [
+                if (_routePoints.isNotEmpty)
+                  Polyline(
+                    points: _routePoints,
+                    strokeWidth: 5,
+                    color: Colors.blue.withValues(alpha: 0.8),
+                    borderColor: Colors.blue.shade900,
+                    borderStrokeWidth: 1,
+                  ),
+              ],
+            ),
             MarkerLayer(markers: markers),
           ],
         ),
@@ -564,14 +634,19 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
             width: double.infinity,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.directions_walk_rounded),
-              label: const Text('بدء التوجيه', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              label: Text(
+                _isFetchingRoute 
+                    ? 'جاري رسم المسار...' 
+                    : (_routePoints.isNotEmpty && _selectedMosque == closest ? 'بدء التنقل الفعلي' : 'رسم مسار الطريق'), 
+                style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: cs.primary,
-                foregroundColor: cs.onPrimary,
+                backgroundColor: _routePoints.isNotEmpty && _selectedMosque == closest ? Colors.blue.shade700 : cs.primary,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              onPressed: () => _navigateToMosque(closest),
+              onPressed: _isFetchingRoute ? null : () => _navigateToMosque(closest),
             ),
           ),
         ],
