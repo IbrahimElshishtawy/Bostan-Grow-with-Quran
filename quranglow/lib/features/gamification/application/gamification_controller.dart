@@ -9,6 +9,7 @@ import 'package:quranglow/core/data/surah_names_ar.dart';
 
 import 'package:quranglow/core/data/surah_ayah_counts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:home_widget/home_widget.dart';
 
 /// Static service to trigger soft satisfying Islamic-inspired UI haptics and sounds
 class PremiumFeedbackService {
@@ -103,6 +104,8 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       if (updatedStreak != profile.currentStreak) {
         await repository.setUserProfile(userId, updatedProfile);
       }
+      
+      _updateHomeWidget(updatedStreak);
 
       final gameState = GameState(
         userProfile: updatedProfile,
@@ -188,6 +191,18 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
 
   Future<void> reload() async {
     await initialize();
+  }
+
+  Future<void> _updateHomeWidget(int streak) async {
+    try {
+      await HomeWidget.saveWidgetData<String>('streak_value', streak.toString());
+      await HomeWidget.updateWidget(
+        androidName: 'LearningWidgetProvider',
+        iOSName: 'LearningWidgetProvider',
+      );
+    } catch (e) {
+      debugPrint('Error updating home widget: $e');
+    }
   }
 
   /// Complete an interactive learning sub-task (Listen, Read, Write, Memorize, Quiz)
@@ -397,6 +412,8 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         error: null,
         dailyMissions: updatedMissions,
       ));
+      
+      _updateHomeWidget(newStreak);
 
       // ---------------------------------------------------------
       // 💾 ATOMIC DISK PERSISTENCE: SAVE ALL UPDATED MEMORY DATA DIRECTLY

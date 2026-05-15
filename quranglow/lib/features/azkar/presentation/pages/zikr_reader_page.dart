@@ -84,6 +84,8 @@ class _ZikrReaderPageState extends ConsumerState<ZikrReaderPage> {
       }
     }
 
+    if (!mounted) return;
+    
     final picked = await showTimePicker(
       context: context,
       initialTime: _reminderTime,
@@ -114,6 +116,8 @@ class _ZikrReaderPageState extends ConsumerState<ZikrReaderPage> {
         scheduled: true,
       ));
 
+      if (!mounted) return;
+      
       setState(() {
         _isScheduled = true;
         _reminderTime = picked;

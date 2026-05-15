@@ -8,6 +8,7 @@ import 'package:quranglow/features/azkar/presentation/pages/zikr_reader_page.dar
 import 'package:quranglow/features/azkar/presentation/widgets/reminder_list.dart';
 import 'package:quranglow/features/azkar/presentation/widgets/tasbih_counter.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_integrated_view.dart';
+import 'package:quranglow/features/azkar/domain/azkar_model.dart';
 
 class AzkarTasbihPage extends ConsumerStatefulWidget {
   const AzkarTasbihPage({super.key});
@@ -248,7 +249,7 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
                   if (meta != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      '${meta.time.format(context)}',
+                      meta.time.format(context),
                       style: TextStyle(
                         fontSize: 11,
                         color: isScheduled ? color : Colors.grey,
@@ -305,6 +306,8 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
       }
     }
 
+    if (!mounted) return;
+
     // Pick Time (New or Change)
     final picked = await showTimePicker(
       context: context,
@@ -359,8 +362,10 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
           _azkarMeta[title] = (time: picked, id: meta.id);
         });
         
+        if (!mounted) return;
         _snack('تم ضبط تنبيه $title يومياً في ${picked.format(context)}');
       } catch (e) {
+        if (!mounted) return;
         _snack('حدث خطأ أثناء ضبط التنبيه: $e');
       }
     }
