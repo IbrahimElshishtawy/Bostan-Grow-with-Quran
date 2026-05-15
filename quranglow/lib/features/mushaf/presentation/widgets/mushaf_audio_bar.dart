@@ -61,7 +61,7 @@ class MushafAudioBar extends ConsumerWidget {
                       children: [
                         const SizedBox(width: 16),
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: (isDark ? Colors.white : Colors.black)
                                 .withValues(alpha: 0.05),
@@ -69,11 +69,11 @@ class MushafAudioBar extends ConsumerWidget {
                           ),
                           child: Icon(
                             Icons.mic_none_rounded,
-                            size: 18,
+                            size: 16,
                             color: isDark ? Colors.amber : Colors.green[800],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,13 +82,13 @@ class MushafAudioBar extends ConsumerWidget {
                                 surahName,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 13,
                                 ),
                               ),
                               Text(
                                 'جاري التشغيل...',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 10,
                                   color: (isDark ? Colors.white : Colors.black)
                                       .withValues(alpha: 0.5),
                                 ),
@@ -107,9 +107,9 @@ class MushafAudioBar extends ConsumerWidget {
                                 processingState ==
                                     ProcessingState.buffering) {
                               return Container(
-                                margin: const EdgeInsets.all(8.0),
-                                width: 24.0,
-                                height: 24.0,
+                                margin: const EdgeInsets.all(6.0),
+                                width: 20.0,
+                                height: 20.0,
                                 child: const CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
@@ -117,32 +117,42 @@ class MushafAudioBar extends ConsumerWidget {
                             } else if (playing != true) {
                               return IconButton(
                                 icon: const Icon(Icons.play_arrow_rounded),
-                                iconSize: 28.0,
+                                iconSize: 24.0,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
                                 onPressed: player.play,
                               );
                             } else if (processingState !=
                                 ProcessingState.completed) {
                               return IconButton(
                                 icon: const Icon(Icons.pause_rounded),
-                                iconSize: 28.0,
+                                iconSize: 24.0,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
                                 onPressed: player.pause,
                               );
                             } else {
                               return IconButton(
                                 icon: const Icon(Icons.replay_rounded),
-                                iconSize: 28.0,
+                                iconSize: 24.0,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
                                 onPressed: () => player.seek(Duration.zero),
                               );
                             }
                           },
                         ),
+                        const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20),
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                           onPressed: onClose,
                         ),
+                        const SizedBox(width: 12),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     // Progress Slider - Representing the whole Surah
                     StreamBuilder<CombinedPositionData>(
                       stream: combinedPositionStream(player),
@@ -157,11 +167,11 @@ class MushafAudioBar extends ConsumerWidget {
                         final total = timeline.total;
                         final pos = timeline.position;
 
-                        // Use the controller's pre-calculated total duration if the player hasn't loaded it yet
+                        // Use the controller's pre-calculated total duration override if it's available and larger than what the player reports
                         final controller = ref.watch(playerControllerProvider.notifier);
                         final totalOverride = controller.totalDuration;
                         
-                        final displayTotal = total == Duration.zero ? totalOverride : total;
+                        final displayTotal = (totalOverride > total) ? totalOverride : total;
                         final useTimeMode = displayTotal.inMilliseconds > 0;
 
                         double sliderValue = pos.inMilliseconds.toDouble();

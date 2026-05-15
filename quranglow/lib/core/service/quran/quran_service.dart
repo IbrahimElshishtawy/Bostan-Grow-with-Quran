@@ -463,8 +463,8 @@ class QuranService {
           final verseNum = verseKey.split(':')[1];
           final rawDuration = v['duration'];
           
-          // API might return duration as num or null
-          final durationMs = rawDuration is num ? rawDuration.toInt() : 0;
+          // API returns duration in seconds for this endpoint
+          final durationMs = rawDuration is num ? (rawDuration * 1000).toInt() : 0;
           durations[int.parse(verseNum)] = Duration(milliseconds: durationMs);
         }
         return durations;

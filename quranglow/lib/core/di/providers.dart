@@ -301,6 +301,7 @@ final editionIdProvider = StateProvider<String>((ref) => 'ar.alafasy');
 final chapterProvider = StateProvider<int>((ref) => 1);
 
 class PlayerUiState extends PlaylistState {
+  final Duration? totalDurationOverride;
   final bool? isPlaying;
   final String? currentUrl;
   final String? surahName;
@@ -319,6 +320,7 @@ class PlayerUiState extends PlaylistState {
     required super.playingStream,
     required super.loopModeStream,
     required super.volumeStream,
+    this.totalDurationOverride,
     this.isPlaying,
     this.currentUrl,
     this.surahName,
@@ -449,10 +451,11 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         await _player.setAudioSource(
           ConcatenatingAudioSource(
             children: sources,
-            useLazyPreparation: false, // Preload for zero gaps
+            useLazyPreparation: false, // Preload metadata for all items
           ),
           initialIndex: 0,
           initialPosition: Duration.zero,
+          preload: true, // Start preloading audio data immediately
         );
       } catch (e) {
         final err = e.toString().toLowerCase();
@@ -521,6 +524,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
+        totalDurationOverride: _totalDuration,
         isPlaying: _player.playing,
         currentUrl: _urls[safeIndex],
         surahName: surahName,
