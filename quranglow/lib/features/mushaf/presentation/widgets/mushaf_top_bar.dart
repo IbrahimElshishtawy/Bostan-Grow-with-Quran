@@ -74,19 +74,19 @@ class MushafTopBar extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: isDark
                         ? [
-                            const Color(0xFF0D2818).withValues(alpha: 0.85),
-                            const Color(0xFF113D25).withValues(alpha: 0.75),
+                            const Color(0xFF0D2818).withValues(alpha: 0.45),
+                            const Color(0xFF061A10).withValues(alpha: 0.35),
                           ]
                         : [
-                            const Color(0xFFFDFBF7).withValues(alpha: 0.9),
-                            const Color(0xFFF5F0E5).withValues(alpha: 0.85),
+                            const Color(0xFFFFFFFF).withValues(alpha: 0.25),
+                            const Color(0xFFFDFCF0).withValues(alpha: 0.15),
                           ],
                   ),
                   border: Border.all(
                     color: isDark
-                        ? Colors.white10
-                        : const Color(0xFFD4AF37).withValues(alpha: 0.6),
-                    width: 1.2,
+                        ? const Color(0xFFD4AF37).withValues(alpha: 0.4)
+                        : const Color(0xFFC5A028).withValues(alpha: 0.7),
+                    width: 1.5,
                   ),
                 ),
                 child: ClipRRect(
@@ -117,12 +117,12 @@ class MushafTopBar extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             IconButton(
-                              icon: Icon(Icons.zoom_in_rounded, color: titleColor),
+                              icon: Icon(Icons.add_circle_outline_rounded, color: titleColor, size: 22),
                               onPressed: onZoomIn,
                               tooltip: 'تكبير الخط',
                             ),
                             IconButton(
-                              icon: Icon(Icons.zoom_out_rounded, color: titleColor),
+                              icon: Icon(Icons.remove_circle_outline_rounded, color: titleColor, size: 22),
                               onPressed: onZoomOut,
                               tooltip: 'تصغير الخط',
                             ),
@@ -148,7 +148,7 @@ class MushafTopBar extends StatelessWidget {
                                             textAlign: TextAlign.center,
                                             maxLines: 1,
                                             style: TextStyle(
-                                              color: const Color(0xFFF1D486),
+                                              color: isDark ? const Color(0xFFF1D486) : const Color(0xFF004D40),
                                               fontWeight: FontWeight.w900,
                                               fontFamily:
                                                   'KFGQPC Uthmanic Script',
@@ -158,7 +158,7 @@ class MushafTopBar extends StatelessWidget {
                                                   offset: const Offset(0, 1),
                                                   blurRadius: 2,
                                                   color: Colors.black
-                                                      .withValues(alpha: 0.2),
+                                                      .withValues(alpha: 0.1),
                                                 ),
                                               ],
                                             ),
@@ -184,7 +184,7 @@ class MushafTopBar extends StatelessWidget {
                                             textAlign: TextAlign.center,
                                             maxLines: 1,
                                             style: TextStyle(
-                                              color: const Color(0xFFF1D486),
+                                              color: isDark ? const Color(0xFFF1D486) : const Color(0xFF004D40),
                                               fontWeight: FontWeight.w900,
                                               fontFamily:
                                                   'KFGQPC Uthmanic Script',
@@ -194,7 +194,7 @@ class MushafTopBar extends StatelessWidget {
                                                   offset: const Offset(0, 1),
                                                   blurRadius: 2,
                                                   color: Colors.black
-                                                      .withValues(alpha: 0.2),
+                                                      .withValues(alpha: 0.1),
                                                 ),
                                               ],
                                             ),
@@ -212,7 +212,7 @@ class MushafTopBar extends StatelessWidget {
 
                             PopupMenuButton<int>(
                               icon: Icon(
-                                Icons.download_rounded,
+                                Icons.more_vert_rounded,
                                 color: titleColor,
                               ),
                               tooltip: 'المزيد من الخيارات',

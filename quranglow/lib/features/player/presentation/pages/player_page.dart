@@ -279,8 +279,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                       const Color(0xFF121212),
                     ]
                   : [
-                      cs.surfaceVariant,
-                      cs.surface,
+                      const Color(0xFFFDFCF0), // Soft Islamic Cream
+                      const Color(0xFFFFFFFF), // Pure White
                     ],
             ),
           ),
@@ -347,10 +347,15 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withValues(alpha: 0.6),
-                                  ],
+                                  colors: Theme.of(context).brightness == Brightness.dark
+                                      ? [
+                                          Colors.transparent,
+                                          Colors.black.withValues(alpha: 0.8),
+                                        ]
+                                      : [
+                                          Colors.transparent,
+                                          const Color(0xFF004D40).withValues(alpha: 0.7),
+                                        ],
                                 ),
                               ),
                               padding: const EdgeInsets.all(24),
@@ -362,16 +367,18 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                   Text(
                                     'إذاعة القرآن الكريم',
                                     style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                      color: Colors.white,
                                       fontSize: 28,
                                       fontWeight: FontWeight.bold,
+                                      fontFamily: 'Tajawal',
                                     ),
                                   ),
                                   Text(
                                     'بث مباشر من القاهرة',
                                     style: TextStyle(
-                                      color: cs.onSurface.withValues(alpha: 0.7),
+                                      color: Colors.white.withValues(alpha: 0.8),
                                       fontSize: 16,
+                                      fontFamily: 'Tajawal',
                                     ),
                                   ),
                                 ],
@@ -403,30 +410,69 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                             stream: audioHandler.playbackState,
                             builder: (context, snapshot) {
                               final playing = snapshot.data?.playing ?? false;
-                              return IconButton.filled(
-                                iconSize: 80,
-                                style: IconButton.styleFrom(
-                                  backgroundColor: cs.primary,
-                                  padding: const EdgeInsets.all(20),
-                                ),
-                                icon: Icon(
-                                  playing
-                                      ? Icons.pause_rounded
-                                      : Icons.play_arrow_rounded,
-                                ),
-                                onPressed: () => playing
-                                    ? audioHandler.pause()
-                                    : audioHandler.play(),
+                              return TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 1.0, end: playing ? 1.1 : 1.0),
+                                duration: const Duration(seconds: 1),
+                                curve: Curves.easeInOutSine,
+                                builder: (context, value, child) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (playing ? Colors.teal : cs.primary)
+                                              .withValues(alpha: 0.4),
+                                          blurRadius: 20 * value,
+                                          spreadRadius: 5 * value,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Transform.scale(
+                                      scale: value,
+                                      child: Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: playing
+                                                ? [const Color(0xFF00695C), const Color(0xFF004D40)]
+                                                : [cs.primary, cs.primaryContainer],
+                                          ),
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () => playing
+                                                ? audioHandler.pause()
+                                                : audioHandler.play(),
+                                            customBorder: const CircleBorder(),
+                                            child: Icon(
+                                              playing
+                                                  ? Icons.pause_rounded
+                                                  : Icons.play_arrow_rounded,
+                                              size: 50,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               );
                             },
                           ),
                           const Spacer(),
-                          const Text(
+                          Text(
                             'تواصل مع الروحانية من خلال البث المباشر',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white30,
+                              color: cs.onSurface.withValues(alpha: 0.3),
                               fontSize: 12,
+                              fontFamily: 'Tajawal',
                             ),
                           ),
                           const SizedBox(height: 20),

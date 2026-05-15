@@ -57,9 +57,9 @@ class TrackCard extends ConsumerWidget {
                             const Color(0xFF0F2027),
                           ]
                         : [
-                            cs.primaryContainer,
-                            cs.secondaryContainer,
-                            cs.surfaceVariant,
+                            const Color(0xFF004D40), // Deep Islamic Green
+                            const Color(0xFF00695C),
+                            const Color(0xFF00796B),
                           ],
                   ),
                   boxShadow: [

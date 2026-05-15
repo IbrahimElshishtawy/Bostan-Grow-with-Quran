@@ -133,7 +133,7 @@ void showSelectionSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: const Color(0xFF1A1A1A),
+    backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -167,9 +167,9 @@ class _SelectionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
         ),
         child: Row(
           children: [
@@ -182,14 +182,14 @@ class _SelectionButton extends StatelessWidget {
                   Text(
                     label,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                       fontSize: 10,
                     ),
                   ),
                   Text(
                     value,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       overflow: TextOverflow.ellipsis,
@@ -198,10 +198,10 @@ class _SelectionButton extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 18,
-              color: Colors.white38,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
             ),
           ],
         ),
@@ -259,7 +259,7 @@ class _SelectionSheetState extends State<SelectionSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -270,14 +270,14 @@ class _SelectionSheetState extends State<SelectionSheet> {
                 children: [
                   Text(
                     widget.title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -288,16 +288,16 @@ class _SelectionSheetState extends State<SelectionSheet> {
               child: TextField(
                 controller: _searchController,
                 onChanged: _filter,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                 decoration: InputDecoration(
                   hintText: 'بحث...',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
+                  prefixIcon: Icon(
                     Icons.search_rounded,
-                    color: Colors.white38,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
                   ),
                   filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  fillColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -326,15 +326,15 @@ class _SelectionSheetState extends State<SelectionSheet> {
                             height: 40,
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.tealAccent
-                                  : Colors.white.withValues(alpha: 0.05),
+                                  ? Colors.teal
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
                               isSelected
                                   ? Icons.check_rounded
                                   : Icons.music_note_rounded,
-                              color: isSelected ? Colors.black : Colors.white38,
+                              color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
                             ),
                           ),
                           title: Text(
@@ -351,8 +351,8 @@ class _SelectionSheetState extends State<SelectionSheet> {
                           subtitle: item['subtitle'] != null
                               ? Text(
                                   item['subtitle'],
-                                  style: const TextStyle(
-                                    color: Colors.white38,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
                                     fontSize: 12,
                                   ),
                                 )
@@ -385,7 +385,7 @@ class SelectionShimmer extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
           ),
@@ -393,7 +393,7 @@ class SelectionShimmer extends StatelessWidget {
             width: 100,
             height: 12,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -401,7 +401,7 @@ class SelectionShimmer extends StatelessWidget {
             width: 150,
             height: 10,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
