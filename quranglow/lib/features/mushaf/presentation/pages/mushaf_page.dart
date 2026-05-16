@@ -23,6 +23,7 @@ import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_audio_bar.
 import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_card.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
+import 'package:quranglow/features/ui/routes/app_routes.dart';
 
 final surahProvider = FutureProvider.autoDispose
     .family<Surah, (int chapter, String editionId)>((ref, args) async {
@@ -613,7 +614,13 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 visible: _uiVisible,
                 asyncSurah: asyncSurah,
                 chapter: _chapter,
-                onBack: () => Navigator.pop(context),
+                onBack: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, AppRoutes.gamificationHome);
+                  }
+                },
                 onPrev: _chapter > 1 ? _goPrev : null,
                 onNext: _chapter < 114 ? _goNext : null,
                 onSave: _saveCurrentPosition,

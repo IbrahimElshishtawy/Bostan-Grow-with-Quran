@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:quranglow/features/ui/routes/app_routes.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -48,7 +49,13 @@ class AboutPage extends StatelessWidget {
                   backgroundColor: isDark ? const Color(0xFF111A14) : Colors.white,
                   leading: IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Navigator.pushReplacementNamed(context, AppRoutes.gamificationHome);
+                      }
+                    },
                   ),
                   flexibleSpace: FlexibleSpaceBar(
                     stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
