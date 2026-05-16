@@ -36,7 +36,8 @@ class PrayerTimesService {
   Future<PrayerTimesData> fetchForToday() async {
     final days = await fetchUpcomingDays(days: 2);
     if (days.isEmpty) {
-      throw Exception('تعذر تجهيز مواقيت الصلاة.');
+      foundation.debugPrint('[PRAYER] Could not prepare prayer times. Returning offline state.');
+      return PrayerTimesData.empty();
     }
 
     final today = days.first;
@@ -84,7 +85,8 @@ class PrayerTimesService {
       if (cachedDays.isNotEmpty) {
         return cachedDays;
       }
-      throw Exception('لا توجد مواقيت محفوظة كافية للتشغيل الأوفلاين.');
+      foundation.debugPrint('[PRAYER] No offline prayer times found.');
+      return [];
     }
 
     final currentPosition = await locationService.getCurrentOnce();
@@ -92,9 +94,8 @@ class PrayerTimesService {
     final effectivePosition = currentPosition ?? cachedPosition;
 
     if (effectivePosition == null) {
-      throw Exception(
-        'تعذر الوصول إلى الموقع. فعّل خدمة الموقع مرة واحدة على الأقل ليتم حفظ المواقيت وتشغيلها أوفلاين.',
-      );
+      foundation.debugPrint('[PRAYER] Location not available. No cache to fallback to.');
+      return [];
     }
 
     try {
@@ -117,9 +118,7 @@ class PrayerTimesService {
     } catch (e) {
       foundation.debugPrint('[PRAYER] Online fetch failed: $e');
       if (!_canUseCache(currentPosition, cachedPosition)) {
-        throw Exception(
-          'المواقيت المحفوظة تخص موقعًا مختلفًا. اتصل بالإنترنت مرة واحدة في موقعك الحالي لتحديث المواقيت.',
-        );
+        foundation.debugPrint('[PRAYER] Cache position mismatch. Using best effort.');
       }
 
       final cachedDays = _collectCachedDays(
@@ -129,9 +128,8 @@ class PrayerTimesService {
       );
 
       if (cachedDays.isEmpty) {
-        throw Exception(
-          'لا توجد مواقيت محفوظة قادمة. افتح التطبيق مرة واحدة أثناء الاتصال بالإنترنت لتجهيز الجدول المحلي.',
-        );
+        foundation.debugPrint('[PRAYER] No offline prayer times available after failed network fetch.');
+        return [];
       }
 
       return cachedDays;
@@ -235,9 +233,7 @@ class PrayerTimesService {
     final nextFajr = tomorrow?['Fajr'];
     if (nextFajr != null) return ('Fajr', nextFajr);
 
-    throw Exception(
-      'تعذر تحديد الصلاة القادمة من الكاش. افتح التطبيق مرة واحدة أونلاين لتحديث مواقيت الغد.',
-    );
+    return (order.first, today[order.first] ?? now.add(const Duration(hours: 1)));
   }
 
   Future<Map<String, dynamic>?> _readCacheBundle() async {

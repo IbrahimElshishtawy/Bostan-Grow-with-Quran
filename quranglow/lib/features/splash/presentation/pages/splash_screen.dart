@@ -35,9 +35,11 @@ class _SplashScreenState extends State<SplashScreen>
     precacheImage(const AssetImage('assets/images/gate_unlocked.png'), context);
     precacheImage(const AssetImage('assets/images/quran_completed.png'), context);
 
-    // 🌳 Precache Main Icons
     precacheImage(const AssetImage('assets/images/bustan_icon.png'), context);
     precacheImage(const AssetImage('assets/images/bustan_splash.png'), context);
+    precacheImage(const AssetImage('assets/images/chest.png'), context);
+    precacheImage(const AssetImage('assets/images/subha_icon.png'), context);
+    precacheImage(const AssetImage('assets/images/app_bg_ultra.png'), context);
   }
 
   @override
