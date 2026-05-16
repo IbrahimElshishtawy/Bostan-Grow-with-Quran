@@ -96,7 +96,10 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       // Small pause to allow the engine to settle if switching rapidly
       await _player.stop(); 
-      await _player.setUrl(nextUrl);
+      await _player.setUrl(
+        nextUrl,
+        headers: const {'User-Agent': 'QuranGlow/1.0'},
+      );
       await play();
     } catch (e) {
       // just_audio throws this if a new setUrl/load is called before this one finishes.

@@ -19,11 +19,20 @@ import 'package:quranglow/core/service/sync/firebase_sync_service.dart';
 import 'package:quranglow/core/storage/hive_storage_impl.dart';
 import 'package:quranglow/firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppBootstrap {
   static Future<void> initialize() async {
     GoogleFonts.config.allowRuntimeFetching = false;
     await initializeDateFormatting('ar');
+    
+    // ✨ HARDENED FIX: Pre-warm SharedPreferences to avoid race conditions in release mode
+    debugPrint('[BOOT] Warming up SharedPreferences...');
+    await _safeInit(
+      'shared-preferences',
+      () => SharedPreferences.getInstance(),
+      timeout: const Duration(seconds: 10),
+    );
 
     // ✨ HARDENED FIX: Desktop platforms (Windows/macOS/Linux) can freeze indefinitely 
     // on standard Firebase C++ SDK handshakes if not fully linked locally.

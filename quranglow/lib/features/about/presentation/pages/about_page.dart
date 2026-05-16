@@ -68,7 +68,7 @@ class AboutPage extends ConsumerWidget {
                       } else {
                         Navigator.pushReplacementNamed(
                           context,
-                          AppRoutes.gamificationHome,
+                          AppRoutes.home,
                         );
                       }
                     },

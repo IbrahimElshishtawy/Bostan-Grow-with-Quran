@@ -241,19 +241,11 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: isDark
+      child: Container(
+        color: isDark
             ? const Color(0xFF111A14)
             : const Color(0xFFFDFBF7),
-        drawer: AppDrawer(
-          onNavigate: (route) {
-            Navigator.pop(context);
-            if (ModalRoute.of(context)?.settings.name != route) {
-              Navigator.pushNamed(context, route);
-            }
-          },
-        ),
-        body: Stack(
+        child: Stack(
           children: [
             // 1. Premium Generated Visual Background Layer
             Positioned.fill(

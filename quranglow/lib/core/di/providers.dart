@@ -595,6 +595,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         await _player.setAudioSource(
           AudioSource.uri(
             Uri.parse(fullSurahUrl),
+            headers: const {'User-Agent': 'QuranGlow/1.0'},
             tag: MediaItem(
               id: 'surah_$chapter',
               title: 'سورة $surahName',
@@ -621,7 +622,10 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         _urls = audioMap.values.toList(); // Update URLs for UI consistency
         final playlist = ConcatenatingAudioSource(
           children: _urls
-              .map((url) => AudioSource.uri(Uri.parse(url)))
+              .map((url) => AudioSource.uri(
+                    Uri.parse(url),
+                    headers: const {'User-Agent': 'QuranGlow/1.0'},
+                  ))
               .toList(),
         );
         await _player.stop();

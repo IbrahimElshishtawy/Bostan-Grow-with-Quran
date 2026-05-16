@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/features/player/presentation/providers/favorites_controller.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:quranglow/features/player/presentation/widgets/CombinedPositionData.dart';
 import 'dart:math' as math;
 
 class PremiumAudioPlayerScreen extends ConsumerWidget {
@@ -21,6 +23,9 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final playerState = ref.watch(playerControllerProvider);
+    final controller = ref.read(playerControllerProvider.notifier);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -46,24 +51,33 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // Album Art with animated background
-              Expanded(child: _buildAlbumArtSection()),
+          child: playerState.when(
+            loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+            error: (err, _) => Center(
+              child: Text(
+                'خطأ: $err',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+            data: (state) => Column(
+              children: [
+                // Album Art with animated background
+                Expanded(child: _buildAlbumArtSection(state)),
 
-              // Player Controls Section
-              _buildPlayerControlsSection(ref),
+                // Player Controls Section
+                _buildPlayerControlsSection(ref, state, controller),
 
-              // Playback Speed & Queue
-              _buildPlaybackOptionsSection(),
-            ],
+                // Playback Speed & Queue
+                _buildPlaybackOptionsSection(state, controller),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAlbumArtSection() {
+  Widget _buildAlbumArtSection(PlayerUiState state) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -109,7 +123,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
 
             // Title and Subtitle
             Text(
-              title,
+              state.surahName ?? title,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -119,7 +133,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              subtitle,
+              state.reciterName ?? subtitle,
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white.withValues(alpha: 0.8),
@@ -132,23 +146,27 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPlayerControlsSection(WidgetRef ref) {
+  Widget _buildPlayerControlsSection(
+    WidgetRef ref,
+    PlayerUiState state,
+    PlayerController controller,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         children: [
           // Waveform Visualizer
-          _buildWaveformVisualizer(),
+          _buildWaveformVisualizer(state),
 
           const SizedBox(height: 20),
 
           // Time and Progress
-          _buildProgressBar(),
+          _buildProgressBar(state, controller),
 
           const SizedBox(height: 28),
 
           // Main Controls
-          _buildMainControls(),
+          _buildMainControls(state, controller),
 
           const SizedBox(height: 24),
 
@@ -160,20 +178,20 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
                 onPressed: () => ref
                     .read(favoritesControllerProvider.notifier)
                     .toggleFavorite(
-                      editionId: ref.read(editionIdProvider),
-                      chapter: ref.read(chapterProvider),
-                      surahName: title,
-                      reciterName: subtitle,
+                      editionId: state.editionId,
+                      chapter: state.chapter,
+                      surahName: state.surahName ?? title,
+                      reciterName: state.reciterName ?? subtitle,
                     ),
                 icon: Icon(
                   ref.watch(favoritesControllerProvider).any((e) =>
-                          e.editionId == ref.read(editionIdProvider) &&
-                          e.chapter == ref.read(chapterProvider))
+                          e.editionId == state.editionId &&
+                          e.chapter == state.chapter)
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
                   color: ref.watch(favoritesControllerProvider).any((e) =>
-                          e.editionId == ref.read(editionIdProvider) &&
-                          e.chapter == ref.read(chapterProvider))
+                          e.editionId == state.editionId &&
+                          e.chapter == state.chapter)
                       ? Colors.redAccent
                       : Colors.white70,
                   size: 28,
@@ -188,68 +206,135 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWaveformVisualizer() {
-    return SizedBox(
-      height: 60,
-      child: CustomPaint(
-        painter: WaveformPainter(),
-        size: const Size(double.infinity, 60),
-      ),
+  Widget _buildWaveformVisualizer(PlayerUiState state) {
+    return StreamBuilder<bool>(
+      stream: state.playingStream,
+      builder: (context, snapshot) {
+        final isPlaying = snapshot.data ?? false;
+        return SizedBox(
+          height: 60,
+          child: CustomPaint(
+            painter: WaveformPainter(isActive: isPlaying),
+            size: const Size(double.infinity, 60),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildProgressBar() {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: 0.45,
-            minHeight: 6,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            valueColor: const AlwaysStoppedAnimation(Colors.white),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildProgressBar(PlayerUiState state, PlayerController controller) {
+    return StreamBuilder<CombinedPositionData>(
+      stream: state.timelineStream,
+      builder: (context, snapshot) {
+        final posData = snapshot.data;
+        final pos = posData?.position ?? Duration.zero;
+        final total = posData?.duration ?? state.totalDurationOverride ?? Duration.zero;
+
+        final value = (total.inMilliseconds > 0)
+            ? pos.inMilliseconds / total.inMilliseconds
+            : 0.0;
+
+        return Column(
           children: [
-            Text(
-              '2:15',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                activeTrackColor: Colors.white,
+                inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
+                thumbColor: Colors.white,
+              ),
+              child: Slider(
+                value: value.clamp(0.0, 1.0),
+                onChanged: (v) {
+                  final target = Duration(
+                    milliseconds: (v * total.inMilliseconds).toInt(),
+                  );
+                  controller.seekTo(target);
+                },
               ),
             ),
-            Text(
-              '5:00',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(pos),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(total),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildMainControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildControlButton(Icons.shuffle, Colors.white70, onPressed: () {}),
-        _buildLargeControlButton(Icons.skip_previous),
-        _buildLargeControlButton(Icons.play_arrow, isPlay: true),
-        _buildLargeControlButton(Icons.skip_next),
-        _buildControlButton(Icons.repeat, Colors.white70, onPressed: () {}),
-      ],
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildMainControls(PlayerUiState state, PlayerController controller) {
+    return StreamBuilder<bool>(
+      stream: state.playingStream,
+      builder: (context, playingSnapshot) {
+        final isPlaying = playingSnapshot.data ?? false;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            StreamBuilder<LoopMode>(
+              stream: state.loopModeStream,
+              builder: (context, loopSnapshot) {
+                final isLoop = (loopSnapshot.data ?? LoopMode.off) != LoopMode.off;
+                return _buildControlButton(
+                  isLoop ? Icons.repeat_one_rounded : Icons.repeat_rounded,
+                  isLoop ? Colors.amber : Colors.white70,
+                  onPressed: () => controller.toggleLoop(),
+                );
+              },
+            ),
+            _buildLargeControlButton(
+              Icons.skip_previous_rounded,
+              onPressed: () => controller.previous(),
+            ),
+            _buildLargeControlButton(
+              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              isPlay: true,
+              onPressed: () => isPlaying ? controller.pause() : controller.play(),
+            ),
+            _buildLargeControlButton(
+              Icons.skip_next_rounded,
+              onPressed: () => controller.next(),
+            ),
+            _buildControlButton(Icons.shuffle, Colors.white70, onPressed: () {}),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildPlaybackOptionsSection() {
+  Widget _buildPlaybackOptionsSection(
+    PlayerUiState state,
+    PlayerController controller,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -263,16 +348,23 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Speed selector
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildSpeedButton('0.75x'),
-                _buildSpeedButton('1.0x', isSelected: true),
-                _buildSpeedButton('1.25x'),
-                _buildSpeedButton('1.5x'),
-              ],
-            ),
+          StreamBuilder<double>(
+            stream: state.volumeStream.map((_) => 1.0), // Mock for speed stream
+            builder: (context, _) {
+              // Note: Just using a static speed display for now, 
+              // as speedStream isn't explicitly in PlaylistState yet
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildSpeedButton('0.75x', onPressed: () => controller.setSpeed(0.75)),
+                    _buildSpeedButton('1.0x', isSelected: true, onPressed: () => controller.setSpeed(1.0)),
+                    _buildSpeedButton('1.25x', onPressed: () => controller.setSpeed(1.25)),
+                    _buildSpeedButton('1.5x', onPressed: () => controller.setSpeed(1.5)),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           // Quality selector
@@ -302,7 +394,11 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLargeControlButton(IconData icon, {bool isPlay = false}) {
+  Widget _buildLargeControlButton(
+    IconData icon, {
+    bool isPlay = false,
+    required VoidCallback onPressed,
+  }) {
     return Container(
       width: isPlay ? 64 : 52,
       height: isPlay ? 64 : 52,
@@ -323,7 +419,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           color: Colors.indigoAccent.shade700,
           size: isPlay ? 32 : 24,
         ),
-        onPressed: () {},
+        onPressed: onPressed,
       ),
     );
   }
@@ -341,20 +437,28 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSpeedButton(String label, {bool isSelected = false}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.black87 : Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
+  Widget _buildSpeedButton(
+    String label, {
+    bool isSelected = false,
+    VoidCallback? onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black87 : Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
         ),
       ),
     );
@@ -442,6 +546,9 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
 
 /// Custom painter for waveform visualization
 class WaveformPainter extends CustomPainter {
+  final bool isActive;
+  WaveformPainter({this.isActive = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -454,11 +561,17 @@ class WaveformPainter extends CustomPainter {
     const gap = 3.0;
     final numBars = ((size.width / (barWidth + gap)) - 1).toInt();
 
+    final time = DateTime.now().millisecondsSinceEpoch / 500;
+
     for (int i = 0; i < numBars; i++) {
       final x =
           i * (barWidth + gap) +
           (size.width / 2 - numBars * (barWidth + gap) / 2);
-      final height = 10 + (math.sin(i * 0.5) * 15);
+      
+      // Animate if active
+      final height = isActive 
+          ? 10 + (math.sin(i * 0.5 + time * 5) * 15).abs()
+          : 10 + (math.sin(i * 0.5) * 15).abs();
 
       canvas.drawLine(
         Offset(x, centerY - height / 2),
@@ -469,5 +582,5 @@ class WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WaveformPainter oldDelegate) => false;
+  bool shouldRepaint(WaveformPainter oldDelegate) => oldDelegate.isActive != isActive || isActive;
 }
