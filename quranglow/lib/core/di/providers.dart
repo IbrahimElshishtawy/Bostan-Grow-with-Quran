@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
@@ -153,16 +154,17 @@ final quranAllProvider = FutureProvider.autoDispose.family<List<Surah>, String>(
   },
 );
 
-final quranMetadataProvider = Provider<List<({int number, String name, int ayatCount})>>((ref) {
-  return List.generate(114, (i) {
-    final s = i + 1;
-    return (
-      number: s,
-      name: kSurahNamesAr[i],
-      ayatCount: quran.getVerseCount(s),
-    );
-  });
-});
+final quranMetadataProvider =
+    Provider<List<({int number, String name, int ayatCount})>>((ref) {
+      return List.generate(114, (i) {
+        final s = i + 1;
+        return (
+          number: s,
+          name: kSurahNamesAr[i],
+          ayatCount: quran.getVerseCount(s),
+        );
+      });
+    });
 
 final settingsProvider =
     StateNotifierProvider<SettingsController, AsyncValue<AppSettings>>(
@@ -292,7 +294,7 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(salawatEnabled: enabled));
     await ref.read(settingsServiceProvider).setSalawatEnabled(enabled);
-    
+
     // Refresh notifications
     await NotificationService.instance.scheduleSalawat(
       enabled: enabled,
@@ -360,7 +362,7 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(smartLearningEnabled: enabled));
     await ref.read(settingsServiceProvider).setSmartLearningEnabled(enabled);
-    
+
     // Update notifications
     await NotificationService.instance.scheduleSmartLearningReminders(
       enabled: enabled,
@@ -390,7 +392,9 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(azkarMorningEnabled: enabled));
     await ref.read(settingsServiceProvider).setAzkarMorningEnabled(enabled);
-    await NotificationService.instance.scheduleMorningAzkarReminder(enabled: enabled);
+    await NotificationService.instance.scheduleMorningAzkarReminder(
+      enabled: enabled,
+    );
   }
 
   Future<void> setAzkarEveningEnabled(bool enabled) async {
@@ -398,7 +402,9 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(azkarEveningEnabled: enabled));
     await ref.read(settingsServiceProvider).setAzkarEveningEnabled(enabled);
-    await NotificationService.instance.scheduleEveningAzkarReminder(enabled: enabled);
+    await NotificationService.instance.scheduleEveningAzkarReminder(
+      enabled: enabled,
+    );
   }
 
   Future<void> setAzkarAfterPrayerEnabled(bool enabled) async {
@@ -406,9 +412,11 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(azkarAfterPrayerEnabled: enabled));
     await ref.read(settingsServiceProvider).setAzkarAfterPrayerEnabled(enabled);
-    
+
     if (enabled) {
-      final prayerTimes = await ref.read(prayerTimesServiceProvider).fetchForToday();
+      final prayerTimes = await ref
+          .read(prayerTimesServiceProvider)
+          .fetchForToday();
       await NotificationService.instance.scheduleAfterPrayerAzkarReminders(
         enabled: true,
         data: prayerTimes,
@@ -468,7 +476,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     _player = handler.player;
     // 3. Initialize streams
     _timelineStream = combinedPositionStream(_player).asBroadcastStream();
-    
+
     // Auto-skip failed ayahs to prevent playback reset
     _player.playbackEventStream.listen(
       (_) {},
@@ -583,6 +591,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         }
         _totalDuration = cumulative;
 
+        await _player.stop();
         await _player.setAudioSource(
           AudioSource.uri(
             Uri.parse(fullSurahUrl),
@@ -597,11 +606,26 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           initialPosition: Duration.zero,
           preload: true,
         );
+      } on PlatformException catch (e) {
+        final code = e.code;
+        final msg = e.message?.toLowerCase() ?? '';
+        if (code == '10000000' ||
+            msg.contains('abort') ||
+            msg.contains('interrupted') ||
+            msg.contains('connection aborted')) {
+          debugPrint(
+            'Audio loading was interrupted (handled PlatformException): $e',
+          );
+          return;
+        }
+        debugPrint('Platform error loading audio: $e');
+        rethrow;
       } catch (e) {
         final err = e.toString().toLowerCase();
         if (err.contains('abort') ||
             err.contains('interrupted') ||
-            err.contains('10000000')) {
+            err.contains('10000000') ||
+            err.contains('connection aborted')) {
           debugPrint('Audio loading was interrupted (handled): $e');
           return;
         }
@@ -676,7 +700,9 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         durationStream: _player.durationStream,
         positionStream: _player.positionStream,
         bufferedStream: _player.bufferedPositionStream,
-        indexStream: _player.currentIndexStream.map((idx) => idx).asBroadcastStream(),
+        indexStream: _player.currentIndexStream
+            .map((idx) => idx)
+            .asBroadcastStream(),
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
@@ -874,7 +900,6 @@ final downloadControllerProvider =
       return DownloadController(ref);
     });
 
-
 final bookmarksProvider =
     StateNotifierProvider<BookmarksController, List<Bookmark>>(
       (ref) => BookmarksController(),
@@ -898,38 +923,55 @@ final statsServiceProvider = Provider<StatsService>((ref) {
   return StatsServiceImpl(ref.watch(trackingServiceProvider));
 });
 
-final dailyQuranProvider = Provider<({String date, String time, List<({String text, int surah, int ayah, String surahName})> verses})>((ref) {
-  final now = DateTime.now();
-  // Stable random seed for the day
-  final random = Random(now.year * 1000 + now.month * 100 + now.day);
-  
-  final List<({String text, int surah, int ayah, String surahName})> verses = [];
-  
-  for (int i = 0; i < 3; i++) {
-    final s = random.nextInt(114) + 1;
-    final totalAyah = quran.getVerseCount(s);
-    final a = random.nextInt(totalAyah) + 1;
-    
-    verses.add((
-      text: quran.getVerse(s, a, verseEndSymbol: true),
-      surah: s,
-      ayah: a,
-      surahName: kSurahNamesAr[s - 1],
-    ));
-  }
-  
-  // Basic Arabic Date Formatting
-  final monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-  final dateStr = "${now.day} ${monthsAr[now.month - 1]} ${now.year}";
-  
-  // Time formatting (HH:mm)
-  final hour = now.hour.toString().padLeft(2, '0');
-  final minute = now.minute.toString().padLeft(2, '0');
-  final timeStr = "$hour:$minute";
-  
-  return (
-    date: dateStr,
-    time: timeStr,
-    verses: verses,
-  );
-});
+final dailyQuranProvider =
+    Provider<
+      ({
+        String date,
+        String time,
+        List<({String text, int surah, int ayah, String surahName})> verses,
+      })
+    >((ref) {
+      final now = DateTime.now();
+      // Stable random seed for the day
+      final random = Random(now.year * 1000 + now.month * 100 + now.day);
+
+      final List<({String text, int surah, int ayah, String surahName})>
+      verses = [];
+
+      for (int i = 0; i < 3; i++) {
+        final s = random.nextInt(114) + 1;
+        final totalAyah = quran.getVerseCount(s);
+        final a = random.nextInt(totalAyah) + 1;
+
+        verses.add((
+          text: quran.getVerse(s, a, verseEndSymbol: true),
+          surah: s,
+          ayah: a,
+          surahName: kSurahNamesAr[s - 1],
+        ));
+      }
+
+      // Basic Arabic Date Formatting
+      final monthsAr = [
+        'يناير',
+        'فبراير',
+        'مارس',
+        'أبريل',
+        'مايو',
+        'يونيو',
+        'يوليو',
+        'أغسطس',
+        'سبتمبر',
+        'أكتوبر',
+        'نوفمبر',
+        'ديسمبر',
+      ];
+      final dateStr = "${now.day} ${monthsAr[now.month - 1]} ${now.year}";
+
+      // Time formatting (HH:mm)
+      final hour = now.hour.toString().padLeft(2, '0');
+      final minute = now.minute.toString().padLeft(2, '0');
+      final timeStr = "$hour:$minute";
+
+      return (date: dateStr, time: timeStr, verses: verses);
+    });

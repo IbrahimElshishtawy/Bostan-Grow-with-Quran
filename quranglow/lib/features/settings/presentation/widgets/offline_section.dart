@@ -18,6 +18,7 @@ class _OfflineSectionState extends ConsumerState<OfflineSection> {
   Future<void> _syncFullQuran() async {
     if (_isSyncing) return;
 
+    if (!mounted) return;
     setState(() {
       _isSyncing = true;
       _progress = 0;
@@ -28,31 +29,31 @@ class _OfflineSectionState extends ConsumerState<OfflineSection> {
       final quranSvc = ref.read(quranServiceProvider);
       const editionId = 'quran-uthmani';
       
+      if (!mounted) return;
       setState(() => _statusText = 'جاري تحميل النص القرآني الكامل...');
       
-      // We'll fetch it and QuranService already caches it in ApiCacheManager (Hive)
-      // but we want to ensure it's fully available offline.
       await quranSvc.getQuranAllText(editionId);
       
+      if (!mounted) return;
       setState(() {
         _progress = 1.0;
         _statusText = 'تم تحميل النص بنجاح! 🎉';
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تمت مزامنة المصحف الشريف للاستخدام الأوفلاين'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تمت مزامنة المصحف الشريف للاستخدام الأوفلاين'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
-      setState(() => _statusText = 'فشل التحميل: $e');
+      if (mounted) setState(() => _statusText = 'فشل التحميل: $e');
     } finally {
       if (mounted) {
         Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) setState(() => _isSyncing = false);
+          if (mounted) {
+            setState(() => _isSyncing = false);
+          }
         });
       }
     }

@@ -154,9 +154,31 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildIconButton(Icons.favorite_border, Colors.white70),
-              _buildIconButton(Icons.share, Colors.white70),
-              _buildIconButton(Icons.list, Colors.white70),
+              IconButton(
+                onPressed: () => ref
+                    .read(favoritesControllerProvider.notifier)
+                    .toggleFavorite(
+                      editionId: ref.read(editionIdProvider),
+                      chapter: ref.read(chapterProvider),
+                      surahName: title,
+                      reciterName: subtitle,
+                    ),
+                icon: Icon(
+                  ref.watch(favoritesControllerProvider).any((e) =>
+                          e.editionId == ref.read(editionIdProvider) &&
+                          e.chapter == ref.read(chapterProvider))
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  color: ref.watch(favoritesControllerProvider).any((e) =>
+                          e.editionId == ref.read(editionIdProvider) &&
+                          e.chapter == ref.read(chapterProvider))
+                      ? Colors.redAccent
+                      : Colors.white70,
+                  size: 28,
+                ),
+              ),
+              _buildIconButton(Icons.share, Colors.white70, onPressed: () {}),
+              _buildIconButton(Icons.list, Colors.white70, onPressed: () {}),
             ],
           ),
         ],
@@ -304,7 +326,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildIconButton(IconData icon, Color color) {
+  Widget _buildIconButton(IconData icon, Color color, {VoidCallback? onPressed}) {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -312,7 +334,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       ),
       child: IconButton(
         icon: Icon(icon, color: color),
-        onPressed: () {},
+        onPressed: onPressed ?? () {},
       ),
     );
   }
