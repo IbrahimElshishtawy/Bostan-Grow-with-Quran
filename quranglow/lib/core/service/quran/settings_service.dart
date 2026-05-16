@@ -43,7 +43,7 @@ class SettingsService {
         sp.getString(_kAudioDownloadMode) ?? AudioDownloadMode.fullSurah.name;
     final tasbihTarget = sp.getInt(_kTasbihTarget) ?? 33;
     final tasbihVibrate = sp.getBool(_kTasbihVibrate) ?? true;
-    final tasbihSound = sp.getBool(_kTasbihSound) ?? false;
+    final tasbihSound = sp.getBool(_kTasbihSound) ?? true;
     final adhanSoundId = sp.getString(_kAdhanSoundId) ?? 'makkah';
     final dailyReminderEnabled = sp.getBool(_kDailyReminderEnabled) ?? false;
     final dailyReminderHour = sp.getInt(_kDailyReminderHour) ?? 7;

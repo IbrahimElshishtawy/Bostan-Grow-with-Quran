@@ -137,6 +137,7 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
             _SpiritualHeader(
               selectedDhikr: DhikrQuickList.items[_selectedDhikrIndex],
               rounds: _rounds,
+              onReset: () => _reset(settings),
               onOpenSettings: () =>
                   Navigator.pushNamed(context, AppRoutes.setting),
               isDark: isDark,
@@ -168,10 +169,13 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _MiniControlBox(
-                  icon: Icons.refresh_rounded,
-                  label: 'تصفير',
-                  onTap: () => _reset(settings),
+                  icon: Icons.vibration_rounded,
+                  label: 'هزاز',
+                  onTap: () => ref
+                      .read(settingsProvider.notifier)
+                      .setTasbihVibrate(!settings.tasbihVibrate),
                   isDark: isDark,
+                  isActive: settings.tasbihVibrate,
                 ),
                 _InfoMetric(
                   icon: Icons.flag_rounded,
@@ -179,13 +183,13 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
                   value: '${settings.tasbihTarget}',
                 ),
                 _MiniControlBox(
-                  icon: settings.tasbihVibrate
-                      ? Icons.vibration_rounded
-                      : Icons.smartphone_rounded,
-                  label: settings.tasbihVibrate ? 'هزاز' : 'صامت',
-                  onTap: () {},
+                  icon: Icons.volume_up_rounded,
+                  label: 'صوت',
+                  onTap: () => ref
+                      .read(settingsProvider.notifier)
+                      .setTasbihSound(!settings.tasbihSound),
                   isDark: isDark,
-                  isActive: settings.tasbihVibrate,
+                  isActive: settings.tasbihSound,
                 ),
               ],
             ),
@@ -257,12 +261,14 @@ class _SpiritualHeader extends StatelessWidget {
   final String selectedDhikr;
   final int rounds;
   final VoidCallback onOpenSettings;
+  final VoidCallback onReset;
   final bool isDark;
 
   const _SpiritualHeader({
     required this.selectedDhikr,
     required this.rounds,
     required this.onOpenSettings,
+    required this.onReset,
     required this.isDark,
   });
 
@@ -306,8 +312,8 @@ class _SpiritualHeader extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.white.withValues(alpha: 0.5),
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.white.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -315,7 +321,7 @@ class _SpiritualHeader extends StatelessWidget {
                     Icon(
                       Icons.rotate_right_rounded,
                       size: 13,
-                      color: textColor.withValues(alpha: 0.7),
+                      color: textColor.withOpacity(0.7),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -330,16 +336,32 @@ class _SpiritualHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
-                onPressed: onOpenSettings,
-                icon: Icon(Icons.tune_rounded, color: textColor, size: 18),
-                constraints: const BoxConstraints(),
-                padding: const EdgeInsets.all(6),
-                style: IconButton.styleFrom(
-                  backgroundColor: isDark
-                      ? Colors.white.withValues(alpha: 0.04)
-                      : Colors.white.withValues(alpha: 0.3),
-                ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: onReset,
+                    icon: Icon(Icons.refresh_rounded, color: textColor, size: 18),
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(6),
+                    style: IconButton.styleFrom(
+                      backgroundColor: isDark
+                          ? Colors.white.withOpacity(0.04)
+                          : Colors.white.withOpacity(0.3),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: onOpenSettings,
+                    icon: Icon(Icons.tune_rounded, color: textColor, size: 18),
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(6),
+                    style: IconButton.styleFrom(
+                      backgroundColor: isDark
+                          ? Colors.white.withOpacity(0.04)
+                          : Colors.white.withOpacity(0.3),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

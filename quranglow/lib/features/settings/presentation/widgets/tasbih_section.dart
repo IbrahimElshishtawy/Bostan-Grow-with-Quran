@@ -9,7 +9,6 @@ class TasbihSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    final cs = Theme.of(context).colorScheme;
 
     return settings.when(
       loading: () => const Center(
@@ -54,7 +53,10 @@ class TasbihSection extends ConsumerWidget {
                     SizedBox(width: 8),
                     Text(
                       'هدف الدورة (تسبيحة)',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -69,16 +71,24 @@ class TasbihSection extends ConsumerWidget {
                       selected: isSelected,
                       onSelected: (selected) async {
                         if (selected) {
-                          await ref.read(settingsProvider.notifier).setTasbihTarget(goal);
+                          await ref
+                              .read(settingsProvider.notifier)
+                              .setTasbihTarget(goal);
                         }
                       },
                       selectedColor: Theme.of(context).colorScheme.primary,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
                       ),
-                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.05),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       side: BorderSide.none,
                       showCheckmark: false,
                     );
@@ -95,7 +105,8 @@ class TasbihSection extends ConsumerWidget {
                   title: 'الاهتزاز عند العد',
                   subtitle: 'نبضة خفيفة مع كل ضغطة',
                   value: st.tasbihVibrate,
-                  onChanged: (val) => ref.read(settingsProvider.notifier).setTasbihVibrate(val),
+                  onChanged: (val) =>
+                      ref.read(settingsProvider.notifier).setTasbihVibrate(val),
                 ),
                 const SizedBox(height: 16),
                 // 🔊 Sound Switch
@@ -105,7 +116,8 @@ class TasbihSection extends ConsumerWidget {
                   title: 'صوت العد',
                   subtitle: 'تنبيه صوتي هادئ عند الضغط',
                   value: st.tasbihSound,
-                  onChanged: (val) => ref.read(settingsProvider.notifier).setTasbihSound(val),
+                  onChanged: (val) =>
+                      ref.read(settingsProvider.notifier).setTasbihSound(val),
                 ),
               ],
             ),
@@ -132,7 +144,11 @@ class TasbihSection extends ConsumerWidget {
             color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+          child: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -141,7 +157,10 @@ class TasbihSection extends ConsumerWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
               Text(
                 subtitle,
@@ -157,6 +176,5 @@ class TasbihSection extends ConsumerWidget {
         ),
       ],
     );
-  }
   }
 }
