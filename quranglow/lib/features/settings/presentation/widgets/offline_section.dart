@@ -32,7 +32,7 @@ class _OfflineSectionState extends ConsumerState<OfflineSection> {
       
       // We'll fetch it and QuranService already caches it in ApiCacheManager (Hive)
       // but we want to ensure it's fully available offline.
-      final allSurahs = await quranSvc.getQuranAllText(editionId);
+      await quranSvc.getQuranAllText(editionId);
       
       setState(() {
         _progress = 1.0;

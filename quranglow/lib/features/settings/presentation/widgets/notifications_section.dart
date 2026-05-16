@@ -47,10 +47,12 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
       await _previewPlayer.seek(Duration.zero);
       await _previewPlayer.play();
     } catch (e) {
-      _snack(
-        'تعذر تشغيل المعاينة: $e',
-        bg: Theme.of(context).colorScheme.error,
-      );
+      if (mounted) {
+        _snack(
+          'تعذر تشغيل المعاينة: $e',
+          bg: Theme.of(context).colorScheme.error,
+        );
+      }
     } finally {
       if (mounted) setState(() => _busyPreview = false);
     }
@@ -296,7 +298,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                   title: 'اختبار الإشعارات',
                   body: 'الإشعارات تعمل بنجاح خارج التطبيق ✅',
                 );
-                _snack('تم إرسال إشعار تجريبي');
+                if (mounted) _snack('تم إرسال إشعار تجريبي');
               },
               icon: const Icon(Icons.notifications_active_outlined),
               label: const Text('اختبار إشعار فوري الآن'),

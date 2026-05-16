@@ -873,9 +873,6 @@ final downloadControllerProvider =
       return DownloadController(ref);
     });
 
-final downloadServiceProvider = Provider<DownloadService>((ref) {
-  return DownloadService(dio: ref.read(dioProvider));
-});
 
 final bookmarksProvider =
     StateNotifierProvider<BookmarksController, List<Bookmark>>(
