@@ -21,6 +21,7 @@ class MushafTopBar extends StatelessWidget {
     this.onTafsir,
     this.onVoiceRecite,
     this.onPlayAll,
+    this.onDownload,
   });
 
   final bool visible;
@@ -35,6 +36,7 @@ class MushafTopBar extends StatelessWidget {
   final VoidCallback? onTafsir;
   final VoidCallback? onVoiceRecite;
   final VoidCallback? onPlayAll;
+  final VoidCallback? onDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +353,7 @@ class MushafTopBar extends StatelessWidget {
                                     onPlayAll?.call();
                                     break;
                                   case 6:
-                                    // Trigger download logic (might need a callback)
+                                    onDownload?.call();
                                     break;
                                 }
                               },

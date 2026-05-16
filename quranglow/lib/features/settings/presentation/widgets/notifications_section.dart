@@ -204,7 +204,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
           _buildPremiumCard(
             context,
             title: 'الأذكار والأوراد',
-            icon: Icons.MenuBook_rounded,
+            icon: Icons.menu_book_rounded,
             status: (st.azkarMorningEnabled || st.azkarEveningEnabled || st.azkarAfterPrayerEnabled) ? 'مفعل' : 'متوقف',
             children: [
               _buildModernSwitch(

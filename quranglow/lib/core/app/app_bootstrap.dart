@@ -167,6 +167,8 @@ class AppBootstrap {
     );
 
     if (settings.azkarAfterPrayerEnabled) {
+      final locationService = LocationService();
+      final client = http.Client();
       final prayerService = PrayerTimesService(
         client: client,
         locationService: locationService,
@@ -180,6 +182,8 @@ class AppBootstrap {
         );
       } catch (e) {
         debugPrint('[BOOTSTRAP] After prayer Azkar sync skipped: $e');
+      } finally {
+        client.close();
       }
     }
 

@@ -798,6 +798,9 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   }
 
   Future<void> _startListening() async {
+    // 🛑 USER REQUEST: Stop Quran audio in recitation mode so only the mic is active
+    await _ayahPreviewPlayer.stop();
+    
     if (!_speechEnabled) {
       await _initSpeech();
       if (!_speechEnabled) {
@@ -1022,7 +1025,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
     // 4. 🔥 Evaluate ayah completion with user-requested relaxed 60% threshold!
     final double completionRatio = currentRevealed.length / totalWordCount;
-    if (completionRatio >= 0.55) {
+    if (completionRatio >= 0.60) {
       HapticFeedback.heavyImpact();
 
       // 🛑 IDENTIFY MISTAKES: Find any word indices that were NOT completed before triggering 70% autocomplete!
