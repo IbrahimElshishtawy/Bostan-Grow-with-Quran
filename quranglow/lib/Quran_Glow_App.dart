@@ -6,6 +6,7 @@ import 'package:quranglow/core/model/setting/reader_settings.dart';
 import 'package:quranglow/core/theme/app_themes.dart';
 import 'package:quranglow/core/theme/theme_controller.dart';
 import 'package:quranglow/core/widgets/error_boundary.dart';
+import 'package:quranglow/core/widgets/restart_app.dart';
 import 'package:quranglow/features/splash/presentation/pages/splash_screen.dart';
 import 'package:quranglow/features/ui/routes/app_router.dart';
 
@@ -91,9 +92,21 @@ class QuranGlowApp extends ConsumerWidget {
       error: (_, _) => _buildApp(
         theme: buildLightTheme(fontFamily: 'System', fontScale: 1),
         darkTheme: buildDarkTheme(fontFamily: 'System', fontScale: 1),
-        home: const Scaffold(
+        home: Scaffold(
           backgroundColor: Colors.white,
-          body: Center(child: Text('حدث خطأ في تحميل الإعدادات')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('حدث خطأ في تحميل الإعدادات'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => RestartApp.restartApp(context),
+                  child: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
       data: (settings) => _buildApp(

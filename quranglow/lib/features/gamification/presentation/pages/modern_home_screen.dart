@@ -12,6 +12,7 @@ import 'package:quranglow/features/gamification/presentation/widgets/modern_home
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/goal_selector_sheet.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/grand_achievement_dialog.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
+import 'package:quranglow/features/home/presentation/widgets/app_drawer.dart';
 
 class ModernHomeScreen extends ConsumerStatefulWidget {
   const ModernHomeScreen({super.key});
@@ -244,6 +245,14 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         backgroundColor: isDark
             ? const Color(0xFF111A14)
             : const Color(0xFFFDFBF7),
+        drawer: AppDrawer(
+          onNavigate: (route) {
+            Navigator.pop(context);
+            if (ModalRoute.of(context)?.settings.name != route) {
+              Navigator.pushNamed(context, route);
+            }
+          },
+        ),
         body: Stack(
           children: [
             // 1. Premium Generated Visual Background Layer
@@ -384,26 +393,28 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          GestureDetector(
-                            onTap: () => Scaffold.of(context).openDrawer(),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.1)
-                                    : Colors.black.withValues(alpha: 0.06),
-                                shape: BoxShape.circle,
-                                border: Border.all(
+                          Builder(
+                            builder: (builderContext) => GestureDetector(
+                              onTap: () => Scaffold.of(builderContext).openDrawer(),
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
                                   color: isDark
-                                      ? Colors.white.withValues(alpha: 0.15)
-                                      : Colors.black.withValues(alpha: 0.08),
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.black.withValues(alpha: 0.06),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.15)
+                                        : Colors.black.withValues(alpha: 0.08),
+                                  ),
                                 ),
-                              ),
-                              child: Icon(
-                                Icons.menu_rounded,
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF1A2E21),
+                                child: Icon(
+                                  Icons.menu_rounded,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1A2E21),
+                                ),
                               ),
                             ),
                           ),

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:quranglow/core/service/sync/firebase_guard.dart';
+import 'package:quranglow/core/widgets/restart_app.dart';
 
 class GlobalErrorBoundary extends StatefulWidget {
   final Widget child;
@@ -84,7 +85,7 @@ class _GlobalErrorBoundaryState extends State<GlobalErrorBoundary> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () => RestartApp.restartApp(context),
                 child: const Text('إعادة المحاولة'),
               ),
             ],

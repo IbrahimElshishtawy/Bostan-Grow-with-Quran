@@ -3,6 +3,8 @@
 /// Premium Spotify-like Audio Player Screen
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/features/player/presentation/providers/favorites_controller.dart';
 import 'dart:math' as math;
 
 class PremiumAudioPlayerScreen extends ConsumerWidget {
@@ -50,7 +52,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
               Expanded(child: _buildAlbumArtSection()),
 
               // Player Controls Section
-              _buildPlayerControlsSection(),
+              _buildPlayerControlsSection(ref),
 
               // Playback Speed & Queue
               _buildPlaybackOptionsSection(),
@@ -130,7 +132,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPlayerControlsSection() {
+  Widget _buildPlayerControlsSection(WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(

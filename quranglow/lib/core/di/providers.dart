@@ -606,6 +606,26 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           initialPosition: Duration.zero,
           preload: true,
         );
+      } on PlayerInterruptedException {
+        // This is normal when the user switches tracks before the current one finishes loading.
+        debugPrint(
+          'Audio loading was interrupted (handled PlayerInterruptedException)',
+        );
+        return;
+      } on PlayerException catch (e) {
+        debugPrint(
+          'Source error with full surah URL: ${e.message}. Falling back to Ayah playlist...',
+        );
+        // FALLBACK: If full surah fails, try individual ayahs
+        final audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
+        _urls = audioMap.values.toList(); // Update URLs for UI consistency
+        final playlist = ConcatenatingAudioSource(
+          children: _urls
+              .map((url) => AudioSource.uri(Uri.parse(url)))
+              .toList(),
+        );
+        await _player.stop();
+        await _player.setAudioSource(playlist, preload: true);
       } on PlatformException catch (e) {
         final code = e.code;
         final msg = e.message?.toLowerCase() ?? '';
