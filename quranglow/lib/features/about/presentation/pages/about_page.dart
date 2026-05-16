@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 
-class AboutPage extends StatelessWidget {
+class AboutPage extends ConsumerWidget {
   const AboutPage({super.key});
 
   static const _developerName = 'Ibrahim Elshishtawy';
@@ -11,7 +13,8 @@ class AboutPage extends StatelessWidget {
   static const _linkedin = 'https://www.linkedin.com/in/ibrahim-elshishtawy-0a67b334a/';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dailyInfo = ref.watch(dailyQuranProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cs = Theme.of(context).colorScheme;
 
@@ -128,8 +131,8 @@ class AboutPage extends StatelessWidget {
                         _buildDedicationCard(context, isDark),
                         const SizedBox(height: 24),
 
-                        // 4. QURANIC VERSE
-                        _buildVerseSection(isDark),
+                        // 4. QURANIC VERSES OF THE DAY
+                        _buildDailyVersesSection(isDark, dailyInfo),
                         const SizedBox(height: 24),
 
                         // 5. FEATURES LIST
@@ -220,39 +223,64 @@ class AboutPage extends StatelessWidget {
     ).animate().fadeIn(delay: 200.ms).moveY(begin: 20, end: 0);
   }
 
-  Widget _buildVerseSection(bool isDark) {
+  Widget _buildDailyVersesSection(bool isDark, ({String date, List<({int ayah, int surah, String surahName, String text})> verses, String time}) dailyInfo) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF384E36).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFF384E36).withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
-          Text(
-            '﴿ وَمَا تُقَدِّمُوا لِأَنفُسِكُم مِّنْ خَيْرٍ تَجِدُوهُ عِندَ اللَّهِ هُوَ خَيْرًا وَأَعْظَمَ أَجْرًا ﴾',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Kitab',
-              height: 1.8,
-              color: isDark ? const Color(0xFFFFD700) : const Color(0xFF8B6B23),
-              shadows: [
-                Shadow(
-                  color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.5),
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'آيات اليوم',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+              ),
+              Row(
+                children: [
+                  Icon(Icons.calendar_today_rounded, size: 12, color: isDark ? Colors.white60 : Colors.black54),
+                  const SizedBox(width: 4),
+                  Text(
+                    dailyInfo.date,
+                    style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.black54),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...dailyInfo.verses.map((v) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              children: [
+                Text(
+                  v.text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Kitab',
+                    height: 1.8,
+                    color: isDark ? const Color(0xFFFFD700) : const Color(0xFF8B6B23),
+                  ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  '${v.surahName} : ${v.ayah}',
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+                if (dailyInfo.verses.last != v)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(color: const Color(0xFF384E36).withValues(alpha: 0.1), thickness: 0.5),
+                  ),
               ],
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '[ المزمل: 20 ]',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          )),
         ],
       ),
     );

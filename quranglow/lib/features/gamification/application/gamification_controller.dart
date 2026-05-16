@@ -216,16 +216,31 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       await HomeWidget.saveWidgetData<String>('task_memorize', currentLevel.isMemorizeCompleted ? '1' : '0');
       await HomeWidget.saveWidgetData<String>('task_quiz', currentLevel.isQuizCompleted ? '1' : '0');
 
-      // Add Date & Random Verse
+      // Add Date, Time & Random Verses
       final now = DateTime.now();
       final hijri = HijriCalendar.now();
+      
       final dateStr = '${DateFormat('EEEE، d MMMM', 'ar').format(now)} • ${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear}هـ';
-      await HomeWidget.saveWidgetData<String>('widget_date_time', dateStr);
+      final timeStr = DateFormat('HH:mm').format(now);
+      
+      await HomeWidget.saveWidgetData<String>('widget_date', dateStr);
+      await HomeWidget.saveWidgetData<String>('widget_time', timeStr);
+      await HomeWidget.saveWidgetData<String>('widget_date_time', '$dateStr | $timeStr');
 
-      // Pick 3 random distinct verses
-      final List<int> indices = List.generate(kDailyVerses.length, (i) => i)..shuffle();
+      // Pick 3 random distinct verses for the day (Daily Stable)
+      final daySeed = now.year * 1000 + now.month * 100 + now.day;
+      final random = math.Random(daySeed);
+      final List<int> indices = List.generate(kDailyVerses.length, (i) => i);
+      indices.shuffle(random);
+      
       final selectedVerses = indices.take(3).map((i) => kDailyVerses[i]).toList();
       
+      // Send verses individually for better widget layout control if needed
+      for (int i = 0; i < selectedVerses.length; i++) {
+        await HomeWidget.saveWidgetData<String>('verse_${i + 1}_text', selectedVerses[i].text);
+        await HomeWidget.saveWidgetData<String>('verse_${i + 1}_ref', selectedVerses[i].ref);
+      }
+
       final versesText = selectedVerses.map((v) => v.text).join('\n\n');
       final versesRef = selectedVerses.map((v) => v.ref).join('\n');
       
