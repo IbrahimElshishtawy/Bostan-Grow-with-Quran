@@ -28,6 +28,7 @@ import 'package:quranglow/core/service/quran/settings_service.dart';
 import 'package:quranglow/core/service/quran/stats_service.dart';
 import 'package:quranglow/core/service/quran/stats_service_impl.dart';
 import 'package:quranglow/core/service/setting/daily_reminder_kind.dart';
+import 'package:quranglow/core/service/setting/notification_service.dart';
 import 'package:quranglow/core/service/setting/download_service.dart';
 import 'package:quranglow/core/service/setting/goals_service.dart';
 import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
@@ -302,6 +303,59 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     await ref
         .read(settingsServiceProvider)
         .setPrayerNotificationsEnabled(enabled);
+  }
+
+  Future<void> setAdhanSoundEnabled(bool enabled) async {
+    final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
+    if (cur == null) return;
+    state = AsyncValue.data(cur.copyWith(adhanSoundEnabled: enabled));
+    await ref.read(settingsServiceProvider).setAdhanSoundEnabled(enabled);
+  }
+
+  Future<void> setDailyReminderSoundEnabled(bool enabled) async {
+    final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
+    if (cur == null) return;
+    state = AsyncValue.data(cur.copyWith(dailyReminderSoundEnabled: enabled));
+    await ref
+        .read(settingsServiceProvider)
+        .setDailyReminderSoundEnabled(enabled);
+  }
+
+  Future<void> setSalawatSoundEnabled(bool enabled) async {
+    final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
+    if (cur == null) return;
+    state = AsyncValue.data(cur.copyWith(salawatSoundEnabled: enabled));
+    await ref.read(settingsServiceProvider).setSalawatSoundEnabled(enabled);
+  }
+
+  Future<void> setSmartLearningEnabled(bool enabled) async {
+    final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
+    if (cur == null) return;
+    state = AsyncValue.data(cur.copyWith(smartLearningEnabled: enabled));
+    await ref.read(settingsServiceProvider).setSmartLearningEnabled(enabled);
+    
+    // Update notifications
+    await NotificationService.instance.scheduleSmartLearningReminders(
+      enabled: enabled,
+      strictness: cur.smartLearningStrictness,
+    );
+  }
+
+  Future<void> setSmartLearningStrictness(int strictness) async {
+    final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
+    if (cur == null) return;
+    state = AsyncValue.data(cur.copyWith(smartLearningStrictness: strictness));
+    await ref
+        .read(settingsServiceProvider)
+        .setSmartLearningStrictness(strictness);
+
+    // Update notifications
+    if (cur.smartLearningEnabled) {
+      await NotificationService.instance.scheduleSmartLearningReminders(
+        enabled: true,
+        strictness: strictness,
+      );
+    }
   }
 }
 

@@ -23,6 +23,7 @@ class NotificationService {
   static const _dailyChannelId = 'daily_reminder_ch';
   static const _salawatChannelId = 'salawat_ch';
   static const _remindersChannelId = 'reminders_ch';
+  static const _smartLearningChannelId = 'smart_learning_ch';
   static const _deviceChannel = MethodChannel('quranglow/device');
   static const _fallbackTimezoneName = 'Africa/Cairo';
 
@@ -35,6 +36,7 @@ class NotificationService {
   static const _azkarMorningId = 3001;
   static const _azkarEveningId = 3002;
   static const _azkarPrayerBaseId = 3100;
+  static const _smartLearningIdBase = 4000;
 
   Future<void> init() async {
     if (!_isSupported) return;
@@ -189,8 +191,10 @@ class NotificationService {
         'أذان الصلوات',
         description: 'تنبيهات الأذان مع صوت أذان مخصص',
         importance: Importance.max,
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
+        playSound: settings.adhanSoundEnabled,
+        sound: settings.adhanSoundEnabled
+            ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
+            : null,
         audioAttributesUsage: AudioAttributesUsage.alarm,
         enableVibration: true,
         showBadge: true,
@@ -223,9 +227,10 @@ class NotificationService {
     await _plugin.cancel(_dailyId);
     if (!enabled) return;
 
+    final settings = await SettingsService().load();
     final mode = await _androidScheduleMode();
 
-    const android = AndroidNotificationDetails(
+    final android = AndroidNotificationDetails(
       _dailyChannelId,
       'التذكير اليومي',
       channelDescription: 'تذكير يومي للورد والذكر والاستعداد للصلاة',
@@ -233,7 +238,7 @@ class NotificationService {
       priority: Priority.high,
       showWhen: true,
       enableVibration: true,
-      playSound: true,
+      playSound: settings.dailyReminderSoundEnabled,
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -259,7 +264,7 @@ class NotificationService {
       title,
       body,
       _nextInstanceOf(time),
-      const NotificationDetails(
+      NotificationDetails(
         android: android,
         iOS: ios,
         macOS: mac,
@@ -280,9 +285,10 @@ class NotificationService {
     }
     if (!enabled) return;
 
+    final settings = await SettingsService().load();
     final mode = await _androidScheduleMode();
 
-    const android = AndroidNotificationDetails(
+    final android = AndroidNotificationDetails(
       _salawatChannelId,
       'تذكير الصلاة على النبي ﷺ',
       channelDescription: 'تذكير دوري محلي للصلاة على النبي ﷺ',
@@ -290,7 +296,7 @@ class NotificationService {
       priority: Priority.high,
       showWhen: true,
       enableVibration: true,
-      playSound: true,
+      playSound: settings.salawatSoundEnabled,
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -304,7 +310,7 @@ class NotificationService {
         'الصلاة على النبي ﷺ',
         'اللهم صل وسلم على نبينا محمد ﷺ',
         scheduled,
-        const NotificationDetails(
+        NotificationDetails(
           android: android,
           iOS: ios,
           macOS: mac,
@@ -445,8 +451,10 @@ class NotificationService {
           audioAttributesUsage: AudioAttributesUsage.alarm,
           showWhen: true,
           enableVibration: true,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
+          playSound: activeSettings.adhanSoundEnabled,
+          sound: activeSettings.adhanSoundEnabled 
+              ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
+              : null,
           channelShowBadge: true,
         ),
         iOS: const DarwinNotificationDetails(),
@@ -455,6 +463,59 @@ class NotificationService {
       ),
       androidScheduleMode: mode,
     );
+  }
+
+  Future<void> scheduleSmartLearningReminders({
+    required bool enabled,
+    int strictness = 1,
+  }) async {
+    if (!_isSupported) return;
+    for (var i = 0; i < 7; i++) {
+      await _plugin.cancel(_smartLearningIdBase + i);
+    }
+    if (!enabled) return;
+
+    final mode = await _androidScheduleMode();
+    const android = AndroidNotificationDetails(
+      _smartLearningChannelId,
+      'تنبيهات التعلم النشط',
+      channelDescription: 'تذكير ذكي عند الانقطاع عن القراءة أو التعلم',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+      playSound: true,
+    );
+
+    final now = tz.TZDateTime.now(tz.local);
+    
+    final reminders = strictness == 3 
+      ? [
+          (delay: 24, title: 'افتقدنا نور تلاوتك', body: 'لا تجعل اليوم يمر دون نصيب من كتاب الله، انضم إلينا الآن.'),
+          (delay: 36, title: 'وردك اليومي أمانة', body: 'الاستمرارية سر النجاح، القرآن ينير دربك فلا تغفل عنه.'),
+          (delay: 48, title: 'أين أنت يا محب القرآن؟', body: 'بستانك بانتظارك، لا تبتعد كثيراً عن آيات الله البينات.'),
+          (delay: 72, title: 'نداء للقلب الذاكر', body: 'اشحن روحك بآيات السكينة، القرآن شفاء لما في الصدور.')
+        ]
+      : strictness == 2
+        ? [
+            (delay: 48, title: 'وقت مستقطع للروح', body: 'بضع دقائق مع القرآن كفيلة بتغيير يومك للأفضل.'),
+            (delay: 96, title: 'تذكير بالورد اليومي', body: 'لا يزال بستانك يزهر بقرائتك، عد لنبع الصفاء.')
+          ]
+        : [
+            (delay: 72, title: 'بانتظار عودتك', body: 'اشتقنا لتفاعلك في بستان، القرآن يفتح لك آفاقاً جديدة.')
+          ];
+
+    for (var i = 0; i < reminders.length; i++) {
+      final r = reminders[i];
+      await _plugin.zonedSchedule(
+        _smartLearningIdBase + i,
+        r.title,
+        r.body,
+        now.add(Duration(hours: r.delay)),
+        const NotificationDetails(android: android, iOS: DarwinNotificationDetails()),
+        androidScheduleMode: mode,
+      );
+    }
   }
 
   Future<void> schedulePrayerNotifications({
@@ -481,8 +542,10 @@ class NotificationService {
       audioAttributesUsage: AudioAttributesUsage.alarm,
       showWhen: true,
       enableVibration: true,
-      playSound: true,
-      sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
+      playSound: settings.adhanSoundEnabled,
+      sound: settings.adhanSoundEnabled 
+          ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
+          : null,
       ongoing: true,
       autoCancel: false,
       channelShowBadge: true,
