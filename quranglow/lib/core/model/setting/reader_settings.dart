@@ -39,7 +39,7 @@ class AppSettings {
     this.tasbihTarget = 33,
     this.tasbihVibrate = true,
     this.tasbihSound = true,
-    this.adhanSoundId = 'makkah',
+    this.adhanSoundId = 'azan',
     this.adhanSoundEnabled = true,
     this.dailyReminderEnabled = false,
     this.dailyReminderSoundEnabled = true,
