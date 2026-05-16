@@ -28,6 +28,9 @@ class AppSettings {
   final bool prayerNotificationsEnabled;
   final bool smartLearningEnabled;
   final int smartLearningStrictness;
+  final bool azkarMorningEnabled;
+  final bool azkarEveningEnabled;
+  final bool azkarAfterPrayerEnabled;
 
   const AppSettings({
     ThemeMode? themeMode,
@@ -52,6 +55,9 @@ class AppSettings {
     this.prayerNotificationsEnabled = false,
     this.smartLearningEnabled = false,
     this.smartLearningStrictness = 1,
+    this.azkarMorningEnabled = false,
+    this.azkarEveningEnabled = false,
+    this.azkarAfterPrayerEnabled = false,
   }) : _themeMode = themeMode;
 
   ThemeMode get themeMode => _themeMode ?? ThemeMode.system;
@@ -84,6 +90,9 @@ class AppSettings {
     bool? prayerNotificationsEnabled,
     bool? smartLearningEnabled,
     int? smartLearningStrictness,
+    bool? azkarMorningEnabled,
+    bool? azkarEveningEnabled,
+    bool? azkarAfterPrayerEnabled,
   }) => AppSettings(
     themeMode: themeMode ?? this.themeMode,
     fontScale: fontScale ?? this.fontScale,
@@ -111,5 +120,9 @@ class AppSettings {
     smartLearningEnabled: smartLearningEnabled ?? this.smartLearningEnabled,
     smartLearningStrictness:
         smartLearningStrictness ?? this.smartLearningStrictness,
+    azkarMorningEnabled: azkarMorningEnabled ?? this.azkarMorningEnabled,
+    azkarEveningEnabled: azkarEveningEnabled ?? this.azkarEveningEnabled,
+    azkarAfterPrayerEnabled:
+        azkarAfterPrayerEnabled ?? this.azkarAfterPrayerEnabled,
   );
 }

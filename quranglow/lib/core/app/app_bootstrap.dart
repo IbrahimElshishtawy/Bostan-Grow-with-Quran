@@ -18,10 +18,12 @@ import 'package:quranglow/core/service/setting/prayer_times_service.dart';
 import 'package:quranglow/core/service/sync/firebase_sync_service.dart';
 import 'package:quranglow/core/storage/hive_storage_impl.dart';
 import 'package:quranglow/firebase_options.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class AppBootstrap {
   static Future<void> initialize() async {
     GoogleFonts.config.allowRuntimeFetching = false;
+    await initializeDateFormatting('ar');
 
     // ✨ HARDENED FIX: Desktop platforms (Windows/macOS/Linux) can freeze indefinitely 
     // on standard Firebase C++ SDK handshakes if not fully linked locally.
@@ -155,6 +157,31 @@ class AppBootstrap {
       enabled: settings.salawatEnabled,
       intervalMinutes: settings.salawatIntervalMinutes,
     );
+
+    await NotificationService.instance.scheduleMorningAzkarReminder(
+      enabled: settings.azkarMorningEnabled,
+    );
+
+    await NotificationService.instance.scheduleEveningAzkarReminder(
+      enabled: settings.azkarEveningEnabled,
+    );
+
+    if (settings.azkarAfterPrayerEnabled) {
+      final prayerService = PrayerTimesService(
+        client: client,
+        locationService: locationService,
+        storage: HiveStorageImpl(),
+      );
+      try {
+        final prayerTimes = await prayerService.fetchForToday();
+        await NotificationService.instance.scheduleAfterPrayerAzkarReminders(
+          enabled: true,
+          data: prayerTimes,
+        );
+      } catch (e) {
+        debugPrint('[BOOTSTRAP] After prayer Azkar sync skipped: $e');
+      }
+    }
 
     if (!settings.prayerNotificationsEnabled) {
       await NotificationService.instance.cancelPrayerNotifications();

@@ -379,6 +379,39 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
       );
     }
   }
+
+  Future<void> setAzkarMorningEnabled(bool enabled) async {
+    final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
+    if (cur == null) return;
+    state = AsyncValue.data(cur.copyWith(azkarMorningEnabled: enabled));
+    await ref.read(settingsServiceProvider).setAzkarMorningEnabled(enabled);
+    await NotificationService.instance.scheduleMorningAzkarReminder(enabled: enabled);
+  }
+
+  Future<void> setAzkarEveningEnabled(bool enabled) async {
+    final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
+    if (cur == null) return;
+    state = AsyncValue.data(cur.copyWith(azkarEveningEnabled: enabled));
+    await ref.read(settingsServiceProvider).setAzkarEveningEnabled(enabled);
+    await NotificationService.instance.scheduleEveningAzkarReminder(enabled: enabled);
+  }
+
+  Future<void> setAzkarAfterPrayerEnabled(bool enabled) async {
+    final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
+    if (cur == null) return;
+    state = AsyncValue.data(cur.copyWith(azkarAfterPrayerEnabled: enabled));
+    await ref.read(settingsServiceProvider).setAzkarAfterPrayerEnabled(enabled);
+    
+    if (enabled) {
+      final prayerTimes = await ref.read(prayerTimesServiceProvider).fetchForToday();
+      await NotificationService.instance.scheduleAfterPrayerAzkarReminders(
+        enabled: true,
+        data: prayerTimes,
+      );
+    } else {
+      await NotificationService.instance.cancelAfterPrayerAzkarReminders();
+    }
+  }
 }
 
 final audioEditionsProvider = FutureProvider<List<dynamic>>((ref) async {

@@ -10,6 +10,9 @@ import 'package:quranglow/core/data/surah_names_ar.dart';
 import 'package:quranglow/core/data/surah_ayah_counts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:quranglow/core/data/daily_verses.dart';
+import 'package:intl/intl.dart';
+import 'package:hijri/hijri_calendar.dart';
 
 /// Static service to trigger soft satisfying Islamic-inspired UI haptics and sounds
 class PremiumFeedbackService {
@@ -212,6 +215,16 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       await HomeWidget.saveWidgetData<String>('task_write', currentLevel.isWriteCompleted ? '1' : '0');
       await HomeWidget.saveWidgetData<String>('task_memorize', currentLevel.isMemorizeCompleted ? '1' : '0');
       await HomeWidget.saveWidgetData<String>('task_quiz', currentLevel.isQuizCompleted ? '1' : '0');
+
+      // Add Date & Random Verse
+      final now = DateTime.now();
+      final hijri = HijriCalendar.now();
+      final dateStr = '${DateFormat('EEEE، d MMMM', 'ar').format(now)} • ${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear}هـ';
+      await HomeWidget.saveWidgetData<String>('widget_date_time', dateStr);
+
+      final randomVerse = kDailyVerses[math.Random().nextInt(kDailyVerses.length)];
+      await HomeWidget.saveWidgetData<String>('widget_quran_verse', randomVerse.text);
+      await HomeWidget.saveWidgetData<String>('widget_quran_ref', randomVerse.ref);
 
       await HomeWidget.updateWidget(
         androidName: 'LearningWidgetProvider',

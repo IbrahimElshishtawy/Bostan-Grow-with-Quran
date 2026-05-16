@@ -24,6 +24,9 @@ class SettingsService {
   static const _kSalawatIntervalMinutes = 'settings.salawatIntervalMinutes';
   static const _kPrayerNotificationsEnabled =
       'settings.prayerNotificationsEnabled';
+  static const _kAzkarMorningEnabled = 'settings.azkarMorningEnabled';
+  static const _kAzkarEveningEnabled = 'settings.azkarEveningEnabled';
+  static const _kAzkarAfterPrayerEnabled = 'settings.azkarAfterPrayerEnabled';
 
   static const _kAdhanSoundEnabled = 'settings.adhanSoundEnabled';
   static const _kDailyReminderSoundEnabled = 'settings.dailyReminderSoundEnabled';
@@ -66,6 +69,9 @@ class SettingsService {
         sp.getBool(_kPrayerNotificationsEnabled) ?? false;
     final smartLearningEnabled = sp.getBool(_kSmartLearningEnabled) ?? false;
     final smartLearningStrictness = sp.getInt(_kSmartLearningStrictness) ?? 1;
+    final azkarMorningEnabled = sp.getBool(_kAzkarMorningEnabled) ?? false;
+    final azkarEveningEnabled = sp.getBool(_kAzkarEveningEnabled) ?? false;
+    final azkarAfterPrayerEnabled = sp.getBool(_kAzkarAfterPrayerEnabled) ?? false;
 
     final colorScheme = AppColorScheme.values.firstWhere(
       (e) => e.name == colorSchemeStr,
@@ -103,6 +109,9 @@ class SettingsService {
       prayerNotificationsEnabled: prayerNotificationsEnabled,
       smartLearningEnabled: smartLearningEnabled,
       smartLearningStrictness: smartLearningStrictness,
+      azkarMorningEnabled: azkarMorningEnabled,
+      azkarEveningEnabled: azkarEveningEnabled,
+      azkarAfterPrayerEnabled: azkarAfterPrayerEnabled,
     );
   }
 
@@ -220,5 +229,20 @@ class SettingsService {
   Future<void> setSmartLearningStrictness(int v) async {
     final sp = await SharedPreferences.getInstance();
     await sp.setInt(_kSmartLearningStrictness, v);
+  }
+
+  Future<void> setAzkarMorningEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kAzkarMorningEnabled, v);
+  }
+
+  Future<void> setAzkarEveningEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kAzkarEveningEnabled, v);
+  }
+
+  Future<void> setAzkarAfterPrayerEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kAzkarAfterPrayerEnabled, v);
   }
 }

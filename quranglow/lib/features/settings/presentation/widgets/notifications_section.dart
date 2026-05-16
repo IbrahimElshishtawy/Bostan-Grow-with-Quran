@@ -75,6 +75,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
             context,
             title: 'أذان الصلوات',
             icon: Icons.mosque_rounded,
+            status: st.prayerNotificationsEnabled ? 'مفعل' : 'متوقف',
             children: [
               _buildModernSwitch(
                 context,
@@ -121,6 +122,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
             context,
             title: 'التذكير اليومي',
             icon: Icons.event_note_rounded,
+            status: st.dailyReminderEnabled ? 'مفعل' : 'متوقف',
             children: [
               _buildModernSwitch(
                 context,
@@ -162,6 +164,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
             context,
             title: 'الصلاة على النبي ﷺ',
             icon: Icons.auto_awesome_rounded,
+            status: st.salawatEnabled ? 'مفعل' : 'متوقف',
             children: [
               _buildModernSwitch(
                 context,
@@ -197,11 +200,53 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
 
           const SizedBox(height: 12),
 
+          // 📿 Azkar & Wird Card
+          _buildPremiumCard(
+            context,
+            title: 'الأذكار والأوراد',
+            icon: Icons.MenuBook_rounded,
+            status: (st.azkarMorningEnabled || st.azkarEveningEnabled || st.azkarAfterPrayerEnabled) ? 'مفعل' : 'متوقف',
+            children: [
+              _buildModernSwitch(
+                context,
+                title: 'أذكار الصباح',
+                subtitle: 'تذكير يومي عند الساعة 8 صباحاً',
+                value: st.azkarMorningEnabled,
+                onChanged: (val) => ref
+                    .read(settingsProvider.notifier)
+                    .setAzkarMorningEnabled(val),
+              ),
+              const Divider(height: 24),
+              _buildModernSwitch(
+                context,
+                title: 'أذكار المساء',
+                subtitle: 'تذكير يومي عند الساعة 6 مساءً',
+                value: st.azkarEveningEnabled,
+                onChanged: (val) => ref
+                    .read(settingsProvider.notifier)
+                    .setAzkarEveningEnabled(val),
+              ),
+              const Divider(height: 24),
+              _buildModernSwitch(
+                context,
+                title: 'أذكار بعد الصلاة',
+                subtitle: 'تذكير بالأذكار بعد كل صلاة بـ 15 دقيقة',
+                value: st.azkarAfterPrayerEnabled,
+                onChanged: (val) => ref
+                    .read(settingsProvider.notifier)
+                    .setAzkarAfterPrayerEnabled(val),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
           // 🎓 Smart Learning Card
           _buildPremiumCard(
             context,
             title: 'التعلم الذكي والتحفيز',
             icon: Icons.psychology_rounded,
+            status: st.smartLearningEnabled ? 'مفعل' : 'متوقف',
             children: [
               _buildModernSwitch(
                 context,
@@ -268,6 +313,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
     required String title,
     required IconData icon,
     required List<Widget> children,
+    String? status,
   }) {
     final cs = Theme.of(context).colorScheme;
     return Container(
@@ -291,14 +337,34 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
             children: [
               Icon(icon, size: 20, color: cs.primary),
               const SizedBox(width: 10),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  fontFamily: 'Tajawal',
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    fontFamily: 'Tajawal',
+                  ),
                 ),
               ),
+              if (status != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: status == 'مفعل' 
+                      ? Colors.green.withOpacity(0.1) 
+                      : Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: status == 'مفعل' ? Colors.green : Colors.red,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 20),
