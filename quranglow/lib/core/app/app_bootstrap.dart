@@ -169,14 +169,18 @@ class AppBootstrap {
         locationService: locationService,
         storage: HiveStorageImpl(),
       );
-      final days = await prayerService.fetchUpcomingDays(
-        preferCache: true,
-        allowNetwork: false,
-      );
-      await NotificationService.instance.schedulePrayerNotifications(
-        days: days,
-        enabled: true,
-      );
+      try {
+        final days = await prayerService.fetchUpcomingDays(
+          preferCache: true,
+          allowNetwork: false,
+        );
+        await NotificationService.instance.schedulePrayerNotifications(
+          days: days,
+          enabled: true,
+        );
+      } catch (e) {
+        debugPrint('[BOOTSTRAP] Prayer sync skipped (no cache): $e');
+      }
     } finally {
       client.close();
       locationService.dispose();

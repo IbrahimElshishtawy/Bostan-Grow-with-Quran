@@ -21,6 +21,26 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 🚀 High-Performance Optimization: Precache heavy home background images 
+    // while the user is watching the beautiful splash animations!
+    precacheImage(const AssetImage('assets/images/app_bg_dark.png'), context);
+    precacheImage(const AssetImage('assets/images/app_bg_light.png'), context);
+    precacheImage(const AssetImage('assets/images/islamic_pattern.png'), context);
+    
+    // 🏰 Precache Level Nodes (Gates) for the Roadmap
+    precacheImage(const AssetImage('assets/images/gate_locked.png'), context);
+    precacheImage(const AssetImage('assets/images/gate_active.png'), context);
+    precacheImage(const AssetImage('assets/images/gate_unlocked.png'), context);
+    precacheImage(const AssetImage('assets/images/quran_completed.png'), context);
+
+    // 🌳 Precache Main Icons
+    precacheImage(const AssetImage('assets/images/bustan_icon.png'), context);
+    precacheImage(const AssetImage('assets/images/bustan_splash.png'), context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final b = Theme.of(context).brightness;

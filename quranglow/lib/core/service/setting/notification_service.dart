@@ -273,7 +273,7 @@ class NotificationService {
       enableVibration: true,
       playSound: settings.dailyReminderSoundEnabled,
       icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -338,7 +338,7 @@ class NotificationService {
           ? const RawResourceAndroidNotificationSound('salawat')
           : null,
       icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -498,7 +498,7 @@ class NotificationService {
               ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
               : null,
           icon: '@mipmap/ic_launcher',
-          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+          largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
           channelShowBadge: true,
         ),
         iOS: const DarwinNotificationDetails(),
@@ -530,7 +530,7 @@ class NotificationService {
       enableVibration: true,
       playSound: true,
       icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
 
     final now = tz.TZDateTime.now(tz.local);
@@ -695,7 +695,7 @@ class NotificationService {
       enableVibration: true,
       playSound: true,
       icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
