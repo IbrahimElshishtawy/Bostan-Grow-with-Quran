@@ -141,6 +141,10 @@ final goalsStreamProvider = StreamProvider.autoDispose<List<Goal>>((ref) {
   return ref.watch(goalsServiceProvider).watchGoalsWithInitial();
 });
 
+final downloadServiceProvider = Provider<DownloadService>((ref) {
+  return DownloadService(dio: ref.watch(dioProvider));
+});
+
 final quranAllProvider = FutureProvider.autoDispose.family<List<Surah>, String>(
   (ref, editionId) {
     final service = ref.read(quranServiceProvider);

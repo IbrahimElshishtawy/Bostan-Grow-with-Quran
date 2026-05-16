@@ -385,6 +385,55 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     }
   }
 
+  Future<void> _downloadSurah() async {
+    final surahAsync = ref.read(surahProvider((_chapter, widget.editionId)));
+    final surahData = surahAsync.valueOrNull;
+    if (surahData == null) return;
+
+    final editionId = _audioEditionId();
+    final quranSvc = ref.read(quranServiceProvider);
+    final downloadSvc = ref.read(downloadServiceProvider);
+    final url = quranSvc.getSurahFullAudioUrl(editionId, _chapter);
+
+    try {
+      final dir = await downloadSvc.surahDir(reciter: editionId, surah: _chapter);
+      final savePath = '${dir.path}/full.mp3';
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('بدأ تحميل سورة ${surahData.name}...'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      await downloadSvc.downloadOne(
+        url: url,
+        savePath: savePath,
+        onProgress: (received, total) {
+          // Future: Add real-time UI progress update
+        },
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم تحميل سورة ${surahData.name} بنجاح! 🎉'),
+          backgroundColor: Colors.green.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('فشل التحميل: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
 
   Future<void> _openAyahActions({
     required int ayahNumber,
@@ -571,6 +620,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 onZoomIn: _zoomIn,
                 onZoomOut: _zoomOut,
                 onTafsir: () => _openTafsirForAyah(_lastAyahNumber ?? 1),
+                onDownload: _downloadSurah,
                 onPlayAll: () {
                   final surah = asyncSurah.valueOrNull;
                   if (surah != null) {

@@ -222,9 +222,15 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       final dateStr = '${DateFormat('EEEE، d MMMM', 'ar').format(now)} • ${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear}هـ';
       await HomeWidget.saveWidgetData<String>('widget_date_time', dateStr);
 
-      final randomVerse = kDailyVerses[math.Random().nextInt(kDailyVerses.length)];
-      await HomeWidget.saveWidgetData<String>('widget_quran_verse', randomVerse.text);
-      await HomeWidget.saveWidgetData<String>('widget_quran_ref', randomVerse.ref);
+      // Pick 3 random distinct verses
+      final List<int> indices = List.generate(kDailyVerses.length, (i) => i)..shuffle();
+      final selectedVerses = indices.take(3).map((i) => kDailyVerses[i]).toList();
+      
+      final versesText = selectedVerses.map((v) => v.text).join('\n\n');
+      final versesRef = selectedVerses.map((v) => v.ref).join('\n');
+      
+      await HomeWidget.saveWidgetData<String>('widget_quran_verse', versesText);
+      await HomeWidget.saveWidgetData<String>('widget_quran_ref', versesRef);
 
       await HomeWidget.updateWidget(
         androidName: 'LearningWidgetProvider',

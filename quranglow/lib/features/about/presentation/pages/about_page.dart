@@ -47,8 +47,8 @@ class AboutPage extends StatelessWidget {
                   stretch: true,
                   backgroundColor: isDark ? const Color(0xFF111A14) : Colors.white,
                   leading: IconButton(
-                    icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
-                    onPressed: () => Navigator.maybePop(context),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                   flexibleSpace: FlexibleSpaceBar(
                     stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],

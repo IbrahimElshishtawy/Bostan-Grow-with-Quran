@@ -81,7 +81,11 @@ android {
 flutter {
     source = "../.."
 }
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5") 
-}
 
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    
+    // 🔥 REQUIRED for HomeWidget & Native Kotlin logic
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.9.10"))
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
+}
