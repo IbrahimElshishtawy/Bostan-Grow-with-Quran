@@ -65,7 +65,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
 
     return settingsAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (st) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

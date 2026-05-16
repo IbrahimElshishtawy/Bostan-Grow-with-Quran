@@ -1,10 +1,14 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 void main() {
   final rawDir = Directory('android/app/src/main/res/raw');
   if (!rawDir.existsSync()) {
     rawDir.createSync(recursive: true);
-    print('Created directory: ${rawDir.path}');
+    if (kDebugMode) {
+      print('Created directory: ${rawDir.path}');
+    }
   }
 
   final filesToCopy = {
@@ -16,9 +20,13 @@ void main() {
     final sourceFile = File(source);
     if (sourceFile.existsSync()) {
       sourceFile.copySync(target);
-      print('Copied $source to $target');
+      if (kDebugMode) {
+        print('Copied $source to $target');
+      }
     } else {
-      print('Source file not found: $source');
+      if (kDebugMode) {
+        print('Source file not found: $source');
+      }
     }
   });
 }

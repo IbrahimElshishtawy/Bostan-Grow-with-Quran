@@ -345,12 +345,11 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   Widget _buildMushafHeader(BuildContext context, int localPageIndex, PageRange range) {
     final absPage = quran.getPageNumber(widget.surahNumber, widget.ayat[range.start].numberInSurah);
     final juz = quran.getJuzNumber(widget.surahNumber, widget.ayat[range.start].numberInSurah);
-    // quran package provides 1-based quarter number (1-120), so we calculate Hizb from it.
-    final quarter = quran.getHizbQuarterNumber(widget.surahNumber, widget.ayat[range.start].numberInSurah);
-    final hizb = ((quarter - 1) ~/ 4) + 1;
-    
+    // The Quran has 604 pages and 60 Hizbs → each Hizb ≈ 10.06 pages.
+    // Ceiling division gives the correct Hizb number (1–60).
+    final hizb = ((absPage - 1) ~/ 10) + 1;
+
     final isRightPage = absPage % 2 != 0;
-    final cs = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

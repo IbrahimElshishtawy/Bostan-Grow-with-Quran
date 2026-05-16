@@ -13,7 +13,7 @@ class SmartLearningSection extends ConsumerWidget {
 
     return settingsAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (st) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
