@@ -225,6 +225,9 @@ class NotificationService {
         description: 'تذكير دوري محلي للصلاة على النبي ﷺ',
         importance: Importance.max,
         playSound: settings.salawatSoundEnabled,
+        sound: settings.salawatSoundEnabled
+            ? const RawResourceAndroidNotificationSound('salawat')
+            : null,
         enableVibration: true,
         vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
         showBadge: true,
@@ -269,6 +272,8 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: settings.dailyReminderSoundEnabled,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -329,6 +334,11 @@ class NotificationService {
       enableVibration: true,
       vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
       playSound: settings.salawatSoundEnabled,
+      sound: settings.salawatSoundEnabled
+          ? const RawResourceAndroidNotificationSound('salawat')
+          : null,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -487,6 +497,8 @@ class NotificationService {
           sound: activeSettings.adhanSoundEnabled 
               ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
               : null,
+          icon: '@mipmap/ic_launcher',
+          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
           channelShowBadge: true,
         ),
         iOS: const DarwinNotificationDetails(),
@@ -517,6 +529,8 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
 
     final now = tz.TZDateTime.now(tz.local);
@@ -578,6 +592,8 @@ class NotificationService {
       sound: settings.adhanSoundEnabled 
           ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
           : null,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       ongoing: true,
       autoCancel: false,
       channelShowBadge: true,
@@ -678,6 +694,8 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();

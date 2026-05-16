@@ -195,6 +195,50 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
             ],
           ),
 
+          const SizedBox(height: 12),
+
+          // 🎓 Smart Learning Card
+          _buildPremiumCard(
+            context,
+            title: 'التعلم الذكي والتحفيز',
+            icon: Icons.psychology_rounded,
+            children: [
+              _buildModernSwitch(
+                context,
+                title: 'تفعيل التنبيهات الذكية',
+                subtitle: 'رسائل تحفيزية عند الانقطاع عن التلاوة',
+                value: st.smartLearningEnabled,
+                onChanged: (val) async {
+                  await ref
+                      .read(settingsProvider.notifier)
+                      .setSmartLearningEnabled(val);
+                },
+              ),
+              if (st.smartLearningEnabled) ...[
+                const Divider(height: 32),
+                const Text(
+                  'مستوى الإلحاح في التذكير',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildStrictnessSelector(context, st),
+                const SizedBox(height: 8),
+                Text(
+                  _getStrictnessDescription(st.smartLearningStrictness),
+                  style: TextStyle(
+                    color: cs.primary.withOpacity(0.7),
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ],
+          ),
+
           const SizedBox(height: 16),
           // Test Button
           Center(
@@ -489,5 +533,48 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
         ),
       ],
     );
+  }
+
+  Widget _buildStrictnessSelector(BuildContext context, AppSettings st) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [1, 2, 3].map((level) {
+        final isSelected = st.smartLearningStrictness == level;
+        final label = switch (level) {
+          1 => 'هادئ',
+          2 => 'مستمر',
+          3 => 'عاجل',
+          _ => '',
+        };
+        return Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: ChoiceChip(
+            label: Text(label),
+            selected: isSelected,
+            onSelected: (val) {
+              if (val) {
+                ref
+                    .read(settingsProvider.notifier)
+                    .setSmartLearningStrictness(level);
+              }
+            },
+            selectedColor: cs.primary,
+            labelStyle: TextStyle(
+              color: isSelected ? Colors.white : cs.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String _getStrictnessDescription(int level) {
+    return switch (level) {
+      1 => 'تنبيهات لطيفة تظهر بعد 3 أيام من الانقطاع.',
+      2 => 'تنبيهات منتظمة تظهر كل يومين لتشجيعك.',
+      3 => 'تنبيهات قوية ومتكررة تبدأ بعد 24 ساعة من التكاسل.',
+      _ => '',
+    };
   }
 }
