@@ -17,6 +17,7 @@ class _RestartAppState extends State<RestartApp> {
   Key _key = UniqueKey();
 
   void restartApp() {
+    debugPrint('♻️ Restarting Application via RestartApp...');
     setState(() {
       _key = UniqueKey();
     });

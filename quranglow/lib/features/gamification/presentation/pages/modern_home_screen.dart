@@ -12,7 +12,6 @@ import 'package:quranglow/features/gamification/presentation/widgets/modern_home
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/goal_selector_sheet.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/grand_achievement_dialog.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
-import 'package:quranglow/features/home/presentation/widgets/app_drawer.dart';
 
 class ModernHomeScreen extends ConsumerStatefulWidget {
   const ModernHomeScreen({super.key});

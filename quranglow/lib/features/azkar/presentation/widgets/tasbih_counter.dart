@@ -85,7 +85,7 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
     });
 
     if (settings.tasbihVibrate) {
-      HapticFeedback.lightImpact();
+      HapticFeedback.vibrate();
     }
     if (settings.tasbihSound) {
       SystemSound.play(SystemSoundType.click);

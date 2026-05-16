@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
@@ -98,16 +99,20 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
       await _player.stop(); 
       await _player.setUrl(
         nextUrl,
-        headers: const {'User-Agent': 'QuranGlow/1.0'},
+        headers: const {
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
       );
       await play();
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('❌ AUDIO ERROR [playUri]: $e');
+      debugPrint('Stack: $stack');
       // just_audio throws this if a new setUrl/load is called before this one finishes.
-      // We can safely ignore it as the new request will take over.
       final errorStr = e.toString().toLowerCase();
       if (errorStr.contains('abort') || 
           errorStr.contains('interrupted') ||
-          errorStr.contains('1001') || // Common code for interruption
+          errorStr.contains('1001') || 
           errorStr.contains('loading interrupted')) {
         return;
       }

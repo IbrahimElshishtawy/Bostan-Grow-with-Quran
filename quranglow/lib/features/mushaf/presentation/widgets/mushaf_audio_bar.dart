@@ -166,7 +166,7 @@ class MushafAudioBar extends ConsumerWidget {
                               Duration.zero,
                               Duration.zero,
                             );
-                        final total = timeline.total;
+                        final total = timeline.duration;
                         final pos = timeline.position;
 
                         // Use the controller's pre-calculated total duration override if it's available and larger than what the player reports
