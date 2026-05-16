@@ -643,6 +643,24 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
     } catch (_) {}
   }
 
+  /// Mark that the user has seen the "Entire Journey Completed" celebration dialog
+  Future<void> markJourneyCompletionAsSeen() async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    try {
+      final updatedProfile = currentState.userProfile.copyWith(
+        hasSeenJourneyCompletionDialog: true,
+      );
+
+      state = AsyncValue.data(currentState.copyWith(
+        userProfile: updatedProfile,
+      ));
+
+      await repository.setUserProfile(userId, updatedProfile);
+    } catch (_) {}
+  }
+
   /// Regenerates the entire roadmap structure based on a new daily goal preference (dynamic chunking).
   Future<void> updateDailyGoalAndRegenerate(int newGoal) async {
     try {

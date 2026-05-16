@@ -10,6 +10,7 @@ import 'package:quranglow/features/gamification/presentation/widgets/modern_home
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/game_level_node.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/station_section_header.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/goal_selector_sheet.dart';
+import 'package:quranglow/features/gamification/presentation/widgets/dialogs/grand_achievement_dialog.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
 class ModernHomeScreen extends ConsumerStatefulWidget {
@@ -156,6 +157,23 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
       error: (error, stackTrace) =>
           Scaffold(body: Center(child: Text('Error: $error'))),
       data: (gameState) {
+        // ✨ JOURNEY COMPLETION CELEBRATION TRIGGER
+        // If the user has finished all levels but hasn't seen the grand achievement dialog yet!
+        if (gameState.overallProgress >= 1.0 && 
+            !gameState.userProfile.hasSeenJourneyCompletionDialog) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const GrandAchievementDialog(),
+              );
+              // Mark as seen so it doesn't pop up again!
+              ref.read(gamificationControllerProvider.notifier).markJourneyCompletionAsSeen();
+            }
+          });
+        }
+
         // PRE-CALCULATE the EXACT target Y coordinate of the Active Node once during build cycle
         // This synchronizes with actual render offsets generator logic!
         final levels = gameState.levels;

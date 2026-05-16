@@ -230,9 +230,11 @@ class UserGameProfile {
     this.streakFreezeCount = 1, // Streak Freeze Shield item
     this.chestsClaimed = const [], // Surprise reward chests index e.g., 'chest_3'
     this.nextHeartRegenTime,
+    this.hasSeenJourneyCompletionDialog = false,
   });
 
   final DateTime? nextHeartRegenTime;
+  final bool hasSeenJourneyCompletionDialog;
 
   final String userId;
   final int totalXp;
@@ -271,6 +273,7 @@ class UserGameProfile {
     int? streakFreezeCount,
     List<String>? chestsClaimed,
     DateTime? nextHeartRegenTime,
+    bool? hasSeenJourneyCompletionDialog,
   }) {
     return UserGameProfile(
       userId: userId ?? this.userId,
@@ -289,6 +292,7 @@ class UserGameProfile {
       streakFreezeCount: streakFreezeCount ?? this.streakFreezeCount,
       chestsClaimed: chestsClaimed ?? this.chestsClaimed,
       nextHeartRegenTime: nextHeartRegenTime ?? this.nextHeartRegenTime,
+      hasSeenJourneyCompletionDialog: hasSeenJourneyCompletionDialog ?? this.hasSeenJourneyCompletionDialog,
     );
   }
 
@@ -309,6 +313,7 @@ class UserGameProfile {
     'streakFreezeCount': streakFreezeCount,
     'chestsClaimed': chestsClaimed,
     'nextHeartRegenTime': nextHeartRegenTime?.toIso8601String(),
+    'hasSeenJourneyCompletionDialog': hasSeenJourneyCompletionDialog,
   };
 
   factory UserGameProfile.fromJson(Map<String, dynamic> json) {
@@ -335,6 +340,7 @@ class UserGameProfile {
       nextHeartRegenTime: json['nextHeartRegenTime'] != null
           ? DateTime.tryParse(json['nextHeartRegenTime'] as String)
           : null,
+      hasSeenJourneyCompletionDialog: json['hasSeenJourneyCompletionDialog'] as bool? ?? false,
     );
   }
 }

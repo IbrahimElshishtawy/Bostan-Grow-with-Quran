@@ -148,9 +148,9 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     if (_artworkUri != null) return _artworkUri;
 
     try {
-      final bytes = await rootBundle.load('assets/iosn/icongrowquran.jpg');
+      final bytes = await rootBundle.load('assets/images/bustan_splash.png');
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/quranglow_now_playing_v2.jpg');
+      final file = File('${dir.path}/bustan_now_playing.png');
       await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
       _artworkUri = Uri.file(file.path);
       return _artworkUri;

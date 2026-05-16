@@ -46,43 +46,44 @@ class TrackCard extends ConsumerWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: Theme.of(context).brightness == Brightness.dark
-                        ? [
-                            const Color(0xFF2C5364),
-                            const Color(0xFF203A43),
-                            const Color(0xFF0F2027),
-                          ]
-                        : [
-                            const Color(0xFF004D40), // Deep Islamic Green
-                            const Color(0xFF00695C),
-                            const Color(0xFF00796B),
-                          ],
+                  borderRadius: BorderRadius.circular(20),
+                  image: const DecorationImage(
+                    image: AssetImage('assets/images/bustan_splash.png'),
+                    fit: BoxFit.cover,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: showLyrics 
-                      ? const EmbeddedPlayerLyrics()
-                      : const Center(
-                          child: Icon(
-                            Icons.graphic_eq_rounded,
-                            size: 80,
-                            color: Colors.white24,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.7),
+                          Colors.black.withOpacity(0.1),
+                        ],
+                      ),
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: showLyrics 
+                        ? const EmbeddedPlayerLyrics()
+                        : const Center(
+                            child: Icon(
+                              Icons.graphic_eq_rounded,
+                              size: 80,
+                              color: Colors.white38,
+                            ),
                           ),
-                        ),
+                    ),
                   ),
                 ),
               ),
