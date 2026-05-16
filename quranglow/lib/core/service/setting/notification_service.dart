@@ -631,6 +631,7 @@ class NotificationService {
         final scheduled = tz.TZDateTime.from(time, tz.local);
         if (!scheduled.isAfter(now)) continue;
 
+        // 1. Schedule the main Adhan notification
         await _plugin.zonedSchedule(
           _prayerNotificationId(dayIndex, prayerIndex),
           'حان الآن موعد صلاة ${_arabicPrayerName(key)}',
@@ -643,9 +644,49 @@ class NotificationService {
             windows: win,
           ),
           androidScheduleMode: mode,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+
+        // 2. Schedule the "Did you pray?" follow-up notification (15 minutes later)
+        final followUpTime = scheduled.add(const Duration(minutes: 15));
+        await _plugin.zonedSchedule(
+          _prayerFollowUpId(dayIndex, prayerIndex),
+          'هل صليت ${_arabicPrayerName(key)}؟',
+          _getPrayerMotivation(key),
+          followUpTime,
+          NotificationDetails(
+            android: android.copyWith(
+              // Use standard notification sound for the question, not the full Adhan
+              sound: null,
+              playSound: true,
+              styleInformation: const BigTextStyleInformation(''),
+            ),
+            iOS: ios,
+            macOS: mac,
+            windows: win,
+          ),
+          androidScheduleMode: mode,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
         );
       }
     }
+  }
+
+  String _getPrayerMotivation(String prayerKey) {
+    final motivations = [
+      'الصلاة هي عماد الدين ونور المؤمن، لا تدع الدنيا تشغلك عن لقاء خالقك.',
+      'تذكر أن أول ما يحاسب عليه العبد يوم القيامة الصلاة، فاجعلها قرة عينك.',
+      'الصلاة صلة بين العبد وربه، وهي راحة للقلب وطمأنينة للنفس.',
+      'أقم صلاتك تنعم بحياتك، فما بين الرجل والكفر أو الشرك إلا ترك الصلاة.',
+    ];
+    // Return a motivation based on some hash or index, or just pick one
+    return motivations[DateTime.now().millisecond % motivations.length];
+  }
+
+  int _prayerFollowUpId(int dayIndex, int prayerIndex) {
+    return _prayerBaseId + 100 + (dayIndex * 10) + prayerIndex;
   }
 
   Future<void> cancelPrayerNotifications() async {
@@ -653,6 +694,7 @@ class NotificationService {
     for (var dayIndex = 0; dayIndex < _prayerScheduleWindowDays; dayIndex++) {
       for (var prayerIndex = 0; prayerIndex < _prayerCount; prayerIndex++) {
         await _plugin.cancel(_prayerNotificationId(dayIndex, prayerIndex));
+        await _plugin.cancel(_prayerFollowUpId(dayIndex, prayerIndex));
       }
     }
   }

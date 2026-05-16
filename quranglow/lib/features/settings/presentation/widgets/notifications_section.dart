@@ -491,32 +491,6 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        Center(
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              await NotificationService.instance.showAdhanPreview(
-                title: 'تجربة صوت الأذان',
-                body: 'سيتم تشغيل صوت ${st.adhanSound.label} الآن...',
-                settings: st,
-              );
-              _snack('سيتم تشغيل التنبيه الآن...');
-            },
-            icon: const Icon(Icons.notifications_active_rounded, size: 20),
-            label: const Text(
-              'تجربة صوت الأذان (إشعار تجريبي)',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: cs.primary,
-              side: BorderSide(color: cs.primary.withOpacity(0.4), width: 1.5),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
