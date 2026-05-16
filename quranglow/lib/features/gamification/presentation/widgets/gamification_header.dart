@@ -19,64 +19,84 @@ class GameificationHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Helper to simulate video ad inside the header context
-    Future<void> watchAdForRefill() async {
+    // Helper to trigger spiritual renewal and refill hearts freely
+    Future<void> spiritualRenewalRefill() async {
+      final List<String> spiritualQuotes = [
+        "'{وَمَنْ يَتَّقِ اللَّهَ يَجْعَلْ لَهُ مَخْرَجًا}' - سورة الطلاق",
+        "'{وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ}' - سورة البقرة",
+        "'{أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ}' - سورة الرعد",
+        "'{إِنَّ مَعَ الْعُسْرِ يُسْرًا}' - سورة الشرح",
+        "قَالَ رَسُولُ اللَّهِ ﷺ: 'اسْتَعِنْ بِاللَّهِ وَلَا تَعْجَزْ'",
+      ];
+      final String randomQuote = spiritualQuotes[DateTime.now().second % spiritualQuotes.length];
+
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => WillPopScope(
-          onWillPop: () async => false,
-          child: Dialog.fullscreen(
-            backgroundColor: Colors.black87,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: Colors.white),
-                  const SizedBox(height: 24),
-                  const Icon(
-                    Icons.video_stable_rounded,
-                    size: 50,
-                    color: Colors.blueAccent,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'مشاهدة فيديو لاستعادة القلوب...',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'سيتم منح المكافأة فور اكتمال المشاهدة',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  ),
-                ],
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          backgroundColor: Theme.of(context).cardColor,
+          title: Column(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.amber, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'تجديد العزم بنور الله',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
               ),
-            ),
+            ],
           ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                randomQuote,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'KFGQPC Uthmanic Script',
+                  fontSize: 18,
+                  color: Theme.of(context).primaryColor,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'سيتم تجديد محاولاتك لتعينك على الاستمرار في رحلتك المباركة.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                final ok = await ref
+                    .read(gamificationControllerProvider.notifier)
+                    .grantRewardAdHearts();
+                if (ok && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تم تجديد القلوب، انطلق ببركة الله! 💖✨', textAlign: TextAlign.center),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              icon: const Icon(Icons.favorite_rounded),
+              label: const Text('استمر في الرحلة'),
+            ),
+          ],
         ),
       );
-
-      // Fake play delay
-      await Future.delayed(const Duration(milliseconds: 2500));
-
-      if (context.mounted) {
-        Navigator.pop(context); // Close overlay
-        final ok = await ref
-            .read(gamificationControllerProvider.notifier)
-            .grantRewardAdHearts();
-        if (ok && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم منحك قلوب مجانية بمشاهدة الإعلان! 💖🎉'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      }
     }
 
     return Container(
@@ -184,12 +204,12 @@ class GameificationHeader extends ConsumerWidget {
                       GestureDetector(
                         onTap: () async {
                           if (userProfile.hearts < 5) {
-                            watchAdForRefill();
+                            spiritualRenewalRefill();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'القلوب ممتلئة بالفعل! لا داعي لمشاهدة الإعلان 💖',
+                                  'القلوب ممتلئة بالفعل، استعن بالله وانطلق! 💖',
                                 ),
                                 backgroundColor: Colors.grey,
                               ),

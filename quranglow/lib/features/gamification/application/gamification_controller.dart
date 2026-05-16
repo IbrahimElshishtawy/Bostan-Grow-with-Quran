@@ -9,6 +9,7 @@ import 'package:quranglow/core/data/surah_names_ar.dart';
 
 import 'package:quranglow/core/data/surah_ayah_counts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:home_widget/home_widget.dart';
 
 /// Static service to trigger soft satisfying Islamic-inspired UI haptics and sounds
 class PremiumFeedbackService {
@@ -82,8 +83,30 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
         await prefs.setInt('quran_levels_data_version', currentTargetVersion);
       }
 
+      // ✨ DYNAMIC STREAK CALCULATION: Handle commitment and negative streaks!
+      final now = DateTime.now();
+      final lastActive = profile.lastActiveDate;
+      int updatedStreak = profile.currentStreak;
+
+      if (lastActive != null) {
+        final daysDifference = now.difference(DateTime(lastActive.year, lastActive.month, lastActive.day)).inDays;
+        
+        if (daysDifference > 1) {
+          // User missed days! Count them as negative to remind them of the gap.
+          updatedStreak = -(daysDifference - 1);
+        } else if (daysDifference == 1) {
+          // If they were active yesterday, they are on track. 
+          // If streak was negative, it stays negative until they complete a task today.
+        }
+      }
+
+      final updatedProfile = profile.copyWith(currentStreak: updatedStreak);
+      if (updatedStreak != profile.currentStreak) {
+        await repository.setUserProfile(userId, updatedProfile);
+      }
+      
       final gameState = GameState(
-        userProfile: profile,
+        userProfile: updatedProfile,
         levels: levels,
         isLoading: false,
         error: null,
@@ -91,6 +114,8 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       );
 
       state = AsyncValue.data(gameState);
+      
+      _updateHomeWidget(gameState);
       
       // Catch up and start heartbeat ticker
       await _processHeartsRegeneration();
@@ -166,6 +191,35 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
 
   Future<void> reload() async {
     await initialize();
+  }
+
+  Future<void> _updateHomeWidget(GameState gameState) async {
+    try {
+      final profile = gameState.userProfile;
+      final levels = gameState.levels;
+      
+      // Find current active level
+      final currentLevel = levels.firstWhere(
+        (l) => !l.isCompleted && l.isUnlocked, 
+        orElse: () => levels.last,
+      );
+
+      await HomeWidget.saveWidgetData<String>('streak_value', profile.currentStreak.toString());
+      await HomeWidget.saveWidgetData<String>('level_value', profile.currentLevel.toString());
+      await HomeWidget.saveWidgetData<String>('station_title', currentLevel.title);
+      await HomeWidget.saveWidgetData<String>('task_listen', currentLevel.isListenCompleted ? '1' : '0');
+      await HomeWidget.saveWidgetData<String>('task_read', currentLevel.isReadCompleted ? '1' : '0');
+      await HomeWidget.saveWidgetData<String>('task_write', currentLevel.isWriteCompleted ? '1' : '0');
+      await HomeWidget.saveWidgetData<String>('task_memorize', currentLevel.isMemorizeCompleted ? '1' : '0');
+      await HomeWidget.saveWidgetData<String>('task_quiz', currentLevel.isQuizCompleted ? '1' : '0');
+
+      await HomeWidget.updateWidget(
+        androidName: 'LearningWidgetProvider',
+        iOSName: 'LearningWidgetProvider',
+      );
+    } catch (e) {
+      debugPrint('Error updating home widget: $e');
+    }
   }
 
   /// Complete an interactive learning sub-task (Listen, Read, Write, Memorize, Quiz)
@@ -332,16 +386,24 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       if (lastActive == null) {
         newStreak = 1;
       } else {
-        final daysDifference = now.difference(lastActive).inDays;
+        final lastActiveDateOnly = DateTime(lastActive.year, lastActive.month, lastActive.day);
+        final nowDateOnly = DateTime(now.year, now.month, now.day);
+        final daysDifference = nowDateOnly.difference(lastActiveDateOnly).inDays;
+
         if (daysDifference == 1) {
-          newStreak = updatedProfile.currentStreak + 1;
+          // Active today after being active yesterday
+          newStreak = (updatedProfile.currentStreak < 0) ? 1 : updatedProfile.currentStreak + 1;
         } else if (daysDifference > 1) {
+          // Returning after a gap
           if (freezesLeft > 0) {
             freezesLeft--;
-            newStreak = updatedProfile.currentStreak; // Freeze saved it!
+            newStreak = (updatedProfile.currentStreak < 0) ? 1 : updatedProfile.currentStreak + 1;
           } else {
-            newStreak = 1;
+            newStreak = 1; // Restart the positive journey
           }
+        } else if (daysDifference == 0) {
+          // Already active today, just maintain current streak if it was already updated to positive
+          newStreak = (updatedProfile.currentStreak < 0) ? 1 : updatedProfile.currentStreak;
         }
       }
 
@@ -360,13 +422,16 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       // 🌟 PERFORMANCE OPTIMIZATION: OPTIMISTIC UI UPDATE! 🌟
       // We push the state to UI immediately so it feels instantaneous (0ms lag)
       // ---------------------------------------------------------
-      state = AsyncValue.data(GameState(
+      final newState = GameState(
         userProfile: finalProfile,
         levels: updatedLevels,
         isLoading: false,
         error: null,
         dailyMissions: updatedMissions,
-      ));
+      );
+      state = AsyncValue.data(newState);
+      
+      _updateHomeWidget(newState);
 
       // ---------------------------------------------------------
       // 💾 ATOMIC DISK PERSISTENCE: SAVE ALL UPDATED MEMORY DATA DIRECTLY
@@ -575,6 +640,24 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
 
       await repository.setUserProfile(userId, updatedProfile);
       await initialize();
+    } catch (_) {}
+  }
+
+  /// Mark that the user has seen the "Entire Journey Completed" celebration dialog
+  Future<void> markJourneyCompletionAsSeen() async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    try {
+      final updatedProfile = currentState.userProfile.copyWith(
+        hasSeenJourneyCompletionDialog: true,
+      );
+
+      state = AsyncValue.data(currentState.copyWith(
+        userProfile: updatedProfile,
+      ));
+
+      await repository.setUserProfile(userId, updatedProfile);
     } catch (_) {}
   }
 

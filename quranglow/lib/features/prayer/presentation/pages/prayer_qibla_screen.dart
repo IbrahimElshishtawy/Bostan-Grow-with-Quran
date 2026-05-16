@@ -5,7 +5,9 @@ import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/prayer/prayer_times_data.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/features/prayer/presentation/widgets/prayer_clock_visualizer.dart';
-import 'package:quranglow/features/qibla/presentation/widgets/qibla_compass.dart';
+import 'package:quranglow/features/prayer/presentation/widgets/prayer_academy_hub.dart';
+import 'package:quranglow/features/ui/routes/app_routes.dart';
+import 'package:quranglow/core/widgets/pro_shimmer.dart';
 
 class PrayerQiblaScreen extends ConsumerStatefulWidget {
   const PrayerQiblaScreen({super.key});
@@ -15,15 +17,40 @@ class PrayerQiblaScreen extends ConsumerStatefulWidget {
 }
 
 class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final prayersAsync = ref.watch(todayPrayersProvider);
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: const ProAppBar(
+      appBar: ProAppBar(
         title: 'المصلى',
         subtitle: 'مواقيت الصلاة واتجاه القبلة بدقة عالية',
+        showBack: false, // Remove the back arrow for cleaner navigation hub aesthetics
+        actions: [
+          _buildAppBarAction(
+            icon: Icons.mosque_rounded,
+            tooltip: 'أقرب المساجد',
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.nearestMosque);
+            },
+          ),
+          _buildAppBarAction(
+            icon: Icons.explore_rounded,
+            tooltip: 'بوصلة القبلة',
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.qibla);
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -41,6 +68,7 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
             data: (data) => RefreshIndicator(
               onRefresh: () => ref.refresh(todayPrayersProvider.future),
               child: SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.only(bottom: 110), // extra padding for stack navbar
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
@@ -56,36 +84,16 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
                     _buildPrayerTimes(context, data),
                     const SizedBox(height: 28),
 
-                    // Section 3: Qibla Title
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'اتجاه القبلة',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: cs.onSurface,
-                          fontFamily: 'Tajawal',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    // Section 2.5: Premium Interactive Prayer Academy Hub
+                    const PrayerAcademyHub(),
+                    const SizedBox(height: 28),
 
-                    // Section 4: Integrated Real Compass Widget
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: const QiblaCompass(
-                        showEffects: true,
-                        showCalibrationCard: false, // keep it clean
-                        showHintCard: true,         // but give them hint
-                        showInfoCards: true,        // and basic degrees
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => _buildLoadingSkeleton(context),
             error: (err, stack) => _buildErrorState(context, err),
           ),
         ),
@@ -115,13 +123,18 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
                   fontFamily: 'Tajawal',
                 ),
               ),
-              const Spacer(),
-              Text(
-                data.methodName,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Tajawal',
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  data.methodName,
+                  textAlign: TextAlign.left, // opposite end alignment in RTL
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Tajawal',
+                  ),
                 ),
               ),
             ],
@@ -349,6 +362,138 @@ class _PrayerQiblaScreenState extends ConsumerState<PrayerQiblaScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+  Widget _buildLoadingSkeleton(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 110),
+      physics: const NeverScrollableScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            // 1. Hero Clock Visualizer Shimmer
+            const ProShimmer(
+              width: double.infinity,
+              height: 320,
+              borderRadius: 32,
+            ),
+            const SizedBox(height: 28),
+
+            // 2. Section 2 Label Shimmer
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ProShimmer(width: 120, height: 22, borderRadius: 8),
+                ProShimmer(width: 140, height: 16, borderRadius: 6),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 3. Grid Items Shimmers (6 items)
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.4,
+              ),
+              itemCount: 6,
+              itemBuilder: (context, index) => const ProShimmer(
+                width: double.infinity,
+                height: double.infinity,
+                borderRadius: 22,
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // 4. Academy Grid Shimmer (6 tiles, 2 columns)
+            const ProShimmer(width: 160, height: 22, borderRadius: 8),
+            const SizedBox(height: 16),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.4,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: 6,
+              itemBuilder: (context, index) => const ProShimmer(
+                width: double.infinity,
+                height: double.infinity,
+                borderRadius: 22,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBarAction({
+    required IconData icon,
+    required VoidCallback onTap,
+    required String tooltip,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 8),
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                cs.surface,
+                cs.surfaceContainerLow,
+              ],
+            ),
+            border: Border.all(
+              color: cs.primary.withValues(alpha: 0.22),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: cs.shadow.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              splashColor: cs.primary.withValues(alpha: 0.15),
+              highlightColor: cs.primary.withValues(alpha: 0.05),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: cs.primary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

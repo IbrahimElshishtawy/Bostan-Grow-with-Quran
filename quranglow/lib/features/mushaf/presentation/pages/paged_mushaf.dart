@@ -26,6 +26,7 @@ class PagedMushaf extends StatefulWidget {
     this.isHifzMode = false,
     this.revealedWords = const {},
     this.mistakenWords = const {},
+    this.fontSize = 24.0,
   });
 
   final List<Aya> ayat;
@@ -42,6 +43,7 @@ class PagedMushaf extends StatefulWidget {
   final bool isHifzMode;
   final Map<int, Set<int>> revealedWords;
   final Map<int, Set<int>> mistakenWords;
+  final double fontSize;
 
   @override
   State<PagedMushaf> createState() => PagedMushafState();
@@ -207,6 +209,7 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
                           isHifzMode: widget.isHifzMode,
                           revealedWords: widget.revealedWords,
                           mistakenWords: widget.mistakenWords,
+                          fontSize: widget.fontSize,
                         ),
                       ),
 

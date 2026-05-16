@@ -502,57 +502,126 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
   }
 
   void _showRefillPrompt() {
+    final cs = Theme.of(context).colorScheme;
+    final List<String> spiritualQuotes = [
+      "'{وَمَنْ يَتَّقِ اللَّهَ يَجْعَلْ لَهُ مَخْرَجًا}' - سورة الطلاق",
+      "'{وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ}' - سورة البقرة",
+      "'{أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ}' - سورة الرعد",
+      "'{إِنَّ مَعَ الْعُسْرِ يُسْرًا}' - سورة الشرح",
+      "قَالَ رَسُولُ اللَّهِ ﷺ: 'اسْتَعِنْ بِاللَّهِ وَلَا تَعْجَزْ'",
+    ];
+    final String randomQuote = spiritualQuotes[DateTime.now().second % spiritualQuotes.length];
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (c) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('نفذت المحاولات! 💔', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('يمكنك الانتظار لإعادة الشحن، أو مشاهدة فيديو لاستعادة المحاولات فوراً والاستمرار!'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        backgroundColor: Theme.of(context).cardColor,
+        title: Column(
+          children: [
+            const Icon(Icons.auto_awesome, color: Colors.amber, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'تذكر واستعن بالله',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              randomQuote,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'KFGQPC Uthmanic Script',
+                fontSize: 18,
+                color: cs.primary,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'الخطأ هو طريق التعلم، لا تحزن.. استمر في رحلتك وسيعينك الله.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
         actionsAlignment: MainAxisAlignment.center,
+        actionsPadding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
         actions: [
-          TextButton(onPressed: () { Navigator.pop(context); Navigator.pop(context); }, child: const Text('خروج')),
-          ElevatedButton.icon(
-            onPressed: () => _simulateWatchAd(c),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[600], foregroundColor: Colors.white),
-            icon: const Icon(Icons.play_circle_fill_rounded),
-            label: const Text('مشاهدة إعلان 🎁'),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _refillHeartsFreely(c),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              icon: const Icon(Icons.favorite_rounded),
+              label: const Text(
+                'استمر بنور الله',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(c);
+              Navigator.pop(context);
+            },
+            child: Text(
+              'خروج مؤقت',
+              style: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _simulateWatchAd(BuildContext dialogContext) async {
+  Future<void> _refillHeartsFreely(BuildContext dialogContext) async {
     Navigator.pop(dialogContext);
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => WillPopScope(
-        onWillPop: () async => false,
-        child: Dialog.fullscreen(
-          backgroundColor: Colors.black87,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                CircularProgressIndicator(color: Colors.white),
-                SizedBox(height: 24),
-                Icon(Icons.movie_creation_rounded, size: 50, color: Colors.blueAccent),
-                SizedBox(height: 16),
-                Text('جاري تشغيل الإعلان...', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              ],
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 24),
+            Text(
+              'جاري تجديد العزم...',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
+          ],
         ),
       ),
     );
-    await Future.delayed(const Duration(milliseconds: 2500));
+
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
     if (mounted) {
       Navigator.pop(context);
-      final success = await ref.read(gamificationControllerProvider.notifier).grantRewardAdHearts();
+      final success = await ref
+          .read(gamificationControllerProvider.notifier)
+          .grantRewardAdHearts();
+      
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت استعادة المحاولات! 🎉'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تمت استعادة المحاولات، انطلق ببركة الله! ✨', textAlign: TextAlign.center),
+            backgroundColor: Colors.green,
+          ),
+        );
         if (_ayahs.isEmpty) _loadLevelData();
       }
     }

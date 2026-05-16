@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/features/player/presentation/widgets/CombinedPositionData.dart';
 
-class PositionBar extends StatelessWidget {
+class PositionBar extends ConsumerWidget {
   const PositionBar({
     super.key,
     required this.timelineStream,
@@ -12,7 +14,7 @@ class PositionBar extends StatelessWidget {
   final Future<void> Function(Duration) onSeek;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
 
     return StreamBuilder<CombinedPositionData>(
@@ -26,11 +28,16 @@ class PositionBar extends StatelessWidget {
         final timeline =
             snap.data ??
             CombinedPositionData(Duration.zero, Duration.zero, Duration.zero);
-        final total = timeline.total;
+        
+        final playerState = ref.watch(playerControllerProvider).asData?.value;
+        final totalOverride = playerState?.totalDurationOverride ?? Duration.zero;
+        
+        final total = (totalOverride > timeline.total) ? totalOverride : timeline.total;
         final position = timeline.position > total ? total : timeline.position;
-        final buffered = timeline.bufferedPosition > total
-            ? total
-            : timeline.bufferedPosition;
+        final bufferedPosition = timeline.bufferedPosition > total ? total : timeline.bufferedPosition;
+        
+        final bufferedMs = bufferedPosition.inMilliseconds.toDouble();
+            
         final sliderMax = total.inMilliseconds <= 0
             ? 1.0
             : total.inMilliseconds.toDouble();
@@ -49,9 +56,7 @@ class PositionBar extends StatelessWidget {
                 min: 0,
                 max: sliderMax,
                 value: position.inMilliseconds.clamp(0, sliderMax).toDouble(),
-                secondaryTrackValue: buffered.inMilliseconds
-                    .clamp(0, sliderMax)
-                    .toDouble(),
+                secondaryTrackValue: bufferedMs.clamp(0, sliderMax).toDouble(),
                 onChanged: total.inMilliseconds <= 0
                     ? null
                     : (value) => onSeek(Duration(milliseconds: value.round())),

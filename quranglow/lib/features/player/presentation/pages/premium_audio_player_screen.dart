@@ -30,7 +30,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.download_rounded),
             onPressed: () => _showPlaylistMenu(context),
           ),
         ],
@@ -380,6 +380,14 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              leading: const Icon(Icons.download_rounded, color: Colors.white),
+              title: const Text(
+                'Download for offline',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () => Navigator.pop(context),
+            ),
             ListTile(
               leading: const Icon(Icons.playlist_add, color: Colors.white),
               title: const Text(

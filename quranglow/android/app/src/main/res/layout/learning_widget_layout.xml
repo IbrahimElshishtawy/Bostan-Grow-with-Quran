@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:padding="16dp">
+
+    <!-- Top Row: Level & Streak -->
+    <RelativeLayout
+        android:id="@+id/top_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true">
+        
+        <TextView
+            android:id="@+id/widget_level"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:text="مستوى 1"
+            android:textColor="#FBBF24"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_streak_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:text="🔥 0"
+            android:textColor="#F87171"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- Center: Station Title -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:orientation="vertical">
+        
+        <TextView
+            android:id="@+id/widget_station_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="الورد القرآني"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="أكمل مهامك اليومية لترتقي بمستواك"
+            android:textColor="#A0AEC0"
+            android:textSize="10sp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+    <!-- Bottom Row: Task Progress (5 dots/icons) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:orientation="horizontal">
+
+        <TextView android:id="@+id/task_listen" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🎧" android:textSize="18sp" android:layout_marginEnd="12dp"/>
+        <TextView android:id="@+id/task_read" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📖" android:textSize="18sp" android:layout_marginEnd="12dp"/>
+        <TextView android:id="@+id/task_write" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="✍️" android:textSize="18sp" android:layout_marginEnd="12dp"/>
+        <TextView android:id="@+id/task_memorize" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🧠" android:textSize="18sp" android:layout_marginEnd="12dp"/>
+        <TextView android:id="@+id/task_quiz" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="❓" android:textSize="18sp" />
+
+    </LinearLayout>
+
+</RelativeLayout>

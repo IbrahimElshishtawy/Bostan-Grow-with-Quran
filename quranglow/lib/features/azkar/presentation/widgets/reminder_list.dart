@@ -8,8 +8,6 @@ import 'package:quranglow/features/azkar/presentation/widgets/reminder_editor.da
 import 'package:quranglow/features/azkar/presentation/widgets/reminder_tile.dart';
 import '../../../../../core/model/reminder/reminder.dart';
 
-enum _AzkarPreset { morning, evening, afterPrayer }
-
 class ReminderList extends ConsumerStatefulWidget {
   const ReminderList({super.key});
 
@@ -18,49 +16,12 @@ class ReminderList extends ConsumerStatefulWidget {
 }
 
 class _ReminderListState extends ConsumerState<ReminderList> {
-  static const _morningKey = 'azkar.reminder.morning';
-  static const _eveningKey = 'azkar.reminder.evening';
-  static const _afterPrayerKey = 'azkar.reminder.afterPrayer';
-
   final List<Reminder> _items = [];
-  final Map<_AzkarPreset, bool> _presetStates = {
-    _AzkarPreset.morning: false,
-    _AzkarPreset.evening: false,
-    _AzkarPreset.afterPrayer: false,
-  };
-  bool _loadingPresets = true;
 
   @override
   void initState() {
     super.initState();
     _loadReminders();
-    _loadPresetStates();
-  }
-
-  Future<void> _loadPresetStates() async {
-    final storage = ref.read(storageProvider);
-    await storage.init();
-    if (!mounted) return;
-    setState(() {
-      _presetStates[_AzkarPreset.morning] =
-          (storage.getString(_morningKey) ?? 'false') == 'true';
-      _presetStates[_AzkarPreset.evening] =
-          (storage.getString(_eveningKey) ?? 'false') == 'true';
-      _presetStates[_AzkarPreset.afterPrayer] =
-          (storage.getString(_afterPrayerKey) ?? 'false') == 'true';
-      _loadingPresets = false;
-    });
-  }
-
-  Future<void> _persistPresetState(_AzkarPreset preset, bool value) async {
-    final storage = ref.read(storageProvider);
-    await storage.init();
-    final key = switch (preset) {
-      _AzkarPreset.morning => _morningKey,
-      _AzkarPreset.evening => _eveningKey,
-      _AzkarPreset.afterPrayer => _afterPrayerKey,
-    };
-    await storage.putString(key, value.toString());
   }
 
   Future<void> _loadReminders() async {
@@ -78,63 +39,24 @@ class _ReminderListState extends ConsumerState<ReminderList> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: const Text('إضافة يدويًا'),
+        icon: const Icon(Icons.add_alarm_rounded),
+        label: const Text('إضافة تنبيه جديد'),
         onPressed: _openEditor,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        physics: const BouncingScrollPhysics(),
         children: [
           _SectionCard(
-            title: 'تذكيرات الأذكار',
-            subtitle:
-                'فعّل التذكير الذي تريده، وسيتم جدولة الإشعار مباشرة حسب اختيارك.',
-            child: _loadingPresets
-                ? const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : Column(
-                    children: [
-                      _PresetTile(
-                        icon: Icons.wb_sunny_rounded,
-                        title: 'أذكار الصباح',
-                        subtitle: 'تذكير يومي صباحي لبدء يومك بالذكر',
-                        value: _presetStates[_AzkarPreset.morning] ?? false,
-                        onChanged: (v) =>
-                            _togglePreset(_AzkarPreset.morning, v),
-                      ),
-                      _PresetTile(
-                        icon: Icons.nightlight_round,
-                        title: 'أذكار المساء',
-                        subtitle: 'تذكير يومي مسائي لختم يومك بالطمأنينة',
-                        value: _presetStates[_AzkarPreset.evening] ?? false,
-                        onChanged: (v) =>
-                            _togglePreset(_AzkarPreset.evening, v),
-                      ),
-                      _PresetTile(
-                        icon: Icons.mosque_rounded,
-                        title: 'أذكار بعد كل صلاة',
-                        subtitle:
-                            'خمسة تذكيرات يومية بعد الفجر والظهر والعصر والمغرب والعشاء',
-                        value: _presetStates[_AzkarPreset.afterPrayer] ?? false,
-                        onChanged: (v) =>
-                            _togglePreset(_AzkarPreset.afterPrayer, v),
-                      ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            title: 'تذكيرات مخصصة',
-            subtitle: 'أنشئ تذكيرًا خاصًا بك بتاريخ ووقت محددين.',
+            title: 'تذكيراتي المخصصة',
+            subtitle: 'أنشئ تذكيرات خاصة بك لمواعيد الأذكار، الصلوات، أو أي ورد خاص بك.',
             child: _items.isEmpty
                 ? const _EmptyState()
                 : ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: _items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (_, i) => ReminderTile(
                       r: _items[i],
                       onEdit: () => _openEditor(edit: _items[i]),
@@ -144,51 +66,17 @@ class _ReminderListState extends ConsumerState<ReminderList> {
                     ),
                   ),
           ),
+          const SizedBox(height: 80), // Space for FAB
         ],
       ),
     );
-  }
-
-  Future<void> _togglePreset(_AzkarPreset preset, bool enabled) async {
-    try {
-      switch (preset) {
-        case _AzkarPreset.morning:
-          await NotificationService.instance.scheduleMorningAzkarReminder(
-            enabled: enabled,
-          );
-        case _AzkarPreset.evening:
-          await NotificationService.instance.scheduleEveningAzkarReminder(
-            enabled: enabled,
-          );
-        case _AzkarPreset.afterPrayer:
-          if (enabled) {
-            final prayerData = await ref
-                .read(prayerTimesServiceProvider)
-                .fetchForToday();
-            await NotificationService.instance
-                .scheduleAfterPrayerAzkarReminders(
-                  enabled: true,
-                  data: prayerData,
-                );
-          } else {
-            await NotificationService.instance
-                .cancelAfterPrayerAzkarReminders();
-          }
-      }
-
-      await _persistPresetState(preset, enabled);
-      if (!mounted) return;
-      setState(() => _presetStates[preset] = enabled);
-      _snack(enabled ? 'تم تفعيل التذكير' : 'تم إيقاف التذكير');
-    } catch (e) {
-      _snack('تعذر ضبط التذكير: $e');
-    }
   }
 
   Future<void> _openEditor({Reminder? edit}) async {
     final res = await showModalBottomSheet<Reminder>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => ReminderEditor(existing: edit),
     );
     if (!mounted || res == null) return;
@@ -261,7 +149,13 @@ class _ReminderListState extends ConsumerState<ReminderList> {
 
   void _snack(String s) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(s),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 }
 
@@ -280,109 +174,67 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: isDark ? Colors.white10 : cs.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(Icons.notifications_active_rounded, color: cs.primary, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Tajawal',
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: cs.onSurfaceVariant,
+                        fontSize: 12,
+                        height: 1.4,
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: cs.onSurfaceVariant,
-              height: 1.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           child,
-        ],
-      ),
-    );
-  }
-}
-
-class _PresetTile extends StatelessWidget {
-  const _PresetTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: value
-              ? cs.primary.withValues(alpha: 0.55)
-              : cs.outlineVariant.withValues(alpha: 0.55),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: cs.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: cs.onSurface,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: cs.onSurfaceVariant,
-                    fontSize: 12,
-                    height: 1.45,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch.adaptive(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -396,21 +248,37 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final ct = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: 40),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.notifications_none, size: 56, color: ct.outline),
-            const SizedBox(height: 12),
-            Text(
-              'لا توجد تذكيرات مخصصة بعد',
-              style: Theme.of(context).textTheme.bodyLarge,
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: ct.primary.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.alarm_add_rounded, size: 48, color: ct.primary.withValues(alpha: 0.4)),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 20),
             Text(
-              'أضف تذكيرًا يدويًا من الزر السفلي',
-              style: TextStyle(color: ct.outline),
+              'لا توجد تذكيرات بعد',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Tajawal',
+                color: ct.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'ابدأ بإضافة تذكير خاص بك من الزر أدناه',
+              style: TextStyle(
+                color: ct.onSurfaceVariant,
+                fontFamily: 'Tajawal',
+                fontSize: 13,
+              ),
             ),
           ],
         ),

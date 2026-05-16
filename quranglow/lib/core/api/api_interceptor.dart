@@ -57,7 +57,8 @@ class ApiInterceptor extends Interceptor {
   ) async {
     // Cache successful GET responses
     if (response.requestOptions.method == 'GET' &&
-        response.statusCode == 200) {
+        response.statusCode == 200 &&
+        (response.data is Map || response.data is List)) {
       final cacheKey = _getCacheKey(response.requestOptions);
       await cacheManager.set(
         cacheKey,

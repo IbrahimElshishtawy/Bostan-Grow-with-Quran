@@ -22,8 +22,8 @@ class _SurahListPageState extends State<SurahListPage> {
     // Initialize with all indices
     _filteredIndices = List.generate(kSurahNamesAr.length, (i) => i);
 
-    // Artificial delay so user sees the gorgeous skeleton loader requested
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    // Reduced delay for a snappier feel
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -174,80 +174,70 @@ class _SurahListPageState extends State<SurahListPage> {
                   },
                 ),
               ),
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 12),
-              child: IconButton.filledTonal(
-                tooltip: 'رجوع',
-                onPressed: () => Navigator.pop(context),
-                style: IconButton.styleFrom(
-                  backgroundColor: cs.surface.withValues(alpha: 0.82),
-                  foregroundColor: cs.primary,
-                  side: BorderSide(
-                    color: cs.outlineVariant.withValues(alpha: 0.7),
-                  ),
-                ),
-                icon: const Icon(Icons.arrow_forward_rounded),
-              ),
-            ),
+
           ],
         ),
-        body: _isLoading
-            ? const SurahListSkeleton()
-            : _filteredIndices.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.search_off_rounded,
-                      size: 64,
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'لم يتم العثور على نتائج',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: cs.onSurfaceVariant,
+        body: Column(
+          children: [
+            // Surahs List
+            Expanded(
+              child: _isLoading
+                  ? const SurahListSkeleton()
+                  : _filteredIndices.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off_rounded,
+                            size: 64,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'لم يتم العثور على نتائج',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 16),
-                itemCount: _filteredIndices.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, listIndex) {
-                  final originalIndex = _filteredIndices[listIndex];
-                  final surahNumber = originalIndex + 1;
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-
-                  // ✨ Ultra-Premium GREEN Palette and Theme Adaptive Variables
-                  final Color greenMain = cs.primary;
-                  final Color greenAccent = cs.primary.withValues(alpha: 0.85);
-                  final Color surfaceColor = isDark
-                      ? const Color(0xFF1C1C1E)
-                      : Colors.white;
-                  final Color textColorMain = isDark
-                      ? Colors.grey[200]!
-                      : const Color(0xFF2D3436);
-                  final Color textColorSub = isDark
-                      ? Colors.grey[500]!
-                      : const Color(0xFF636E72);
-
-                  return Container(
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: surfaceColor,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+                      itemCount: _filteredIndices.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, listIndex) {
+                        final originalIndex = _filteredIndices[listIndex];
+                        final surahNumber = originalIndex + 1;
+                        final isDark =
+                            Theme.of(context).brightness == Brightness.dark;
+      
+                        // ✨ Ultra-Premium GREEN Palette and Theme Adaptive Variables
+                        final Color greenMain = cs.primary;
+                        final Color greenAccent = cs.primary.withValues(alpha: 0.85);
+                        final Color surfaceColor = isDark
+                            ? const Color(0xFF1C1C1E)
+                            : Colors.white;
+                        final Color textColorMain = isDark
+                            ? Colors.grey[200]!
+                            : const Color(0xFF2D3436);
+                        final Color textColorSub = isDark
+                            ? Colors.grey[500]!
+                            : const Color(0xFF636E72);
+      
+                        return Container(
+                          margin: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
                           color: isDark
                               ? Colors.black.withValues(alpha: 0.3)
                               : greenMain.withValues(alpha: 0.08),
@@ -406,10 +396,13 @@ class _SurahListPageState extends State<SurahListPage> {
                   );
                 },
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
-
+ 
   String _toArabicDigits(int n) {
     const east = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     final b = StringBuffer();
@@ -420,3 +413,5 @@ class _SurahListPageState extends State<SurahListPage> {
     return b.toString();
   }
 }
+
+

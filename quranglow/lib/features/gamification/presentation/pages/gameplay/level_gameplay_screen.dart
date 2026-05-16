@@ -195,12 +195,19 @@ class _LevelGameplayScreenState extends ConsumerState<LevelGameplayScreen> {
                                             Text(
                                               ayah.text,
                                               style: TextStyle(
-                                                fontSize: 25,
-                                                height: 1.6,
+                                                fontSize: 28, // Slightly larger
+                                                height: 1.8, // Better spacing for clarity
                                                 fontWeight: FontWeight.bold,
                                                 fontFamily: 'Kitab',
-                                                color: isActive ? textColor : subTextColor,
-                                                letterSpacing: -0.1,
+                                                color: isActive ? textColor : subTextColor.withValues(alpha: 0.8),
+                                                letterSpacing: -0.2,
+                                                shadows: isActive ? [
+                                                  Shadow(
+                                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ] : null,
                                               ),
                                               textAlign: TextAlign.right,
                                             ),

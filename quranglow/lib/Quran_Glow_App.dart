@@ -61,7 +61,7 @@ class QuranGlowApp extends ConsumerWidget {
     RouteFactory? onGenerateRoute,
   }) {
     return MaterialApp(
-      title: 'QuranGlow',
+      title: 'بُستان',
       debugShowCheckedModeBanner: false,
       theme: theme,
       darkTheme: darkTheme,

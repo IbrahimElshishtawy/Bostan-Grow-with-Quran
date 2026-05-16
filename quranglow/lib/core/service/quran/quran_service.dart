@@ -282,53 +282,76 @@ class QuranService {
   }
 
   Future<List<String>> getSurahAudioUrls(String editionId, int surah) async {
+    // 1. Get the full list of URLs from the cloud
+    final map = await cloud.getSurahAudio(editionId, surah);
+    final ayahs = _extractAudioAyahs(map);
+    if (ayahs.isEmpty) {
+      throw Exception('No ayah audio URLs found for $editionId in surah $surah');
+    }
+
+    final urls = ayahs
+        .map(_readAudioUrl)
+        .whereType<String>()
+        .where((url) => url.trim().isNotEmpty)
+        .toList();
+
+    // 2. Check for local files and override specific indices
     final localFiles = await _getLocalDownloadedSurahAudioFiles(
       editionId,
       surah,
     );
     if (localFiles.isNotEmpty) {
-      return localFiles.map((file) => Uri.file(file.path).toString()).toList();
+      for (final file in localFiles) {
+        final ayahNumber = int.tryParse(p.basenameWithoutExtension(file.path));
+        // ayahNumber is 1-based, index is 0-based
+        if (ayahNumber != null && ayahNumber > 0 && ayahNumber <= urls.length) {
+          urls[ayahNumber - 1] = Uri.file(file.path).toString();
+        }
+      }
     }
 
-    final map = await cloud.getSurahAudio(editionId, surah);
-    final ayahs = _extractAudioAyahs(map);
-    if (ayahs.isNotEmpty) {
-      return ayahs
-          .map(_readAudioUrl)
-          .whereType<String>()
-          .where((url) => url.trim().isNotEmpty)
-          .toList(growable: false);
+    return urls;
+  }
+
+  /// Returns the URL for a single audio file containing the entire Surah.
+  /// This is useful for continuous playback with correct total duration.
+  String getSurahFullAudioUrl(String editionId, int surah) {
+    // Map AlQuran.cloud edition IDs to download.quranicaudio.com reciter paths
+    final Map<String, String> reciterMap = {
+      'ar.alafasy': 'mishaari_raashid_al_3afaasee',
+      'ar.abdulsamad': 'abdul_basit_murattal',
+      'ar.abdullahbasfar': 'abdullaah_basfar',
+      'ar.abdurrahmaansudais': 'abdurrahmaan_as-sudays',
+      'ar.ahmedajamy': 'ahmed_ibn_3ali_al-3ajamy',
+      'ar.alajmy': 'ahmed_ibn_3ali_al-3ajamy',
+      'ar.hanirifai': 'haani_ar-rifaa3ee',
+      'ar.hudhaify': 'al-huthaifee',
+      'ar.husary': 'mahmood_khaleel_al-husaree',
+      'ar.minshawi': 'muhammad_siddeeq_al-minshaawee',
+      'ar.mahermuaiqly': 'maher_almuaiqly',
+      'ar.saoodshuraym': 'sa3ood_ash-shuraym',
+    };
+
+    final reciterPath = reciterMap[editionId];
+    if (reciterPath != null) {
+      // Use QuranicAudio CDN (Extremely reliable)
+      final paddedSurah = surah.toString().padLeft(3, '0');
+      return 'https://download.quranicaudio.com/quran/$reciterPath/$paddedSurah.mp3';
     }
-    throw Exception('No ayah audio URLs found for $editionId in surah $surah');
+
+    // Fallback to Islamic Network CDN with User-Agent headers (handled in player)
+    return 'https://cdn.islamic.network/quran/audio-surah/128/$editionId/$surah.mp3';
   }
 
   Future<Map<int, String>> getSurahAudioUrlMap(
     String editionId,
     int surah,
   ) async {
-    final localFiles = await _getLocalDownloadedSurahAudioFiles(
-      editionId,
-      surah,
-    );
-    if (localFiles.isNotEmpty) {
-      final out = <int, String>{};
-      for (final file in localFiles) {
-        final ayahNumber = int.tryParse(p.basenameWithoutExtension(file.path));
-        if (ayahNumber == null) continue;
-        out[ayahNumber] = Uri.file(file.path).toString();
-      }
-      if (out.isNotEmpty) {
-        return out;
-      }
-    }
-
+    // 1. Fetch the full map from the cloud first
     final map = await cloud.getSurahAudio(editionId, surah);
     final ayahs = _extractAudioAyahs(map);
-    if (ayahs.isEmpty) {
-      return <int, String>{};
-    }
-
     final out = <int, String>{};
+
     for (final item in ayahs) {
       final rawAyahNumber =
           item['numberInSurah'] ??
@@ -348,6 +371,21 @@ class QuranService {
       }
       out[ayahNumber] = audio;
     }
+
+    // 2. Override with local files if they exist
+    final localFiles = await _getLocalDownloadedSurahAudioFiles(
+      editionId,
+      surah,
+    );
+    if (localFiles.isNotEmpty) {
+      for (final file in localFiles) {
+        final ayahNumber = int.tryParse(p.basenameWithoutExtension(file.path));
+        if (ayahNumber != null) {
+          out[ayahNumber] = Uri.file(file.path).toString();
+        }
+      }
+    }
+
     return out;
   }
 
@@ -394,6 +432,55 @@ class QuranService {
     }
 
     return null;
+  }
+
+  /// Fetches durations for each verse in a surah from Quran.com API.
+  /// Used to provide explicit durations to AudioSource for perfect gapless playback and immediate total time reporting.
+  Future<Map<int, Duration>> getVerseDurations(
+    String editionId,
+    int chapter,
+  ) async {
+    try {
+      final Map<String, int> reciterMap = {
+        'ar.alafasy': 7,
+        'ar.abdulsamad': 1,
+        'ar.abdullahbasfar': 3,
+        'ar.abdurrahmaansudais': 4,
+        'ar.ahmedajamy': 5,
+        'ar.hanirifai': 6,
+        'ar.hudhaify': 8,
+        'ar.husary': 9,
+        'ar.minshawi': 10,
+        'ar.mahermuaiqly': 11,
+        'ar.saoodshuraym': 12,
+      };
+
+      final reciterId = reciterMap[editionId];
+      if (reciterId == null) return {};
+
+      final res = await cloud.dio.get(
+        'https://api.quran.com/api/v4/recitations/$reciterId/by_chapter/$chapter?fields=duration',
+      );
+      if (res.statusCode == 200 && res.data != null) {
+        final List verses = res.data['audio_files'] ?? [];
+        final Map<int, Duration> durations = {};
+        for (var v in verses) {
+          final verseKey = v['verse_key']?.toString();
+          if (verseKey == null || !verseKey.contains(':')) continue;
+          
+          final verseNum = verseKey.split(':')[1];
+          final rawDuration = v['duration'];
+          
+          // API returns duration in seconds for this endpoint
+          final durationMs = rawDuration is num ? (rawDuration * 1000).toInt() : 0;
+          durations[int.parse(verseNum)] = Duration(milliseconds: durationMs);
+        }
+        return durations;
+      }
+    } catch (e) {
+      debugPrint('Error fetching verse durations: $e');
+    }
+    return {};
   }
 
   Future<List<File>> _getLocalDownloadedSurahAudioFiles(

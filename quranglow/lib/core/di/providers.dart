@@ -1,13 +1,15 @@
 // lib/core/di/providers.dart
-// ignore_for_file: implementation_imports, unnecessary_this
+// ignore_for_file: unused_local_variable, experimental_member_use, implementation_imports, unnecessary_this
 
 import 'dart:async';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:quran/quran.dart' as quran;
 import 'package:quranglow/core/api/api_cache_manager.dart';
 import 'package:quranglow/core/api/api_interceptor.dart';
 import 'package:quranglow/core/api/alquran_cloud_source.dart';
@@ -18,6 +20,7 @@ import 'package:quranglow/core/model/book/bookmark.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/core/model/setting/reader_settings.dart';
 import 'package:quranglow/core/model/setting/goal.dart';
+import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/core/service/audio/audio_service.dart';
 import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/core/service/quran/quran_service.dart';
@@ -52,11 +55,11 @@ final dioProvider = Provider<Dio>((ref) {
       validateStatus: (s) => s != null && s < 500,
     ),
   );
-  
+
   // Add the universal caching interceptor for instant speed!
   final cacheManager = ApiCacheManager(boxName: 'api_cache');
   dio.interceptors.add(ApiInterceptor(cacheManager: cacheManager));
-  
+
   return dio;
 });
 
@@ -80,7 +83,7 @@ final goalsServiceProvider = Provider<GoalsService>((ref) {
 });
 
 final audioHandlerProvider = Provider<MyAudioHandler>((ref) {
-  return MyAudioHandler();
+  return audioHandler;
 });
 
 final audioServiceProvider = Provider<MyAudioService>((ref) {
@@ -143,6 +146,17 @@ final quranAllProvider = FutureProvider.autoDispose.family<List<Surah>, String>(
     return service.getQuranAllText(editionId);
   },
 );
+
+final quranMetadataProvider = Provider<List<({int number, String name, int ayatCount})>>((ref) {
+  return List.generate(114, (i) {
+    final s = i + 1;
+    return (
+      number: s,
+      name: kSurahNamesAr[i],
+      ayatCount: quran.getVerseCount(s),
+    );
+  });
+});
 
 final settingsProvider =
     StateNotifierProvider<SettingsController, AsyncValue<AppSettings>>(
@@ -285,9 +299,9 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     final cur = state.maybeWhen(data: (s) => s, orElse: () => null);
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(prayerNotificationsEnabled: enabled));
-    await ref.read(settingsServiceProvider).setPrayerNotificationsEnabled(
-      enabled,
-    );
+    await ref
+        .read(settingsServiceProvider)
+        .setPrayerNotificationsEnabled(enabled);
   }
 }
 
@@ -299,6 +313,7 @@ final editionIdProvider = StateProvider<String>((ref) => 'ar.alafasy');
 final chapterProvider = StateProvider<int>((ref) => 1);
 
 class PlayerUiState extends PlaylistState {
+  final Duration? totalDurationOverride;
   final bool? isPlaying;
   final String? currentUrl;
   final String? surahName;
@@ -317,6 +332,9 @@ class PlayerUiState extends PlaylistState {
     required super.playingStream,
     required super.loopModeStream,
     required super.volumeStream,
+    required super.processingStateStream,
+
+    this.totalDurationOverride,
     this.isPlaying,
     this.currentUrl,
     this.surahName,
@@ -326,24 +344,51 @@ class PlayerUiState extends PlaylistState {
 }
 
 final playerControllerProvider =
-    StateNotifierProvider.autoDispose<PlayerController, AsyncValue<PlayerUiState>>(
+    StateNotifierProvider<PlayerController, AsyncValue<PlayerUiState>>(
       (ref) => PlayerController(ref),
     );
 
 class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   PlayerController(this.ref) : super(const AsyncValue.loading()) {
-    _playingSub = _player.playingStream.listen((_) => _emitState());
-    _indexSub = _player.currentIndexStream.listen((_) => _emitState());
+    final handler = ref.read(audioHandlerProvider);
+    _player = handler.player;
+    // 3. Initialize streams
+    _timelineStream = combinedPositionStream(_player).asBroadcastStream();
+    
+    // Auto-skip failed ayahs to prevent playback reset
+    _player.playbackEventStream.listen(
+      (_) {},
+      onError: (error) {
+        debugPrint('Playback error detected: $error. Skipping to next...');
+        _player.seekToNext();
+      },
+    );
+
     _init();
   }
 
   final Ref ref;
-  final AudioPlayer _player = AudioPlayer();
+  late final AudioPlayer _player;
+  late final Stream<CombinedPositionData> _timelineStream;
   StreamSubscription<bool>? _playingSub;
-  StreamSubscription<int?>? _indexSub;
-  List<String> _urls = const <String>[];
+  StreamSubscription<Duration>? _posSub;
   String _reciterName = '';
+  List<String> _urls = [];
+  List<Duration> _ayahOffsets = [];
   bool _disposed = false;
+
+  // Local cache for common reciter names to avoid network calls
+  static const _kReciterNames = {
+    'ar.alafasy': 'مشاري العفاسي',
+    'ar.abdurrahmaansudais': 'عبد الرحمن السديس',
+    'ar.saoodshuraym': 'سعود الشريم',
+    'ar.minshawi': 'محمد صديق المنشاوي',
+    'ar.abdulbasitmurattal': 'عبد الباسط عبد الصمد',
+    'ar.husary': 'محمود خليل الحصري',
+    'ar.hudhaify': 'علي الحذيفي',
+    'ar.ghamadi': 'سعد الغامدي',
+    'ar.mahermuaiqly': 'ماهر المعيقلي',
+  };
 
   Future<void> _init() async {
     if (_disposed || !mounted) return;
@@ -361,31 +406,102 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     state = const AsyncValue.loading();
     try {
       final service = ref.read(quranServiceProvider);
+
+      // 1. Get URLs (Checks local files first)
       final urls = await service.getSurahAudioUrls(editionId, chapter);
       if (_disposed || !mounted) return;
       if (urls.isEmpty) {
-        throw Exception('No audio URLs found');
+        throw Exception('لا توجد روابط صوتية متاحة');
       }
 
       _urls = urls;
-      _reciterName = await _resolveReciterName(editionId);
+
+      // 2. Resolve Reciter Name (Use cache if possible)
+      _reciterName =
+          _kReciterNames[editionId] ?? await _resolveReciterName(editionId);
+
+      final surahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
+          ? kSurahNamesAr[chapter - 1]
+          : 'سورة $chapter';
+
       if (_disposed || !mounted) return;
 
-      await _player.setAudioSource(
-        // ignore: deprecated_member_use
-        ConcatenatingAudioSource(
-          children: urls
-              .map((url) => AudioSource.uri(Uri.parse(url)))
-              .toList(growable: false),
+      // Update AudioHandler metadata
+      final handler = ref.read(audioHandlerProvider);
+      handler.mediaItem.add(
+        MediaItem(
+          id: 'surah_$chapter',
+          title: surahName,
+          artist: _reciterName,
+          album: 'القرآن الكريم',
         ),
-        initialIndex: 0,
-        initialPosition: Duration.zero,
       );
+
+      final Map<int, String> audioMap;
+      try {
+        audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
+        final surahData = await service.getSurahText('quran-uthmani', chapter);
+        final allAyat = surahData.ayat;
+
+        // Fetch explicit durations for perfect timer reporting and gapless preloading
+        final verseDurations = await service.getVerseDurations(
+          editionId,
+          chapter,
+        );
+
+        // Calculate total surah duration upfront for UI override
+        _totalDuration = verseDurations.values.fold(
+          Duration.zero,
+          (a, b) => a + b,
+        );
+        _emitState();
+
+        // SEAMLESS PLAYBACK: Use a single full surah file for 100% gapless experience
+        final fullSurahUrl = service.getSurahFullAudioUrl(editionId, chapter);
+        _urls = [fullSurahUrl]; // Only one item in the playlist
+
+        _ayahOffsets = [];
+        Duration cumulative = Duration.zero;
+        for (final a in allAyat) {
+          _ayahOffsets.add(cumulative);
+          cumulative +=
+              verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
+        }
+        _totalDuration = cumulative;
+
+        await _player.setAudioSource(
+          AudioSource.uri(
+            Uri.parse(fullSurahUrl),
+            tag: MediaItem(
+              id: 'surah_$chapter',
+              title: 'سورة $surahName',
+              album: _reciterName,
+              artist: _reciterName,
+              duration: cumulative,
+            ),
+          ),
+          initialPosition: Duration.zero,
+          preload: true,
+        );
+      } catch (e) {
+        final err = e.toString().toLowerCase();
+        if (err.contains('abort') ||
+            err.contains('interrupted') ||
+            err.contains('10000000')) {
+          debugPrint('Audio loading was interrupted (handled): $e');
+          return;
+        }
+        debugPrint('Error loading audio playlist: $e');
+        rethrow;
+      }
+
       if (_disposed || !mounted) return;
 
       if (autoPlay) {
+        await _player.setLoopMode(
+          LoopMode.off,
+        ); // Ensure sequential, non-repeating playback
         await _player.play();
-        if (_disposed || !mounted) return;
       }
 
       _emitState();
@@ -396,6 +512,10 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   }
 
   Future<String> _resolveReciterName(String editionId) async {
+    if (_kReciterNames.containsKey(editionId)) {
+      return _kReciterNames[editionId]!;
+    }
+
     try {
       final editions = await ref.read(quranServiceProvider).listAudioEditions();
       for (final item in editions) {
@@ -406,18 +526,29 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           return (map['name'] ?? map['englishName'] ?? editionId).toString();
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // Offline fallback
+    }
     return editionId;
   }
 
   void _emitState() {
     if (_disposed || !mounted) return;
-    if (_urls.isEmpty) return;
+    if (_ayahOffsets.isEmpty) return;
 
     final editionId = ref.read(editionIdProvider);
     final chapter = ref.read(chapterProvider).clamp(1, 114);
-    final index = _player.currentIndex ?? 0;
-    final safeIndex = index.clamp(0, _urls.length - 1);
+
+    // Manually calculate the current ayah index based on playback position
+    int ayahIndex = 0;
+    final pos = _player.position;
+    for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
+      if (pos >= _ayahOffsets[i]) {
+        ayahIndex = i;
+        break;
+      }
+    }
+
     final surahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
         ? kSurahNamesAr[chapter - 1]
         : 'سورة $chapter';
@@ -426,20 +557,22 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       PlayerUiState(
         editionId: editionId,
         chapter: chapter,
-        total: _urls.length,
-        timelineStream: combinedPositionStream(_player),
+        total: _ayahOffsets.length,
+        timelineStream: _timelineStream,
         durationStream: _player.durationStream,
         positionStream: _player.positionStream,
         bufferedStream: _player.bufferedPositionStream,
-        indexStream: _player.currentIndexStream,
+        indexStream: _player.currentIndexStream.map((idx) => idx).asBroadcastStream(),
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
+        processingStateStream: _player.processingStateStream,
+        totalDurationOverride: _totalDuration,
         isPlaying: _player.playing,
-        currentUrl: _urls[safeIndex],
+        currentUrl: _urls.isNotEmpty ? _urls.first : '',
         surahName: surahName,
         reciterName: _reciterName,
-        currentAyah: safeIndex + 1,
+        currentAyah: ayahIndex,
       ),
     );
   }
@@ -457,19 +590,41 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   }
 
   Future<void> next() async {
-    await _player.seekToNext();
+    final curPos = _player.position;
+    int nextIdx = 0;
+    for (int i = 0; i < _ayahOffsets.length; i++) {
+      if (_ayahOffsets[i] > curPos + const Duration(milliseconds: 200)) {
+        nextIdx = i;
+        break;
+      }
+    }
+    await _player.seek(_ayahOffsets[nextIdx]);
     if (_disposed || !mounted) return;
     _emitState();
   }
 
   Future<void> previous() async {
-    await _player.seekToPrevious();
+    final curPos = _player.position;
+    int prevIdx = 0;
+    for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
+      if (_ayahOffsets[i] < curPos - const Duration(seconds: 2)) {
+        prevIdx = i;
+        break;
+      }
+    }
+    await _player.seek(_ayahOffsets[prevIdx]);
     if (_disposed || !mounted) return;
     _emitState();
   }
 
   Future<void> seekTo(Duration position) async {
     await _player.seek(position);
+  }
+
+  Future<void> seekToIndex(int index) async {
+    if (index >= 0 && index < _ayahOffsets.length) {
+      await _player.seek(_ayahOffsets[index]);
+    }
   }
 
   Future<void> setSpeed(double speed) async {
@@ -500,6 +655,20 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     await _loadSurah(editionId: editionId, chapter: chapter, autoPlay: false);
   }
 
+  Duration _totalDuration = Duration.zero;
+  Duration get totalDuration => _totalDuration;
+
+  Future<void> playSurah(int chapter, {int? startAyah}) async {
+    final safeChapter = chapter.clamp(1, 114);
+    ref.read(chapterProvider.notifier).state = safeChapter;
+    final editionId = ref.read(editionIdProvider);
+    await _loadSurah(
+      editionId: editionId,
+      chapter: safeChapter,
+      autoPlay: true,
+    );
+  }
+
   Future<void> changeChapter(int chapter) async {
     final safeChapter = chapter.clamp(1, 114);
     ref.read(chapterProvider.notifier).state = safeChapter;
@@ -515,7 +684,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   void dispose() {
     _disposed = true;
     _playingSub?.cancel();
-    _indexSub?.cancel();
+    _posSub?.cancel();
     _player.dispose();
     super.dispose();
   }

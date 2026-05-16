@@ -2,16 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:quranglow/core/data/surah_names_ar.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:quranglow/core/di/providers.dart';
-import 'package:quranglow/core/model/aya/aya.dart';
-import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/core/model/setting/reader_settings.dart';
 import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/features/downloads/presentation/widgets/AyahPickerSheet.dart';
-import 'package:quranglow/features/player/presentation/widgets/reader_row.dart';
 import 'package:quranglow/features/player/presentation/widgets/track_card.dart';
 import 'package:quranglow/features/player/presentation/widgets/transport_controls.dart';
+import 'package:quranglow/features/player/presentation/pages/favorites_page.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
 
@@ -29,11 +27,22 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   late final dynamic _trackingService;
   String? _forwardedUrl;
   bool _wasPlaying = false;
+  bool _isRadioMode = false;
+  bool _showLyrics = false;
 
   @override
   void initState() {
     super.initState();
     _trackingService = ref.read(trackingServiceProvider);
+
+    // Initial check for Radio Mode
+    if (isAudioHandlerReady) {
+      final activeMediaId = audioHandler.mediaItem.value?.id;
+      if (activeMediaId == 'https://stream.radiojar.com/8s5u5tpdtwzuv') {
+        _isRadioMode = true;
+      }
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await _trackingService.startSession();
@@ -181,283 +190,302 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final ctrl = ref.watch(playerControllerProvider);
-    final ed = ref.watch(editionIdProvider);
-    final ch = ref.watch(chapterProvider).clamp(1, 114);
-    final editions = ref.watch(audioEditionsProvider);
-    final settings = ref.watch(settingsProvider).whenOrNull(data: (s) => s);
-    final surahName = kSurahNamesAr[ch - 1];
-    final downloadLabel =
-        settings?.audioDownloadMode == AudioDownloadMode.selectedAyat
-        ? 'اختيار آيات'
-        : 'تنزيل السورة';
-
-    final surahs = AsyncValue.data(
-      List<Surah>.generate(
-        kSurahNamesAr.length,
-        (i) => Surah(number: i + 1, name: kSurahNamesAr[i], ayat: const <Aya>[]),
-        growable: false,
-      ),
-    );
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: _PlayerAppBar(
-          surahName: surahName,
-          onOpenLibrary: () =>
-              Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
-          onDownload: () => _downloadCurrent(context, ref),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          leading: const SizedBox.shrink(), // Removed down arrow
+          title: Text(
+            _isRadioMode ? 'بث مباشر الآن' : 'قيد التشغيل الآن',
+            style: TextStyle(
+              color: cs.onSurface.withValues(alpha: 0.7),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.radio_rounded,
+                color: _isRadioMode ? cs.primary : cs.onSurface,
+              ),
+              tooltip: 'وضع الإذاعة',
+              onPressed: () async {
+                setState(() {
+                  _isRadioMode = !_isRadioMode;
+                });
+                if (_isRadioMode) {
+                  await audioHandler.playUri(
+                    Uri.parse('https://stream.radiojar.com/8s5u5tpdtwzuv'),
+                    title: 'إذاعة القرآن الكريم',
+                    artist: 'بث مباشر - القاهرة',
+                  );
+                } else {
+                  ref.read(playerControllerProvider.notifier).play();
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
+              tooltip: 'المفضلات',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FavoritesPage()),
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.library_music_rounded,
+                color: cs.onSurface,
+              ),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.downloadsLibrary),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.download_for_offline_rounded,
+                color: cs.onSurface,
+              ),
+              onPressed: () => _downloadCurrent(context, ref),
+            ),
+            IconButton(
+              icon: Icon(
+                _showLyrics ? Icons.lyrics_rounded : Icons.lyrics_outlined,
+                color: _showLyrics ? Colors.teal : cs.onSurface,
+              ),
+              tooltip: 'الكلمات',
+              onPressed: () {
+                setState(() {
+                  _showLyrics = !_showLyrics;
+                });
+              },
+            ),
+          ],
         ),
+        extendBodyBehindAppBar: true,
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [cs.primary.withValues(alpha: 0.06), cs.surface],
+              colors: Theme.of(context).brightness == Brightness.dark
+                  ? [
+                      const Color(0xFF1E3C40),
+                      const Color(0xFF121212),
+                    ]
+                  : [
+                      const Color(0xFFFDFCF0), // Soft Islamic Cream
+                      const Color(0xFFFFFFFF), // Pure White
+                    ],
             ),
           ),
           child: SafeArea(
-            top: false,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  elevation: 0,
-                  color: cs.surfaceContainerHigh,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: cs.outlineVariant),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: ReaderRow(
-                      editions: editions,
-                      surahs: surahs,
-                      selectedEditionId: ed,
-                      selectedSurah: ch,
-                      onEditionChanged: (v) => ref
-                          .read(playerControllerProvider.notifier)
-                          .changeEdition(v),
-                      onChapterChanged: (v) => ref
-                          .read(playerControllerProvider.notifier)
-                          .changeChapter(v),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ctrl.when(
-                  loading: () => const PlayerSkeleton(),
-                  error: (e, st) => Card(
-                    color: cs.errorContainer,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'تعذر التحميل: $e',
-                        style: TextStyle(color: cs.onErrorContainer),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 8.0,
+              ),
+              child: Column(
+                children: [
+                  if (!_isRadioMode) ...[
+                    // Surah Mode UI
+                    Expanded(
+                      child: ctrl.when(
+                        loading: () => const PlayerSkeleton(),
+                        error: (e, st) => Center(
+                          child: Text(
+                            'تعذر التحميل: $e',
+                            style: const TextStyle(color: Colors.redAccent),
+                          ),
+                        ),
+                        data: (s) => SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              TrackCard(state: s, showLyrics: _showLyrics),
+                              const SizedBox(height: 24),
+                              TransportControls(state: s),
+                              const SizedBox(height: 32),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  data: (s) => Column(
-                    children: [
-                      TrackCard(state: s),
-                      const SizedBox(height: 14),
-                      Row(
+                  ] else ...[
+                    // Radio Mode UI
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () => _downloadCurrent(context, ref),
-                              icon: const Icon(Icons.download_rounded),
-                              label: Text(downloadLabel),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => Navigator.pushNamed(
-                                context,
-                                AppRoutes.downloadsLibrary,
+                          Container(
+                            width: double.infinity,
+                            height: 320,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cs.primary.withValues(alpha: 0.2),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                              image: const DecorationImage(
+                                image: NetworkImage(
+                                  'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1000&auto=format&fit=crop',
+                                ),
+                                fit: BoxFit.cover,
                               ),
-                              icon: const Icon(Icons.library_music),
-                              label: const Text('المكتبة'),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: Theme.of(context).brightness == Brightness.dark
+                                      ? [
+                                          Colors.transparent,
+                                          Colors.black.withValues(alpha: 0.8),
+                                        ]
+                                      : [
+                                          Colors.transparent,
+                                          const Color(0xFF004D40).withValues(alpha: 0.7),
+                                        ],
+                                ),
+                              ),
+                              padding: const EdgeInsets.all(24),
+                              alignment: Alignment.bottomRight,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'إذاعة القرآن الكريم',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Tajawal',
+                                    ),
+                                  ),
+                                  Text(
+                                    'بث مباشر من القاهرة',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                      fontSize: 16,
+                                      fontFamily: 'Tajawal',
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
+                          const SizedBox(height: 48),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.sensors_rounded,
+                                color: Colors.redAccent,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'مباشر الآن',
+                                style: TextStyle(
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 48),
+                          StreamBuilder<PlaybackState>(
+                            stream: audioHandler.playbackState,
+                            builder: (context, snapshot) {
+                              final playing = snapshot.data?.playing ?? false;
+                              return TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 1.0, end: playing ? 1.1 : 1.0),
+                                duration: const Duration(seconds: 1),
+                                curve: Curves.easeInOutSine,
+                                builder: (context, value, child) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (playing ? Colors.teal : cs.primary)
+                                              .withValues(alpha: 0.4),
+                                          blurRadius: 20 * value,
+                                          spreadRadius: 5 * value,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Transform.scale(
+                                      scale: value,
+                                      child: Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: playing
+                                                ? [const Color(0xFF00695C), const Color(0xFF004D40)]
+                                                : [cs.primary, cs.primaryContainer],
+                                          ),
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () => playing
+                                                ? audioHandler.pause()
+                                                : audioHandler.play(),
+                                            customBorder: const CircleBorder(),
+                                            child: Icon(
+                                              playing
+                                                  ? Icons.pause_rounded
+                                                  : Icons.play_arrow_rounded,
+                                              size: 50,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                          const Spacer(),
+                          Text(
+                            'تواصل مع الروحانية من خلال البث المباشر',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: cs.onSurface.withValues(alpha: 0.3),
+                              fontSize: 12,
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      if (settings != null)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            settings.audioDownloadMode ==
-                                    AudioDownloadMode.selectedAyat
-                                ? 'وضع التنزيل الحالي: اختيار آيات من الإعدادات'
-                                : 'وضع التنزيل الحالي: السورة كاملة من الإعدادات',
-                            style: TextStyle(
-                              color: cs.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      Card(
-                        elevation: 0,
-                        color: cs.surfaceContainerHigh,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          side: BorderSide(color: cs.outlineVariant),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: TransportControls(state: s),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PlayerAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _PlayerAppBar({
-    required this.surahName,
-    required this.onOpenLibrary,
-    required this.onDownload,
-  });
-
-  final String surahName;
-  final VoidCallback onOpenLibrary;
-  final VoidCallback onDownload;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(112);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return AppBar(
-      toolbarHeight: 112,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      backgroundColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      automaticallyImplyLeading: false,
-      titleSpacing: 16,
-      flexibleSpace: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [
-              cs.primary.withValues(alpha: 0.18),
-              cs.tertiary.withValues(alpha: 0.10),
-              cs.surface,
-            ],
-          ),
-          border: Border(
-            bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.55)),
-          ),
-        ),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
-                ),
-                child: Icon(Icons.graphic_eq_rounded, color: cs.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'المشغل',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$surahName • استماع، تقدم كامل، وتنزيل سريع',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(end: 8),
-          child: Row(
-            children: [
-              _PlayerAppBarAction(
-                tooltip: 'المكتبة الصوتية',
-                icon: Icons.library_music_rounded,
-                onPressed: onOpenLibrary,
-              ),
-              const SizedBox(width: 8),
-              _PlayerAppBarAction(
-                tooltip: 'تنزيل الصوت',
-                icon: Icons.download_rounded,
-                onPressed: onDownload,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PlayerAppBarAction extends StatelessWidget {
-  const _PlayerAppBarAction({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return IconButton.filledTonal(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      style: IconButton.styleFrom(
-        backgroundColor: cs.surface.withValues(alpha: 0.82),
-        foregroundColor: cs.primary,
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7)),
-      ),
-      icon: Icon(icon),
     );
   }
 }

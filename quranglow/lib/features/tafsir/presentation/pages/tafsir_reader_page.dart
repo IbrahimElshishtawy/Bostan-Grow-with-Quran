@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/di/tafsir_providers.dart'
     hide quranAllProvider, tafsirForAyahProvider;
-import 'package:quranglow/core/model/aya/aya.dart';
+import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/selection_card.dart';
@@ -56,23 +56,20 @@ class _TafsirReaderPageState extends ConsumerState<TafsirReaderPage> {
       }
     });
 
-    final quranAll = ref.watch(quranAllProvider('quran-uthmani'));
+    final quranMetadata = ref.watch(quranMetadataProvider);
+    final AsyncValue<Surah> selectedSurah = ref.watch(quranSurahProvider((_surah, 'quran-uthmani')));
     final AsyncValue<String> tafsir = (_editionId == null)
         ? const AsyncValue<String>.loading()
         : ref.watch(tafsirForAyahProvider((_surah, _ayah, _editionId!)));
 
-    String surahName = 'سورة $_surah';
+    final meta = quranMetadata[_surah - 1];
+    String surahName = meta.name;
+    int maxAyat = meta.ayatCount;
     String ayahText = '';
-    int maxAyat = 286;
-    quranAll.whenData((all) {
-      if (_surah >= 1 && _surah <= all.length) {
-        final s = all[_surah - 1];
-        surahName = s.name;
-        maxAyat = s.ayat.length;
-        if (_ayah >= 1 && _ayah <= s.ayat.length) {
-          final Aya a = s.ayat[_ayah - 1];
-          ayahText = a.text;
-        }
+
+    selectedSurah.whenData((s) {
+      if (_ayah >= 1 && _ayah <= s.ayat.length) {
+        ayahText = s.ayat[_ayah - 1].text;
       }
     });
 
@@ -80,66 +77,110 @@ class _TafsirReaderPageState extends ConsumerState<TafsirReaderPage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: ProAppBar(
-          title: 'قارئ التفسير',
-          subtitle: 'افتح الآية المطلوبة واقرأ تفسيرها مباشرة بشكل واضح ومرتب',
+          title: 'خزانة التفسير',
+          subtitle: 'تدبّر معاني الآيات من خلال أوثق كتب التفسير',
           actions: [
             if (_editionId != null)
               IconButton(
-                tooltip: 'تنزيل تفسير السورة للاستخدام دون اتصال',
+                tooltip: 'تنزيل تفسير السورة',
                 onPressed: () {
                   ref.refresh(prefetchTafsirSurahProvider((_editionId!, _surah)));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('جارٍ تنزيل تفسير السورة...'),
+                    SnackBar(
+                      content: const Text('جارٍ تنزيل التفسير للقراءة دون اتصال...'),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   );
                 },
-                icon: const Icon(Icons.download_outlined),
+                icon: const Icon(Icons.cloud_download_rounded),
               ),
           ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            SelectionCard(
-              editions: editions,
-              quranAll: quranAll,
-              editionId: _editionId,
-              surah: _surah,
-              ayah: _ayah,
-              onEditionChange: (id, name) {
-                setState(() {
-                  _editionId = id;
-                  _editionName = name;
-                });
-                ref.refresh(tafsirForAyahProvider((_surah, _ayah, id)).future);
-              },
-              onSurahChange: (v, _) {
-                setState(() {
-                  _surah = v;
-                  _ayah = 1;
-                });
-                if (_editionId != null) {
-                  ref.refresh(
-                    tafsirForAyahProvider((v, 1, _editionId!)).future,
-                  );
-                }
-              },
-              onAyahChange: (v) {
-                final nextAyah = v.clamp(1, maxAyat);
-                setState(() => _ayah = nextAyah);
-                if (_editionId != null) {
-                  ref.refresh(
-                    tafsirForAyahProvider((_surah, nextAyah, _editionId!)).future,
-                  );
-                }
-              },
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: Theme.of(context).brightness == Brightness.dark
+                  ? [const Color(0xFF0F172A), const Color(0xFF020617)]
+                  : [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9)],
             ),
-            const SizedBox(height: 12),
-            AyahCard(surahName: surahName, ayah: _ayah, ayahText: ayahText),
-            const SizedBox(height: 12),
-            TafsirCard(tafsir: tafsir, editionName: _editionName),
-          ],
+          ),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              // Selection Section
+              SelectionCard(
+                editions: editions,
+                quranMetadata: quranMetadata,
+                editionId: _editionId,
+                surah: _surah,
+                ayah: _ayah,
+                ayahText: ayahText,
+                onEditionChange: (id, name) {
+                  setState(() {
+                    _editionId = id;
+                    _editionName = name;
+                  });
+                  ref.refresh(tafsirForAyahProvider((_surah, _ayah, id)).future);
+                },
+                onSurahChange: (v, _) {
+                  setState(() {
+                    _surah = v;
+                    _ayah = 1;
+                  });
+                  if (_editionId != null) {
+                    ref.refresh(
+                      tafsirForAyahProvider((v, 1, _editionId!)).future,
+                    );
+                  }
+                },
+                onAyahChange: (v) {
+                  final nextAyah = v.clamp(1, maxAyat);
+                  setState(() => _ayah = nextAyah);
+                  if (_editionId != null) {
+                    ref.refresh(
+                      tafsirForAyahProvider((_surah, nextAyah, _editionId!)).future,
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // The Sacred Text Card
+              AyahCard(surahName: surahName, ayah: _ayah, ayahText: ayahText),
+              const SizedBox(height: 20),
+
+              // The Professional Tafsir Card
+              TafsirCard(tafsir: tafsir, editionName: _editionName),
+              
+              const SizedBox(height: 40),
+              
+              // Decorative footer
+              Opacity(
+                opacity: 0.3,
+                child: Center(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.auto_awesome_rounded, size: 24),
+                      const SizedBox(height: 8),
+                      Text(
+                        'كُلُّ نَفْسٍ ذَائِقَةُ الْمَوْتِ ۗ وَإِنَّمَا تُوَفَّوْنَ أُجُورَكُمْ يَوْمَ الْقِيَامَةِ',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Tajawal',
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

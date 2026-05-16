@@ -1,6 +1,6 @@
 name: quranglow
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
-      sdk: flutter
+    sdk: flutter
   cupertino_icons: ^1.0.8
   rename: ^3.1.0
   http: ^1.5.0
@@ -35,6 +35,9 @@ dependencies:
   flutter_local_notifications: ^19.4.2
   geolocator: ^10.1.0
   flutter_compass: ^0.8.0
+  sensors_plus: ^7.0.0
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
   share_plus: ^10.0.0
   url_launcher: ^6.3.2
   audio_service: ^0.18.18
@@ -50,6 +53,8 @@ dependencies:
   intl: ^0.20.2
   scrollable_positioned_list: ^0.3.8
   speech_to_text: ^7.0.0
+  home_widget: ^0.9.1
+  hijri: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -70,15 +75,16 @@ flutter:
     - android/app/src/main/res/raw/adhan_makkah.mp3
     - android/app/src/main/res/raw/adhan_madinah.mp3
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/iosn/icongrowquran.jpg"
+  image_path: "assets/images/bustan_icon.png"
   adaptive_icon_background: "#FFFFFF"
 
 flutter_native_splash:
   color: "#FFFFFF"
-  image: assets/iosn/icongrowquran.jpg
+  image: assets/images/bustan_icon.png
+  background_image: assets/images/bustan_splash.png
   android_12:
     color: "#FFFFFF"
-    image: assets/iosn/icongrowquran.jpg
+    image: assets/images/bustan_icon.png

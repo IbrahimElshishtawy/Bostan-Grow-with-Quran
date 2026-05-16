@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 class MyAudioHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
+  AudioPlayer get player => _player;
   String? _activeUrl;
   Uri? _artworkUri;
 
@@ -19,9 +20,36 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
 
-    _player.playbackEventStream.listen((_) {
-      _broadcastPlaybackState();
+    // Handle audio focus and interruptions (e.g., phone call, other music app)
+    session.interruptionEventStream.listen((event) {
+      if (event.begin) {
+        switch (event.type) {
+          case AudioInterruptionType.duck:
+            _player.setVolume(0.5);
+            break;
+          case AudioInterruptionType.pause:
+          case AudioInterruptionType.unknown:
+            pause();
+            break;
+        }
+      } else {
+        switch (event.type) {
+          case AudioInterruptionType.duck:
+            _player.setVolume(1.0);
+            break;
+          case AudioInterruptionType.pause:
+            play();
+            break;
+          case AudioInterruptionType.unknown:
+            break;
+        }
+      }
     });
+
+    // Handle unplugging headphones (becoming noisy)
+    session.becomingNoisyEventStream.listen((_) => pause());
+
+    _player.playbackEventStream.listen((_) => _broadcastPlaybackState());
 
     _player.durationStream.listen((duration) {
       final currentItem = mediaItem.value;
@@ -38,42 +66,69 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     String? album,
   }) async {
     final nextUrl = uri.toString();
+    // 1. If already loading/playing this exact URL, don't interrupt it
     if (_activeUrl == nextUrl &&
-        _player.processingState != ProcessingState.idle) {
+        _player.processingState != ProcessingState.idle &&
+        _player.processingState != ProcessingState.completed) {
       if (!_player.playing) {
         await _player.play();
       }
       return;
     }
 
+    // 2. Resolve metadata
     final artworkUri = await _resolveArtworkUri();
     mediaItem.add(
       MediaItem(
         id: nextUrl,
-        title: title ?? 'تشغيل القرآن',
-        artist: artist,
-        album: album,
+        title: title ?? 'القرآن الكريم',
+        artist: artist ?? 'QuranGlow',
+        album: album ?? 'المصحف المرتل',
         artUri: artworkUri,
-        displayTitle: title ?? 'تشغيل القرآن',
-        displaySubtitle: artist,
+        displayTitle: title ?? 'القرآن الكريم',
+        displaySubtitle: artist ?? 'QuranGlow',
         displayDescription: album,
       ),
     );
 
+    // 3. Update intent and load
     _activeUrl = nextUrl;
-    await _player.setUrl(nextUrl);
-    await play();
+    try {
+      // Small pause to allow the engine to settle if switching rapidly
+      await _player.stop(); 
+      await _player.setUrl(nextUrl);
+      await play();
+    } catch (e) {
+      // just_audio throws this if a new setUrl/load is called before this one finishes.
+      // We can safely ignore it as the new request will take over.
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('abort') || 
+          errorStr.contains('interrupted') ||
+          errorStr.contains('1001') || // Common code for interruption
+          errorStr.contains('loading interrupted')) {
+        return;
+      }
+      rethrow;
+    }
   }
 
   void _broadcastPlaybackState() {
     final playing = _player.playing;
     playbackState.add(
       playbackState.value.copyWith(
-        controls: playing
-            ? [MediaControl.pause, MediaControl.stop]
-            : [MediaControl.play, MediaControl.stop],
-        androidCompactActionIndices: const [0, 1],
-        systemActions: const {MediaAction.seek},
+        controls: [
+          MediaControl.skipToPrevious,
+          MediaControl.rewind,
+          if (playing) MediaControl.pause else MediaControl.play,
+          MediaControl.fastForward,
+          MediaControl.skipToNext,
+        ],
+        androidCompactActionIndices: const [0, 2, 4],
+        systemActions: const {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
         processingState: const {
           ProcessingState.idle: AudioProcessingState.idle,
           ProcessingState.loading: AudioProcessingState.loading,
@@ -93,9 +148,9 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     if (_artworkUri != null) return _artworkUri;
 
     try {
-      final bytes = await rootBundle.load('assets/iosn/icongrowquran.jpg');
+      final bytes = await rootBundle.load('assets/images/bustan_splash.png');
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/quranglow_now_playing.jpg');
+      final file = File('${dir.path}/bustan_now_playing.png');
       await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
       _artworkUri = Uri.file(file.path);
       return _artworkUri;
@@ -119,4 +174,16 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
+
+  @override
+  Future<void> fastForward() => _player.seek(_player.position + const Duration(seconds: 10));
+
+  @override
+  Future<void> rewind() => _player.seek(_player.position - const Duration(seconds: 10));
+
+  @override
+  Future<void> skipToNext() => _player.seekToNext();
+
+  @override
+  Future<void> skipToPrevious() => _player.seekToPrevious();
 }

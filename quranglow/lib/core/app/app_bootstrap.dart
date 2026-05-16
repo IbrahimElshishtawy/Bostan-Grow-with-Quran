@@ -23,7 +23,15 @@ class AppBootstrap {
   static Future<void> initialize() async {
     GoogleFonts.config.allowRuntimeFetching = false;
 
-    final firebaseReady = DefaultFirebaseOptions.isConfigured
+    // ✨ HARDENED FIX: Desktop platforms (Windows/macOS/Linux) can freeze indefinitely 
+    // on standard Firebase C++ SDK handshakes if not fully linked locally.
+    // We suppress native Firebase boots on desktop to ensure instantaneous boot speeds!
+    final bool isDesktop = !kIsWeb && 
+        (defaultTargetPlatform == TargetPlatform.windows || 
+         defaultTargetPlatform == TargetPlatform.macOS || 
+         defaultTargetPlatform == TargetPlatform.linux);
+
+    final firebaseReady = (DefaultFirebaseOptions.isConfigured && !isDesktop)
         ? await _safeInit(
             'firebase',
             () async {
@@ -33,11 +41,13 @@ class AppBootstrap {
                 options: DefaultFirebaseOptions.currentPlatform,
               );
             },
-            timeout: const Duration(seconds: 20),
+            timeout: const Duration(seconds: 15),
           )
         : false;
 
-    if (!DefaultFirebaseOptions.isConfigured) {
+    if (isDesktop) {
+      debugPrint('[BOOT] firebase initializing bypassed on desktop platform to maximize dev boot speed.');
+    } else if (!DefaultFirebaseOptions.isConfigured) {
       debugPrint(
         '[BOOT] firebase skipped: firebase_options.dart uses placeholders',
       );
@@ -49,7 +59,7 @@ class AppBootstrap {
           _safeInit(
             'firebase-anon-signin',
             () => FirebaseSyncService().signInAnonymously(),
-            timeout: const Duration(seconds: 20),
+            timeout: const Duration(seconds: 15),
           ),
         );
       } else {
@@ -73,43 +83,63 @@ class AppBootstrap {
         // This stops synchronous lookups like storage.getString from failing silently at startup.
         await HiveStorageImpl().init();
       },
-      timeout: const Duration(seconds: 20),
+      timeout: const Duration(seconds: 15),
     );
 
     await _safeInit(
       'audio-handler',
       () => initAudioHandler(),
-      timeout: const Duration(seconds: 25),
+      timeout: const Duration(seconds: 20),
     );
 
     await _safeInit(
       'notifications',
       () => NotificationService.instance.init(),
-      timeout: const Duration(seconds: 20),
+      timeout: const Duration(seconds: 15),
     );
 
     unawaited(
       _safeInit(
         'notification-sync',
         () => _syncLocalNotificationsFromSettings(),
-        timeout: const Duration(seconds: 20),
+        timeout: const Duration(seconds: 15),
       ),
     );
   }
 
+  /// ✨ ULTIMATE NO-THROW RACE ENGINE
+  /// Uses a plain Timer + Completer race INSTEAD of `.timeout()`.
+  /// This guarantees that if an initialization hangs, the app completes execution
+  /// with a false status WITHOUT EVER THROWING A TimeoutException.
+  /// This completely PREVENTS IDE Debuggers (VS Code) from pausing on execution!
   static Future<bool> _safeInit(
     String name,
     Future<void> Function() task, {
     required Duration timeout,
   }) async {
-    try {
-      await task().timeout(timeout);
-      return true;
-    } catch (e, st) {
-      debugPrint('[BOOT] $name failed/skipped: $e');
-      debugPrintStack(stackTrace: st);
-      return false;
-    }
+    final completer = Completer<bool>();
+
+    // Execute underlying task
+    task().then((_) {
+      if (!completer.isCompleted) {
+        completer.complete(true);
+      }
+    }).catchError((error, stackTrace) {
+      debugPrint('[BOOT] $name executed catch block: $error');
+      if (!completer.isCompleted) {
+        completer.complete(false);
+      }
+    });
+
+    // Timer race - COMPLETELY SAFE, NEVER THROWS EXCEPTION!
+    Timer(timeout, () {
+      if (!completer.isCompleted) {
+        debugPrint('[BOOT] $name exceeded maximum latency and was bypassed safely WITHOUT exception throw.');
+        completer.complete(false);
+      }
+    });
+
+    return completer.future;
   }
 
   static Future<void> _syncLocalNotificationsFromSettings() async {

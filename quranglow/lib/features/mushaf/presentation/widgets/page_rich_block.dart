@@ -31,6 +31,7 @@ class PageRichBlock extends ConsumerStatefulWidget {
     this.isHifzMode = false,
     this.revealedWords = const {},
     this.mistakenWords = const {},
+    this.fontSize = 24.0,
   });
 
   final List<Aya> ayat;
@@ -46,6 +47,7 @@ class PageRichBlock extends ConsumerStatefulWidget {
   final bool isHifzMode;
   final Map<int, Set<int>> revealedWords;
   final Map<int, Set<int>> mistakenWords;
+  final double fontSize;
 
   @override
   ConsumerState<PageRichBlock> createState() => _PageRichBlockState();
@@ -183,7 +185,7 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
                             'Scheherazade',
                           ],
                           height: 2.0,
-                          fontSize: 30 * fontScale,
+                          fontSize: (widget.fontSize + 3) * fontScale,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -193,7 +195,7 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
                       textAlign: TextAlign.justify,
                       textDirection: TextDirection.rtl,
                       strutStyle: StrutStyle(
-                        fontSize: 27 * fontScale,
+                        fontSize: widget.fontSize * fontScale,
                         height: 2.25,
                       ),
                       text: TextSpan(
@@ -206,7 +208,7 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
                             'Scheherazade',
                           ],
                           height: 2.25,
-                          fontSize: 27 * fontScale,
+                          fontSize: widget.fontSize * fontScale,
                           letterSpacing: 0.2,
                         ),
                         children: spans,
