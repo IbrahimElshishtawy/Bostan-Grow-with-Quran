@@ -463,51 +463,6 @@ class NotificationService {
     );
   }
 
-  Future<void> showAdhanPreview({
-    required String title,
-    required String body,
-    AppSettings? settings,
-  }) async {
-    if (!_isSupported) return;
-
-    final activeSettings = settings ?? await SettingsService().load();
-    await _ensurePrayerChannel(activeSettings);
-    final adhanSound = activeSettings.adhanSound;
-    final mode = await _androidScheduleMode();
-    final scheduled = tz.TZDateTime.now(
-      tz.local,
-    ).add(const Duration(seconds: 1));
-    await _plugin.zonedSchedule(
-      991002,
-      title,
-      body,
-      scheduled,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _prayerChannelId(adhanSound.id),
-          'أذان الصلوات',
-          channelDescription: 'تنبيهات الأذان مع صوت أذان مخصص',
-          importance: Importance.max,
-          priority: Priority.high,
-          category: AndroidNotificationCategory.alarm,
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          showWhen: true,
-          enableVibration: true,
-          playSound: activeSettings.adhanSoundEnabled,
-          sound: activeSettings.adhanSoundEnabled 
-              ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
-              : null,
-          icon: '@mipmap/ic_launcher',
-          largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-          channelShowBadge: true,
-        ),
-        iOS: const DarwinNotificationDetails(),
-        macOS: const DarwinNotificationDetails(),
-        windows: const WindowsNotificationDetails(),
-      ),
-      androidScheduleMode: mode,
-    );
-  }
 
   Future<void> scheduleSmartLearningReminders({
     required bool enabled,
@@ -562,6 +517,49 @@ class NotificationService {
         androidScheduleMode: mode,
       );
     }
+  }
+
+  Future<void> showAdhanPreview({
+    required String title,
+    required String body,
+    required AppSettings settings,
+  }) async {
+    if (!_isSupported) return;
+
+    await _ensurePrayerChannel(settings);
+    final adhanSound = settings.adhanSound;
+    
+    final android = AndroidNotificationDetails(
+      _prayerChannelId(adhanSound.id),
+      'أذان الصلوات',
+      channelDescription: 'تنبيهات الأذان مع صوت أذان مخصص',
+      importance: Importance.max,
+      priority: Priority.high,
+      category: AndroidNotificationCategory.alarm,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      showWhen: true,
+      enableVibration: true,
+      playSound: settings.adhanSoundEnabled,
+      sound: settings.adhanSoundEnabled 
+          ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
+          : null,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      channelShowBadge: true,
+      fullScreenIntent: true,
+    );
+
+    await _plugin.show(
+      991002,
+      title,
+      body,
+      NotificationDetails(
+        android: android,
+        iOS: const DarwinNotificationDetails(),
+        macOS: const DarwinNotificationDetails(),
+        windows: const WindowsNotificationDetails(),
+      ),
+    );
   }
 
   Future<void> schedulePrayerNotifications({

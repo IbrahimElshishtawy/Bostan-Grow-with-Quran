@@ -12,7 +12,6 @@ import 'package:quranglow/features/gamification/presentation/widgets/modern_home
 import 'package:quranglow/features/gamification/presentation/widgets/modern_home/goal_selector_sheet.dart';
 import 'package:quranglow/features/gamification/presentation/widgets/dialogs/grand_achievement_dialog.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
-import 'package:quranglow/core/di/providers.dart';
 
 class ModernHomeScreen extends ConsumerStatefulWidget {
   const ModernHomeScreen({super.key});
@@ -146,7 +145,6 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final gameStateAsync = ref.watch(gamificationControllerProvider);
-    final dailyInfo = ref.watch(dailyQuranProvider);
 
     return gameStateAsync.when(
       loading: () => Scaffold(
@@ -161,7 +159,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
       data: (gameState) {
         // ✨ JOURNEY COMPLETION CELEBRATION TRIGGER
         // If the user has finished all levels but hasn't seen the grand achievement dialog yet!
-        if (gameState.overallProgress >= 1.0 && 
+        if (gameState.overallProgress >= 1.0 &&
             !gameState.userProfile.hasSeenJourneyCompletionDialog) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
@@ -171,7 +169,9 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                 builder: (context) => const GrandAchievementDialog(),
               );
               // Mark as seen so it doesn't pop up again!
-              ref.read(gamificationControllerProvider.notifier).markJourneyCompletionAsSeen();
+              ref
+                  .read(gamificationControllerProvider.notifier)
+                  .markJourneyCompletionAsSeen();
             }
           });
         }
@@ -198,7 +198,12 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         final activeLevel = levels[activeIdx];
         final activeLevelTitle = activeLevel.surahName;
 
-        return _buildContent(gameState, activeLevelTitle, activeIdx + 1, activeLevel, dailyInfo);
+        return _buildContent(
+          gameState,
+          activeLevelTitle,
+          activeIdx + 1,
+          activeLevel,
+        );
       },
     );
   }
@@ -208,7 +213,6 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     String activeLevelTitle,
     int activeLevelSeq,
     GameLevel activeLevel,
-    ({String date, List<({int ayah, int surah, String surahName, String text})> verses, String time}) dailyInfo,
   ) {
     final levels = gameState.levels;
     final int totalLevelsCount = levels.length;
@@ -434,80 +438,6 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
 
                     const SizedBox(height: 13),
 
-                    // 📅 Daily Dynamic Info Bar (Date, Time, Random Verse)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF384E36).withValues(alpha: 0.1)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.calendar_today_rounded, size: 14, color: isDark ? Colors.white70 : const Color(0xFF384E36)),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      dailyInfo.date,
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    Icon(Icons.access_time_rounded, size: 14, color: isDark ? Colors.white70 : const Color(0xFF384E36)),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      dailyInfo.time,
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Divider(height: 1, thickness: 0.5),
-                            const SizedBox(height: 12),
-                            // Display the first random verse of the day
-                            Column(
-                              children: [
-                                Text(
-                                  dailyInfo.verses.first.text,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Kitab',
-                                    color: isDark ? const Color(0xFFFFD700) : const Color(0xFF8B6B23),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${dailyInfo.verses.first.surahName} : ${dailyInfo.verses.first.ayah}',
-                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
                     const SizedBox(height: 13),
 
                     // Floating Stats Board
@@ -552,7 +482,8 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (context) => StationTasksSheet(level: activeLevel),
+                          builder: (context) =>
+                              StationTasksSheet(level: activeLevel),
                         );
 
                         // 2. Background aesthetic: Fast scroll back into focus range!
@@ -686,4 +617,3 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
   }
 }
-

@@ -107,20 +107,20 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                   title: 'صوت الأذان',
                   subtitle: 'تشغيل صوت الأذان عند التنبيه',
                   value: st.adhanSoundEnabled,
-                onChanged: (val) async {
-                  await ref
-                      .read(settingsProvider.notifier)
-                      .setAdhanSoundEnabled(val);
-                  if (st.prayerNotificationsEnabled) {
-                    await NotificationService.instance
-                        .schedulePrayerNotifications(
-                          days: await ref
-                              .read(prayerTimesServiceProvider)
-                              .fetchUpcomingDays(),
-                          enabled: true,
-                        );
-                  }
-                },
+                  onChanged: (val) async {
+                    await ref
+                        .read(settingsProvider.notifier)
+                        .setAdhanSoundEnabled(val);
+                    if (st.prayerNotificationsEnabled) {
+                      await NotificationService.instance
+                          .schedulePrayerNotifications(
+                            days: await ref
+                                .read(prayerTimesServiceProvider)
+                                .fetchUpcomingDays(),
+                            enabled: true,
+                          );
+                    }
+                  },
                 ),
                 const SizedBox(height: 16),
                 _buildAdhanSelector(context, st),
@@ -218,7 +218,12 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
             context,
             title: 'الأذكار والأوراد',
             icon: Icons.menu_book_rounded,
-            status: (st.azkarMorningEnabled || st.azkarEveningEnabled || st.azkarAfterPrayerEnabled) ? 'مفعل' : 'متوقف',
+            status:
+                (st.azkarMorningEnabled ||
+                    st.azkarEveningEnabled ||
+                    st.azkarAfterPrayerEnabled)
+                ? 'مفعل'
+                : 'متوقف',
             children: [
               _buildModernSwitch(
                 context,
@@ -362,11 +367,14 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
               ),
               if (status != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: status == 'مفعل' 
-                      ? Colors.green.withOpacity(0.1) 
-                      : Colors.red.withOpacity(0.1),
+                    color: status == 'مفعل'
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -480,25 +488,33 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                   ),
                 );
               }),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await NotificationService.instance.showAdhanPreview(
-                    title: 'تجربة صوت الأذان',
-                    body: 'سيتم تشغيل صوت ${st.adhanSound.label} الآن...',
-                    settings: st,
-                  );
-                  _snack('سيعمل التنبيه خلال ثانية واحدة...');
-                },
-                icon: const Icon(Icons.play_circle_outline, size: 18),
-                label: const Text('اختبار التنبيه الحقيقي', style: TextStyle(fontSize: 11)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: cs.primary,
-                  side: BorderSide(color: cs.primary.withOpacity(0.3)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
             ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              await NotificationService.instance.showAdhanPreview(
+                title: 'تجربة صوت الأذان',
+                body: 'سيتم تشغيل صوت ${st.adhanSound.label} الآن...',
+                settings: st,
+              );
+              _snack('سيعمل التنبيه خلال ثانية واحدة...');
+            },
+            icon: const Icon(Icons.notifications_active_rounded, size: 20),
+            label: const Text(
+              'تجربة صوت الأذان (إشعار تجريبي)',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: cs.primary,
+              side: BorderSide(color: cs.primary.withOpacity(0.4), width: 1.5),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
           ),
         ),
       ],

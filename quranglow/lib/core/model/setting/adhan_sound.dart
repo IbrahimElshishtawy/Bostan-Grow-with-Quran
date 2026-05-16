@@ -15,38 +15,14 @@ class AdhanSoundOption {
 class AdhanSounds {
   static const main = AdhanSoundOption(
     id: 'azan',
-    label: 'أذان بستان (افتراضي)',
+    label: 'أذان بستان (الافتراضي)',
     resourceName: 'azan',
     assetPath: 'assets/voice/azan.mp3',
   );
 
-  static const makkah = AdhanSoundOption(
-    id: 'makkah',
-    label: 'أذان مكة المكرمة',
-    resourceName: 'adhan_makkah',
-    assetPath: 'assets/voice/azan.mp3', // Fallback asset for now
-  );
-
-  static const madinah = AdhanSoundOption(
-    id: 'madinah',
-    label: 'أذان المدينة المنورة',
-    resourceName: 'adhan_madinah',
-    assetPath: 'assets/voice/azan.mp3', // Fallback asset for now
-  );
-
-  static const alaqsa = AdhanSoundOption(
-    id: 'alaqsa',
-    label: 'أذان المسجد الأقصى',
-    resourceName: 'adhan_alaqsa',
-    assetPath: 'assets/voice/azan.mp3', // Fallback asset for now
-  );
-
-  static const values = <AdhanSoundOption>[main, makkah, madinah, alaqsa];
+  static const values = <AdhanSoundOption>[main];
 
   static AdhanSoundOption byId(String id) {
-    return values.firstWhere(
-      (e) => e.id == id,
-      orElse: () => main,
-    );
+    return main;
   }
 }

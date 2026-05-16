@@ -9,9 +9,9 @@ import 'package:quranglow/core/app/app_bootstrap_scope.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  debugProfileBuildsEnabled = false;
-  debugRepaintRainbowEnabled = false;
-  debugRepaintTextRainbowEnabled = false;
+  debugProfileBuildsEnabled = true;
+  debugRepaintRainbowEnabled = true;
+  debugRepaintTextRainbowEnabled = true;
   SplashBootstrap.initBinding();
   await AppBootstrap.initialize();
   runApp(const ProviderScope(child: AppBootstrapScope(child: QuranGlowApp())));
