@@ -58,7 +58,7 @@ class TransportControls extends ConsumerWidget {
           timelineStream: state.timelineStream,
           onSeek: ref.read(playerControllerProvider.notifier).seekTo,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 8),
         
         // Main Transport Row
         FittedBox(

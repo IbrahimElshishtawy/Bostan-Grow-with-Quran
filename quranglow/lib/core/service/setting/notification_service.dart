@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -202,6 +203,35 @@ class NotificationService {
     );
   }
 
+  Future<void> _ensureSalawatChannel(AppSettings settings) async {
+    if (kIsWeb || !Platform.isAndroid) return;
+
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+
+    const channelId = _salawatChannelId;
+
+    try {
+      await android.deleteNotificationChannel(channelId);
+    } catch (_) {}
+
+    await android.createNotificationChannel(
+      AndroidNotificationChannel(
+        channelId,
+        'تذكير الصلاة على النبي ﷺ',
+        description: 'تذكير دوري محلي للصلاة على النبي ﷺ',
+        importance: Importance.max,
+        playSound: settings.salawatSoundEnabled,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+        showBadge: true,
+      ),
+    );
+  }
+
   tz.TZDateTime _nextInstanceOf(TimeOfDay t) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -286,6 +316,7 @@ class NotificationService {
     if (!enabled) return;
 
     final settings = await SettingsService().load();
+    await _ensureSalawatChannel(settings);
     final mode = await _androidScheduleMode();
 
     final android = AndroidNotificationDetails(
@@ -296,6 +327,7 @@ class NotificationService {
       priority: Priority.high,
       showWhen: true,
       enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
       playSound: settings.salawatSoundEnabled,
     );
     const ios = DarwinNotificationDetails();

@@ -287,6 +287,12 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(salawatEnabled: enabled));
     await ref.read(settingsServiceProvider).setSalawatEnabled(enabled);
+    
+    // Refresh notifications
+    await NotificationService.instance.scheduleSalawat(
+      enabled: enabled,
+      intervalMinutes: cur.salawatIntervalMinutes,
+    );
   }
 
   Future<void> setSalawatIntervalMinutes(int minutes) async {
@@ -294,6 +300,14 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(salawatIntervalMinutes: minutes));
     await ref.read(settingsServiceProvider).setSalawatIntervalMinutes(minutes);
+
+    // Refresh notifications
+    if (cur.salawatEnabled) {
+      await NotificationService.instance.scheduleSalawat(
+        enabled: true,
+        intervalMinutes: minutes,
+      );
+    }
   }
 
   Future<void> setPrayerNotificationsEnabled(bool enabled) async {
@@ -326,6 +340,14 @@ class SettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     if (cur == null) return;
     state = AsyncValue.data(cur.copyWith(salawatSoundEnabled: enabled));
     await ref.read(settingsServiceProvider).setSalawatSoundEnabled(enabled);
+
+    // Refresh notifications to apply channel sound changes
+    if (cur.salawatEnabled) {
+      await NotificationService.instance.scheduleSalawat(
+        enabled: true,
+        intervalMinutes: cur.salawatIntervalMinutes,
+      );
+    }
   }
 
   Future<void> setSmartLearningEnabled(bool enabled) async {
