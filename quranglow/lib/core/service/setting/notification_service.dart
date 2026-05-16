@@ -594,9 +594,8 @@ class NotificationService {
           : null,
       icon: '@mipmap/ic_launcher',
       largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-      ongoing: true,
-      autoCancel: false,
       channelShowBadge: true,
+      fullScreenIntent: true,
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();

@@ -107,9 +107,20 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                   title: 'صوت الأذان',
                   subtitle: 'تشغيل صوت الأذان عند التنبيه',
                   value: st.adhanSoundEnabled,
-                  onChanged: (val) => ref
+                onChanged: (val) async {
+                  await ref
                       .read(settingsProvider.notifier)
-                      .setAdhanSoundEnabled(val),
+                      .setAdhanSoundEnabled(val);
+                  if (st.prayerNotificationsEnabled) {
+                    await NotificationService.instance
+                        .schedulePrayerNotifications(
+                          days: await ref
+                              .read(prayerTimesServiceProvider)
+                              .fetchUpcomingDays(),
+                          enabled: true,
+                        );
+                  }
+                },
                 ),
                 const SizedBox(height: 16),
                 _buildAdhanSelector(context, st),
@@ -430,44 +441,64 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: AdhanSounds.values.map((sound) {
-              final isSelected = st.adhanSoundId == sound.id;
-              return Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: ChoiceChip(
-                  label: Text(sound.label),
-                  selected: isSelected,
-                  onSelected: (val) async {
-                    if (val) {
-                      await ref
-                          .read(settingsProvider.notifier)
-                          .setAdhanSoundId(sound.id);
-                      if (st.prayerNotificationsEnabled) {
-                        await NotificationService.instance
-                            .schedulePrayerNotifications(
-                              days: await ref
-                                  .read(prayerTimesServiceProvider)
-                                  .fetchUpcomingDays(),
-                              enabled: true,
-                            );
+            children: [
+              ...AdhanSounds.values.map((sound) {
+                final isSelected = st.adhanSoundId == sound.id;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: ChoiceChip(
+                    label: Text(sound.label),
+                    selected: isSelected,
+                    onSelected: (val) async {
+                      if (val) {
+                        await ref
+                            .read(settingsProvider.notifier)
+                            .setAdhanSoundId(sound.id);
+                        if (st.prayerNotificationsEnabled) {
+                          await NotificationService.instance
+                              .schedulePrayerNotifications(
+                                days: await ref
+                                    .read(prayerTimesServiceProvider)
+                                    .fetchUpcomingDays(),
+                                enabled: true,
+                              );
+                        }
+                        _previewSelectedAdhan(sound);
                       }
-                      _previewSelectedAdhan(sound);
-                    }
-                  },
-                  selectedColor: cs.primary,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : cs.onSurface,
-                    fontWeight: FontWeight.bold,
+                    },
+                    selectedColor: cs.primary,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : cs.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    backgroundColor: cs.primary.withOpacity(0.05),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    side: BorderSide.none,
+                    showCheckmark: false,
                   ),
-                  backgroundColor: cs.primary.withOpacity(0.05),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  side: BorderSide.none,
-                  showCheckmark: false,
+                );
+              }),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await NotificationService.instance.showAdhanPreview(
+                    title: 'تجربة صوت الأذان',
+                    body: 'سيتم تشغيل صوت ${st.adhanSound.label} الآن...',
+                    settings: st,
+                  );
+                  _snack('سيعمل التنبيه خلال ثانية واحدة...');
+                },
+                icon: const Icon(Icons.play_circle_outline, size: 18),
+                label: const Text('اختبار التنبيه الحقيقي', style: TextStyle(fontSize: 11)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: cs.primary,
+                  side: BorderSide(color: cs.primary.withOpacity(0.3)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
         ),
       ],
