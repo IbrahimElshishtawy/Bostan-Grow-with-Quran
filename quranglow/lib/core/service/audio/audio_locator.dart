@@ -1,4 +1,4 @@
-// lib/core/audio/audio_locator.dart
+// lib/core/service/audio/audio_locator.dart
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'my_audio_handler.dart';
@@ -23,7 +23,7 @@ Future<void> initAudioHandler() async {
       androidNotificationChannelName: 'تشغيل الصوت',
       androidNotificationOngoing: false,
       androidStopForegroundOnPause: false,
-      androidNotificationIcon: 'mipmap/ic_launcher_round',
+      androidNotificationIcon: 'mipmap/ic_launcher',
       androidNotificationClickStartsActivity: true,
       notificationColor: Color(0xFF1B5E20),
       preloadArtwork: true,
