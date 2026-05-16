@@ -35,7 +35,7 @@
     <application
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:label="QuranGlow"
+        android:label="بُستان"
         android:usesCleartextTraffic="true">
 
         <activity

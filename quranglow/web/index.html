@@ -1,26 +1,15 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
+<!DOCTYPE html><html lang="ar" dir="rtl"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuranGlow | تحميل التطبيق</title>
-  <meta
-    name="description"
-    content="حمل تطبيق QuranGlow مباشرة من صفحة رسمية أنيقة تعرض المميزات وروابط التنزيل."
-  >
+  <meta name="description" content="حمل تطبيق QuranGlow مباشرة من صفحة رسمية أنيقة تعرض المميزات وروابط التنزيل.">
   <meta property="og:title" content="QuranGlow">
-  <meta
-    property="og:description"
-    content="تطبيق قرآني متكامل يجمع بين القراءة والاستماع والتفسير والأذكار واتجاه القبلة."
-  >
+  <meta property="og:description" content="تطبيق قرآني متكامل يجمع بين القراءة والاستماع والتفسير والأذكار واتجاه القبلة.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="icons/Icon-512.png">
   <meta property="theme-color" content="#074f4f">
   <link rel="icon" type="image/png" href="favicon.png">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@300;400;600;700;900&display=swap"
-    rel="stylesheet"
-  >
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&amp;family=Cairo:wght@300;400;600;700;900&amp;display=swap" rel="stylesheet">
   <style>
     :root {
       --gold: #c9a84c;
@@ -512,8 +501,80 @@
       .download-section::before { font-size: 72px; top: 28px; }
     }
   </style>
+  <style id="splash-screen-style">
+    html {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background-color: #FFFFFF;
+      background-image: url("splash/img/light-background.png");
+      background-size: 100% 100%;
+    }
+
+    .center {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+    }
+
+    .contain {
+      display:block;
+      width:100%; height:100%;
+      object-fit: contain;
+    }
+
+    .stretch {
+      display:block;
+      width:100%; height:100%;
+    }
+
+    .cover {
+      display:block;
+      width:100%; height:100%;
+      object-fit: cover;
+    }
+
+    .bottom {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      -ms-transform: translate(-50%, 0);
+      transform: translate(-50%, 0);
+    }
+
+    .bottomLeft {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    .bottomRight {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+  </style>
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      document.getElementById("splash")?.remove();
+      document.getElementById("splash-branding")?.remove();
+      document.body.style.background = "transparent";
+    }
+  </script>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
 <body>
+  <picture id="splash">
+      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
+      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
+      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
+  </picture>
   <div class="hero">
     <div class="hero-pattern"></div>
     <div class="hero-content">
@@ -544,9 +605,9 @@
       </div>
 
       <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-        <img src="https://img.shields.io/github/v/release/IbrahimElshishtawy/QuranGlow?display_name=tag&style=for-the-badge&color=c9a84c&labelColor=074f4f" alt="Release" style="height:28px; border-radius:6px;">
-        <img src="https://img.shields.io/badge/Built%20with-Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" style="height:28px; border-radius:6px;">
-        <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" style="height:28px; border-radius:6px;">
+        <img src="https://img.shields.io/github/v/release/IbrahimElshishtawy/QuranGlow?display_name=tag&amp;style=for-the-badge&amp;color=c9a84c&amp;labelColor=074f4f" alt="Release" style="height:28px; border-radius:6px;">
+        <img src="https://img.shields.io/badge/Built%20with-Flutter-02569B?style=for-the-badge&amp;logo=flutter&amp;logoColor=white" alt="Flutter" style="height:28px; border-radius:6px;">
+        <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&amp;logo=android&amp;logoColor=white" alt="Android" style="height:28px; border-radius:6px;">
       </div>
     </div>
     <div class="scroll-hint">اكتشف المزيد</div>
@@ -683,5 +744,6 @@
     }, { threshold: 0.1 });
     reveals.forEach((element) => observer.observe(element));
   </script>
-</body>
-</html>
+
+
+</body></html>

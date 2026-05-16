@@ -74,15 +74,16 @@ flutter:
     - android/app/src/main/res/raw/adhan_makkah.mp3
     - android/app/src/main/res/raw/adhan_madinah.mp3
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/iosn/icongrowquran.jpg"
+  image_path: "assets/images/bustan_icon.png"
   adaptive_icon_background: "#FFFFFF"
 
 flutter_native_splash:
   color: "#FFFFFF"
-  image: assets/iosn/icongrowquran.jpg
+  image: assets/images/bustan_icon.png
+  background_image: assets/images/bustan_splash.png
   android_12:
     color: "#FFFFFF"
-    image: assets/iosn/icongrowquran.jpg
+    image: assets/images/bustan_icon.png
