@@ -17,7 +17,7 @@ class SettingsPage extends ConsumerWidget {
       child: Scaffold(
         appBar: ProAppBar(
           title: 'الإعدادات',
-          subtitle: 'خصص القراءة والإشعارات والتنزيلات',
+          subtitle: 'خصص القراءة والإشعارات وأهدافك اليومية',
           onBack: () {
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).maybePop();

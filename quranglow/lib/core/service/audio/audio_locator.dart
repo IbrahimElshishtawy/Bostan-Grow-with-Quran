@@ -23,7 +23,7 @@ Future<void> initAudioHandler() async {
       androidNotificationChannelName: 'تشغيل الصوت',
       androidNotificationOngoing: false,
       androidStopForegroundOnPause: false,
-      androidNotificationIcon: 'mipmap/ic_launcher',
+      androidNotificationIcon: 'mipmap/ic_launcher_round',
       androidNotificationClickStartsActivity: true,
       notificationColor: Color(0xFF1B5E20),
       preloadArtwork: true,

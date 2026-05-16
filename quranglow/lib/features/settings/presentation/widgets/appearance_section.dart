@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/di/providers.dart';
-import 'package:quranglow/core/model/setting/reader_settings.dart';
-import 'package:quranglow/core/theme/theme_controller.dart';
-import 'package:quranglow/features/settings/presentation/widgets/font_scale_dialog.dart';
-import 'package:quranglow/features/settings/presentation/widgets/readers_sheet.dart';
+
 import 'package:quranglow/features/settings/presentation/widgets/section_header.dart';
 
 class AppearanceSection extends ConsumerWidget {
@@ -24,142 +21,130 @@ class AppearanceSection extends ConsumerWidget {
       error: (e, _) =>
           Padding(padding: const EdgeInsets.all(16), child: Text('خطأ: $e')),
       data: (st) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader('المظهر والقراءة'),
-          ListTile(
-            title: const Text('مظهر التطبيق'),
-            subtitle: Text(_themeModeLabel(st.themeMode)),
-            trailing: DropdownButton<ThemeMode>(
-              value: st.themeMode,
-              onChanged: (value) async {
-                if (value == null) return;
-                await ref.read(settingsProvider.notifier).setThemeMode(value);
-              },
-              items: const [
-                DropdownMenuItem(
-                  value: ThemeMode.system,
-                  child: Text('حسب الهاتف'),
+          const SectionHeader('تخصيص القراءة'),
+          const SizedBox(height: 8),
+          // 📏 Professional Font Size Control Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
                 ),
-                DropdownMenuItem(
-                  value: ThemeMode.light,
-                  child: Text('فاتح'),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.format_size_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'حجم خط الآيات',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${(st.fontScale * 100).toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                DropdownMenuItem(
-                  value: ThemeMode.dark,
-                  child: Text('داكن'),
+                const SizedBox(height: 24),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 6,
+                    activeTrackColor: Theme.of(context).colorScheme.primary,
+                    inactiveTrackColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.1),
+                    thumbColor: Theme.of(context).colorScheme.primary,
+                    overlayColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.2),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 10,
+                      elevation: 4,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 20,
+                    ),
+                  ),
+                  child: Slider(
+                    value: st.fontScale,
+                    min: 0.8,
+                    max: 2.0,
+                    onChanged: (value) async {
+                      await ref
+                          .read(settingsProvider.notifier)
+                          .setFontScale(value);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Text(
+                    'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+                    style: TextStyle(
+                      fontFamily: 'Kitab',
+                      fontSize: 22 * st.fontScale,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.8),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          ListTile(
-            title: const Text('لون التطبيق'),
-            subtitle: Text(_colorSchemeLabel(st.colorScheme)),
-            trailing: DropdownButton<AppColorScheme>(
-              value: st.colorScheme,
-              onChanged: (value) async {
-                if (value == null) return;
-                await ref.read(settingsProvider.notifier).setColorScheme(value);
-              },
-              items: const [
-                DropdownMenuItem(
-                  value: AppColorScheme.green,
-                  child: Text('أخضر'),
-                ),
-                DropdownMenuItem(
-                  value: AppColorScheme.sepia,
-                  child: Text('بني هادئ'),
-                ),
-                DropdownMenuItem(
-                  value: AppColorScheme.blue,
-                  child: Text('أزرق'),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            title: const Text('حجم الخط'),
-            subtitle: Text(st.fontScale.toStringAsFixed(2)),
-            trailing: const Icon(Icons.chevron_left),
-            onTap: () async {
-              final v = await showDialog<double>(
-                context: context,
-                builder: (_) => FontScaleDialog(value: st.fontScale),
-              );
-              if (v != null) {
-                await ref.read(settingsProvider.notifier).setFontScale(v);
-              }
-            },
-          ),
-          ListTile(
-            title: const Text('اختيار القارئ'),
-            subtitle: Text(st.readerEditionId),
-            trailing: const Icon(Icons.chevron_left),
-            onTap: () async {
-              final chosen = await showModalBottomSheet<String>(
-                context: context,
-                builder: (_) => const ReadersSheet(),
-              );
-              if (chosen != null) {
-                await ref.read(settingsProvider.notifier).setReader(chosen);
-              }
-            },
-          ),
-          ListTile(
-            title: const Text('تنزيل الصوت'),
-            subtitle: Text(_downloadModeLabel(st.audioDownloadMode)),
-            trailing: DropdownButton<AudioDownloadMode>(
-              value: st.audioDownloadMode,
-              onChanged: (value) async {
-                if (value == null) return;
-                await ref
-                    .read(settingsProvider.notifier)
-                    .setAudioDownloadMode(value);
-              },
-              items: const [
-                DropdownMenuItem(
-                  value: AudioDownloadMode.fullSurah,
-                  child: Text('السورة كاملة'),
-                ),
-                DropdownMenuItem(
-                  value: AudioDownloadMode.selectedAyat,
-                  child: Text('اختيار آيات'),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
-  }
-
-  String _themeModeLabel(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.system:
-        return 'يتبع إعدادات الهاتف';
-      case ThemeMode.light:
-        return 'فاتح';
-      case ThemeMode.dark:
-        return 'داكن';
-    }
-  }
-
-  String _colorSchemeLabel(AppColorScheme scheme) {
-    switch (scheme) {
-      case AppColorScheme.green:
-        return 'أخضر';
-      case AppColorScheme.sepia:
-        return 'بني هادئ';
-      case AppColorScheme.blue:
-        return 'أزرق';
-    }
-  }
-
-  String _downloadModeLabel(AudioDownloadMode mode) {
-    switch (mode) {
-      case AudioDownloadMode.fullSurah:
-        return 'تنزيل السورة كاملة مباشرة';
-      case AudioDownloadMode.selectedAyat:
-        return 'فتح قائمة لاختيار آيات محددة';
-    }
   }
 }

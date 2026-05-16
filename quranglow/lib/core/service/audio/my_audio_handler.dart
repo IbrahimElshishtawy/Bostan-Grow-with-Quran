@@ -82,11 +82,11 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
       MediaItem(
         id: nextUrl,
         title: title ?? 'القرآن الكريم',
-        artist: artist ?? 'QuranGlow',
+        artist: artist ?? 'بُستان',
         album: album ?? 'المصحف المرتل',
         artUri: artworkUri,
         displayTitle: title ?? 'القرآن الكريم',
-        displaySubtitle: artist ?? 'QuranGlow',
+        displaySubtitle: artist ?? 'بُستان',
         displayDescription: album,
       ),
     );
