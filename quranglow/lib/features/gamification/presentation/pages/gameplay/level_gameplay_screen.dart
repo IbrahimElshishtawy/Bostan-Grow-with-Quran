@@ -43,7 +43,6 @@ class _LevelGameplayScreenState extends ConsumerState<LevelGameplayScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(levelGameplayControllerProvider(widget.level));
     final controller = ref.read(levelGameplayControllerProvider(widget.level).notifier);
-    final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // 🚀 Auto-Scroll Synchronization Listener
