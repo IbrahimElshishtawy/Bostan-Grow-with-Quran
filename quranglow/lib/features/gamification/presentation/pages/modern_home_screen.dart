@@ -556,6 +556,9 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
     if (activeVisualIdx == -1) activeVisualIdx = 0;
 
+    // Cache the Y coordinate for the auto-scroll logic in initState
+    _cachedActiveNodeY = offsets[activeVisualIdx].dy;
+
     return SizedBox(
       height: mapTotalHeight,
       child: Stack(

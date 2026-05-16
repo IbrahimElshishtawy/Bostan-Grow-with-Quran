@@ -500,7 +500,7 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                 body: 'سيتم تشغيل صوت ${st.adhanSound.label} الآن...',
                 settings: st,
               );
-              _snack('سيعمل التنبيه خلال ثانية واحدة...');
+              _snack('سيتم تشغيل التنبيه الآن...');
             },
             icon: const Icon(Icons.notifications_active_rounded, size: 20),
             label: const Text(

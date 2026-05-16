@@ -526,6 +526,17 @@ class NotificationService {
   }) async {
     if (!_isSupported) return;
 
+    // Request permissions before showing the preview to ensure it works
+    if (Platform.isAndroid) {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      await android?.requestNotificationsPermission();
+    } else if (Platform.isIOS) {
+      final ios = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      await ios?.requestPermissions(alert: true, badge: true, sound: true);
+    }
+
     await _ensurePrayerChannel(settings);
     final adhanSound = settings.adhanSound;
     
@@ -743,7 +754,7 @@ class NotificationService {
     await _plugin.cancelAll();
   }
 
-  static String _prayerChannelId(String soundId) => 'prayer_adhan_ch_$soundId';
+  static String _prayerChannelId(String soundId) => 'adhan_channel_${soundId}_v4';
 
   int _prayerNotificationId(int dayIndex, int prayerIndex) {
     return _prayerBaseId + (dayIndex * 10) + prayerIndex;
