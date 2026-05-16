@@ -11,12 +11,14 @@ class MushafAudioBar extends ConsumerWidget {
     required this.player,
     required this.surahName,
     required this.onClose,
+    this.onPlay,
   });
 
   final bool visible;
   final AudioPlayer player;
   final String surahName;
   final VoidCallback onClose;
+  final VoidCallback? onPlay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -120,7 +122,7 @@ class MushafAudioBar extends ConsumerWidget {
                                 iconSize: 24.0,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
-                                onPressed: player.play,
+                                onPressed: onPlay ?? player.play,
                               );
                             } else if (processingState !=
                                 ProcessingState.completed) {

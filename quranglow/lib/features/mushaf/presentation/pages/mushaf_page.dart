@@ -78,6 +78,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       {}; // Surah Ayah Number -> Set of wrong/skipped word indices
   int _consumedSpokenWordsCount =
       0; // Tracker for real-time session stream offsets
+
+  // 🎵 Audio Session Trackers
+  String? _currentPlayingEdition;
+  int? _currentPlayingChapter;
   bool _speechEnabled = false;
   bool _isListening = false;
   String _wordsSpoken = "";
@@ -160,20 +164,36 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   void _goPrev() {
     if (_chapter <= 1) return;
+    
+    final wasPlaying = _ayahPreviewPlayer.playing;
     setState(() {
       _chapter--;
       _lastAyahNumber = null;
     });
     _pagedMushafKey.currentState?.animateToPage(0);
+    
+    // 🎵 Auto-switch audio to new surah if was playing
+    if (wasPlaying) {
+      final surahAsync = ref.read(surahProvider((_chapter, widget.editionId)));
+      surahAsync.whenData((s) => _playAyahAudio(s.ayat, 1));
+    }
   }
 
   void _goNext() {
     if (_chapter >= 114) return;
+    
+    final wasPlaying = _ayahPreviewPlayer.playing;
     setState(() {
       _chapter++;
       _lastAyahNumber = null;
     });
     _pagedMushafKey.currentState?.animateToPage(0);
+
+    // 🎵 Auto-switch audio to new surah if was playing
+    if (wasPlaying) {
+      final surahAsync = ref.read(surahProvider((_chapter, widget.editionId)));
+      surahAsync.whenData((s) => _playAyahAudio(s.ayat, 1));
+    }
   }
 
   Future<void> _saveCurrentPosition() async {
@@ -285,20 +305,40 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   Future<void> _playAyahAudio(List<Aya> allAyat, int startAyahNumber, {bool singleOnly = false}) async {
     try {
       final audioEdition = _audioEditionId();
-      final audioAsync = ref.read(audioMapProvider((audioEdition, _chapter)));
-      final audioMap = audioAsync.valueOrNull;
+      
+      // 🟢 FIX: Await the future instead of using valueOrNull to prevent failure during loading
+      // Show a subtle loading indicator in a SnackBar if it takes more than 300ms
+      final loadingTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                  SizedBox(width: 16),
+                  Text('جاري تحضير ملفات الصوت...'),
+                ],
+              ),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      });
 
-      if (audioMap == null || audioMap.isEmpty) {
+      final audioMap = await ref.read(audioMapProvider((audioEdition, _chapter)).future);
+      loadingTimer.cancel();
+
+      if (audioMap.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('جاري تحميل بيانات الصوت، يرجى الانتظار ثانية...')),
+          const SnackBar(content: Text('عذراً، لا توجد ملفات صوتية متاحة لهذا القارئ حالياً.')),
         );
         return;
       }
 
       // 1. Prepare source(s)
       final service = ref.read(quranServiceProvider);
-      final verseDurations = await service.getVerseDurations(_audioEditionId(), _chapter);
+      final verseDurations = await service.getVerseDurations(audioEdition, _chapter);
 
       if (singleOnly) {
         // Single Ayah playback
@@ -322,13 +362,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         }
       } else {
         // Continuous playback (Existing logic)
-        final currentSource = _ayahPreviewPlayer.audioSource;
-        bool needsNewSource = true;
-        if (currentSource is AudioSource && currentSource is! ConcatenatingAudioSource) {
-          if (_ayahPreviewPlayer.audioSource?.toString().contains('surah/$_audioEditionId()/$_chapter.mp3') ?? false) {
-            needsNewSource = false;
-          }
-        }
+        bool needsNewSource = _currentPlayingEdition != audioEdition || _currentPlayingChapter != _chapter || _ayahPreviewPlayer.audioSource == null;
 
         if (needsNewSource) {
           final List<AudioSource> sources = [];
@@ -357,6 +391,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
             preload: true,
           );
           await _ayahPreviewPlayer.setLoopMode(LoopMode.off);
+          
+          // Update trackers
+          _currentPlayingEdition = audioEdition;
+          _currentPlayingChapter = _chapter;
         }
 
         final targetIndex = startAyahNumber - 1;
@@ -467,6 +505,22 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   @override
   Widget build(BuildContext context) {
     final asyncSurah = ref.watch(surahProvider((_chapter, widget.editionId)));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // 🎧 Listen for reciter change in settings to update active player
+    ref.listen(settingsProvider, (prev, next) {
+      final oldEdition = prev?.valueOrNull?.readerEditionId;
+      final newEdition = next.valueOrNull?.readerEditionId;
+      if (newEdition != null && oldEdition != newEdition && _ayahPreviewPlayer.playing) {
+        debugPrint('Reciter changed from $oldEdition to $newEdition. Updating player...');
+        final surah = asyncSurah.valueOrNull;
+        if (surah != null) {
+          // Restart playback with new reciter at current index
+          final currentIndex = _ayahPreviewPlayer.currentIndex ?? 0;
+          _playAyahAudio(surah.ayat, currentIndex + 1);
+        }
+      }
+    });
 
     // 🎤 Pre-fetch audio map for smooth transition
     ref.listen(audioMapProvider((_audioEditionId(), _chapter)), (prev, next) {
@@ -717,6 +771,12 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                     player: _ayahPreviewPlayer,
                     surahName: asyncSurah.valueOrNull?.name ?? 'سورة',
                     onClose: () => _ayahPreviewPlayer.stop(),
+                    onPlay: () {
+                      final surah = asyncSurah.valueOrNull;
+                      if (surah != null) {
+                        _playAyahAudio(surah.ayat, 1);
+                      }
+                    },
                   );
                 },
               ),
