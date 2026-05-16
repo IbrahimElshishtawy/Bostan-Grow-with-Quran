@@ -540,7 +540,6 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       orElse: () => null,
     );
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgGradient = isDark
         ? const [Color(0xFF18140E), Color(0xFF0D0B08)]
         : const [Color(0xFFFFFDF8), Color(0xFFFDF7E8)];
