@@ -644,8 +644,6 @@ class NotificationService {
             windows: win,
           ),
           androidScheduleMode: mode,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
         );
 
         // 2. Schedule the "Did you pray?" follow-up notification (15 minutes later)
@@ -656,10 +654,21 @@ class NotificationService {
           _getPrayerMotivation(key),
           followUpTime,
           NotificationDetails(
-            android: android.copyWith(
-              // Use standard notification sound for the question, not the full Adhan
-              sound: null,
+            android: AndroidNotificationDetails(
+              _prayerChannelId(adhanSound.id),
+              'أذان الصلوات',
+              channelDescription: 'تنبيهات الأذان مع صوت أذان مخصص',
+              importance: Importance.max,
+              priority: Priority.high,
+              category: AndroidNotificationCategory.alarm,
+              audioAttributesUsage: AudioAttributesUsage.alarm,
+              showWhen: true,
+              enableVibration: true,
               playSound: true,
+              sound: null, // Use standard notification sound for the question
+              icon: '@mipmap/ic_launcher',
+              largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+              channelShowBadge: true,
               styleInformation: const BigTextStyleInformation(''),
             ),
             iOS: ios,
@@ -667,8 +676,6 @@ class NotificationService {
             windows: win,
           ),
           androidScheduleMode: mode,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
         );
       }
     }
