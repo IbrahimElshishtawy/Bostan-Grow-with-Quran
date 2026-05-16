@@ -2,6 +2,7 @@
 // ignore_for_file: unused_local_variable, experimental_member_use, implementation_imports, unnecessary_this
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
@@ -895,4 +896,40 @@ final surahAyatCountProvider = FutureProvider.family<int, int>((ref, n) {
 
 final statsServiceProvider = Provider<StatsService>((ref) {
   return StatsServiceImpl(ref.watch(trackingServiceProvider));
+});
+
+final dailyQuranProvider = Provider<({String date, String time, List<({String text, int surah, int ayah, String surahName})> verses})>((ref) {
+  final now = DateTime.now();
+  // Stable random seed for the day
+  final random = Random(now.year * 1000 + now.month * 100 + now.day);
+  
+  final List<({String text, int surah, int ayah, String surahName})> verses = [];
+  
+  for (int i = 0; i < 3; i++) {
+    final s = random.nextInt(114) + 1;
+    final totalAyah = quran.getVerseCount(s);
+    final a = random.nextInt(totalAyah) + 1;
+    
+    verses.add((
+      text: quran.getVerse(s, a, verseEndSymbol: true),
+      surah: s,
+      ayah: a,
+      surahName: kSurahNamesAr[s - 1],
+    ));
+  }
+  
+  // Basic Arabic Date Formatting
+  final monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  final dateStr = "${now.day} ${monthsAr[now.month - 1]} ${now.year}";
+  
+  // Time formatting (HH:mm)
+  final hour = now.hour.toString().padLeft(2, '0');
+  final minute = now.minute.toString().padLeft(2, '0');
+  final timeStr = "$hour:$minute";
+  
+  return (
+    date: dateStr,
+    time: timeStr,
+    verses: verses,
+  );
 });
