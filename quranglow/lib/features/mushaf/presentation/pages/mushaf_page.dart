@@ -645,6 +645,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                   });
 
                   if (_voiceReciteMode) {
+                    _ayahPreviewPlayer.stop(); // 🛑 Stop any background audio immediately
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text(

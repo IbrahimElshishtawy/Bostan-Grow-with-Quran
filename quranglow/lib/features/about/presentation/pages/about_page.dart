@@ -9,8 +9,10 @@ class AboutPage extends ConsumerWidget {
   const AboutPage({super.key});
 
   static const _developerName = 'Ibrahim Elshishtawy';
-  static const _facebook = 'https://www.facebook.com/p/Ibrahim-El-ShiShtawy-100025661886698/';
-  static const _linkedin = 'https://www.linkedin.com/in/ibrahim-elshishtawy-0a67b334a/';
+  static const _facebook =
+      'https://www.facebook.com/p/Ibrahim-El-ShiShtawy-100025661886698/';
+  static const _linkedin =
+      'https://www.linkedin.com/in/ibrahim-elshishtawy-0a67b334a/';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,7 +28,9 @@ class AboutPage extends ConsumerWidget {
             // 1. Premium Background with Subtle Pattern
             Positioned.fill(
               child: Image.asset(
-                isDark ? 'assets/images/app_bg_dark.png' : 'assets/images/app_bg_light.png',
+                isDark
+                    ? 'assets/images/app_bg_dark.png'
+                    : 'assets/images/app_bg_light.png',
                 fit: BoxFit.cover,
               ),
             ),
@@ -49,19 +53,31 @@ class AboutPage extends ConsumerWidget {
                   floating: false,
                   pinned: true,
                   stretch: true,
-                  backgroundColor: isDark ? const Color(0xFF111A14) : Colors.white,
+                  backgroundColor: isDark
+                      ? const Color(0xFF111A14)
+                      : Colors.white,
                   leading: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     onPressed: () {
                       if (Navigator.of(context).canPop()) {
                         Navigator.of(context).pop();
                       } else {
-                        Navigator.pushReplacementNamed(context, AppRoutes.gamificationHome);
+                        Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.gamificationHome,
+                        );
                       }
                     },
                   ),
                   flexibleSpace: FlexibleSpaceBar(
-                    stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+                    stretchModes: const [
+                      StretchMode.zoomBackground,
+                      StretchMode.blurBackground,
+                    ],
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -86,13 +102,18 @@ class AboutPage extends ConsumerWidget {
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white24, width: 2),
+                                  border: Border.all(
+                                    color: Colors.white24,
+                                    width: 2,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.2),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.2,
+                                      ),
                                       blurRadius: 20,
                                       offset: const Offset(0, 10),
-                                    )
+                                    ),
                                   ],
                                 ),
                                 child: ClipOval(
@@ -103,7 +124,10 @@ class AboutPage extends ConsumerWidget {
                                     fit: BoxFit.cover,
                                   ),
                                 ),
-                              ).animate().scale(duration: 800.ms, curve: Curves.elasticOut),
+                              ).animate().scale(
+                                duration: 800.ms,
+                                curve: Curves.elasticOut,
+                              ),
                               const SizedBox(height: 12),
                               const Text(
                                 'بُستان القرآن',
@@ -135,17 +159,29 @@ class AboutPage extends ConsumerWidget {
                         _buildDailyVersesSection(isDark, dailyInfo),
                         const SizedBox(height: 24),
 
-                        // 5. FEATURES LIST
-                        _buildSectionHeader('مميزات التطبيق', Icons.auto_awesome_rounded, isDark),
+                        // 5. OFFLINE DOWNLOAD CARD
+                        _buildOfflineDownloadCard(context, ref, isDark),
+                        const SizedBox(height: 24),
+
+                        // 6. FEATURES LIST
+                        _buildSectionHeader(
+                          'مميزات التطبيق',
+                          Icons.auto_awesome_rounded,
+                          isDark,
+                        ),
                         const SizedBox(height: 12),
                         _buildFeaturesGrid(cs, isDark),
                         const SizedBox(height: 24),
 
                         // 6. DEVELOPER & SOCIAL
-                        _buildSectionHeader('تواصل مع المطور', Icons.connect_without_contact_rounded, isDark),
+                        _buildSectionHeader(
+                          'تواصل مع المطور',
+                          Icons.connect_without_contact_rounded,
+                          isDark,
+                        ),
                         const SizedBox(height: 12),
                         _buildDeveloperCard(context, isDark),
-                        
+
                         const SizedBox(height: 40),
                         const Text(
                           'الإصدار 1.0.0',
@@ -171,13 +207,15 @@ class AboutPage extends ConsumerWidget {
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF384E36).withValues(alpha: 0.1)),
+        border: Border.all(
+          color: const Color(0xFF384E36).withValues(alpha: 0.1),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -205,7 +243,9 @@ class AboutPage extends ConsumerWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF384E36).withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF384E36).withValues(alpha: 0.1)),
+              border: Border.all(
+                color: const Color(0xFF384E36).withValues(alpha: 0.1),
+              ),
             ),
             child: Text(
               'اللهم ارحم أمواتنا وأموات المسلمين، واغفر لهم وتجاوز عن سيئاتهم، واجعل قبورهم روضة من رياض الجنة. اللهم ارحمنا إذا صرنا إلى ما صاروا إليه، وتوفنا وأنت راضٍ عنا، واجعل خير أعمالنا خواتيمها.',
@@ -223,13 +263,23 @@ class AboutPage extends ConsumerWidget {
     ).animate().fadeIn(delay: 200.ms).moveY(begin: 20, end: 0);
   }
 
-  Widget _buildDailyVersesSection(bool isDark, ({String date, List<({int ayah, int surah, String surahName, String text})> verses, String time}) dailyInfo) {
+  Widget _buildDailyVersesSection(
+    bool isDark,
+    ({
+      String date,
+      List<({int ayah, int surah, String surahName, String text})> verses,
+      String time,
+    })
+    dailyInfo,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF384E36).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF384E36).withValues(alpha: 0.2)),
+        border: Border.all(
+          color: const Color(0xFF384E36).withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         children: [
@@ -238,49 +288,180 @@ class AboutPage extends ConsumerWidget {
             children: [
               const Text(
                 'آيات اليوم',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Tajawal',
+                ),
               ),
               Row(
                 children: [
-                  Icon(Icons.calendar_today_rounded, size: 12, color: isDark ? Colors.white60 : Colors.black54),
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 12,
+                    color: isDark ? Colors.white60 : Colors.black54,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     dailyInfo.date,
-                    style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.black54),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.white60 : Colors.black54,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 16),
-          ...dailyInfo.verses.map((v) => Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Column(
-              children: [
-                Text(
-                  v.text,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Kitab',
-                    height: 1.8,
-                    color: isDark ? const Color(0xFFFFD700) : const Color(0xFF8B6B23),
+          ...dailyInfo.verses.map(
+            (v) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                children: [
+                  Text(
+                    v.text,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Kitab',
+                      height: 1.8,
+                      color: isDark
+                          ? const Color(0xFFFFD700)
+                          : const Color(0xFF8B6B23),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${v.surahName} : ${v.ayah}',
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-                if (dailyInfo.verses.last != v)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Divider(color: const Color(0xFF384E36).withValues(alpha: 0.1), thickness: 0.5),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${v.surahName} : ${v.ayah}',
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
                   ),
-              ],
+                  if (dailyInfo.verses.last != v)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Divider(
+                        color: const Color(0xFF384E36).withValues(alpha: 0.1),
+                        thickness: 0.5,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfflineDownloadCard(
+    BuildContext context,
+    WidgetRef ref,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF10B981).withValues(alpha: 0.1),
+            const Color(0xFF3B82F6).withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.cloud_download_rounded,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'دعم الأوفلاين الكامل',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Tajawal',
+                      ),
+                    ),
+                    Text(
+                      'تحميل كافة نصوص السور للقراءة بدون إنترنت',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey,
+                        fontFamily: 'Tajawal',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade700,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'بدأ تحميل نصوص القرآن الكريم، يرجى عدم إغلاق الصفحة...',
+                    ),
+                  ),
+                );
+                try {
+                  final quranSvc = ref.read(quranServiceProvider);
+                  await quranSvc.getQuranAllText('quran-uthmani');
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تم تحميل المصحف كاملاً بنجاح! 🎉'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('حدث خطأ: $e'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              },
+              child: const Text(
+                'تحميل نصوص القرآن (114 سورة)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Tajawal',
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -329,12 +510,19 @@ class AboutPage extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              Icon(features[index].$2, size: 20, color: const Color(0xFF384E36)),
+              Icon(
+                features[index].$2,
+                size: 20,
+                color: const Color(0xFF384E36),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   features[index].$1,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -372,7 +560,10 @@ class AboutPage extends ConsumerWidget {
                   children: [
                     Text(
                       _developerName,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       'Mobile App Developer',
@@ -436,7 +627,11 @@ class AboutPage extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
           ],
         ),

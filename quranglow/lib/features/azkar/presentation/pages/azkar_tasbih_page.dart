@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
 import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/reminder/reminder.dart';
@@ -202,6 +203,28 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
       ),
       child: Stack(
         children: [
+          // Active State Glow Background
+          if (isScheduled)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+              begin: const Offset(0.95, 0.95),
+              end: const Offset(1.02, 1.02),
+              duration: 2.seconds,
+              curve: Curves.easeInOut,
+            ),
+
           if (meta != null)
             PositionScaler(
               alignment: Alignment.topRight,
@@ -214,6 +237,24 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
                 onPressed: () => _toggleReminder(title, meta),
               ),
             ),
+          
+          if (isScheduled)
+            Positioned(
+              top: 12,
+              left: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'مفعل',
+                  style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+                ),
+              ).animate().fadeIn().scale(),
+            ),
+
           InkWell(
             onTap: () {
               Navigator.push(
@@ -233,9 +274,10 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
+                      border: isScheduled ? Border.all(color: color.withValues(alpha: 0.3), width: 2) : null,
                     ),
                     child: Icon(icon, color: color, size: 28),
-                  ),
+                  ).animate(target: isScheduled ? 1 : 0).shimmer(duration: 2.seconds),
                   const SizedBox(height: 10),
                   Text(
                     title,
