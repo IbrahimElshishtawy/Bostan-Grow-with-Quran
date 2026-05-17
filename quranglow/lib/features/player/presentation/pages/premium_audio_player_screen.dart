@@ -7,9 +7,10 @@ import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/features/player/presentation/providers/favorites_controller.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:quranglow/features/player/presentation/widgets/CombinedPositionData.dart';
+import 'package:quranglow/core/model/book/surah.dart';
 import 'dart:math' as math;
 
-class PremiumAudioPlayerScreen extends ConsumerWidget {
+class PremiumAudioPlayerScreen extends ConsumerStatefulWidget {
   final String title;
   final String subtitle;
   final String duration;
@@ -22,7 +23,47 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PremiumAudioPlayerScreen> createState() =>
+      _PremiumAudioPlayerScreenState();
+}
+
+class _PremiumAudioPlayerScreenState
+    extends ConsumerState<PremiumAudioPlayerScreen> {
+  late final ScrollController _scrollController;
+  int _lastAyahIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToActiveAyah(int ayahIndex) {
+    if (!_scrollController.hasClients || ayahIndex < 0) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+
+      final double targetOffset = ayahIndex * 115.0 - 150.0;
+      final maxExtent = _scrollController.position.maxScrollExtent;
+      final minExtent = _scrollController.position.minScrollExtent;
+
+      _scrollController.animateTo(
+        targetOffset.clamp(minExtent, maxExtent),
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
 
@@ -30,6 +71,16 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     final isLoading = playerState.isLoading;
     final hasError = playerState.hasError;
     final error = playerState.error;
+
+    if (uiState != null && uiState.currentAyah != null) {
+      final currentAyahIndex = uiState.currentAyah!;
+      if (currentAyahIndex != _lastAyahIndex) {
+        _lastAyahIndex = currentAyahIndex;
+        _scrollToActiveAyah(currentAyahIndex);
+      }
+    }
+
+    final showLyrics = ref.watch(playerLyricsModeProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -76,9 +127,11 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
                   if (uiState != null) {
                     return Column(
                       children: [
-                        // Album Art with animated background
+                        // Album Art or Live Verses Reader
                         Expanded(
-                          child: _buildAlbumArtSection(uiState, isLoading),
+                          child: showLyrics
+                              ? _buildLiveVersesSection(uiState, controller)
+                              : _buildAlbumArtSection(uiState, isLoading),
                         ),
 
                         // Player Controls Section
@@ -245,6 +298,128 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildLiveVersesSection(
+    PlayerUiState state,
+    PlayerController controller,
+  ) {
+    final surahAsync = ref.watch(surahTextProvider(state.chapter));
+
+    return surahAsync.when(
+      data: (surah) {
+        final ayats = surah.ayat;
+        return ShaderMask(
+          shaderCallback: (rect) {
+            return const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black,
+                Colors.black,
+                Colors.transparent,
+              ],
+              stops: [0.0, 0.08, 0.92, 1.0],
+            ).createShader(rect);
+          },
+          blendMode: BlendMode.dstIn,
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+            itemCount: ayats.length,
+            itemBuilder: (context, index) {
+              final aya = ayats[index];
+              final isActive = state.currentAyah == index;
+
+              return GestureDetector(
+                onTap: () {
+                  controller.seekToIndex(index);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? Colors.amber.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isActive
+                          ? Colors.amber.withValues(alpha: 0.3)
+                          : Colors.white.withValues(alpha: 0.05),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        aya.text,
+                        style: TextStyle(
+                          fontSize: isActive ? 21 : 17,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                          fontFamily: 'Uthmanic',
+                          color: isActive ? Colors.amber : Colors.white70,
+                          height: 1.6,
+                        ),
+                        textDirection: TextDirection.rtl,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? Colors.amber.withValues(alpha: 0.2)
+                                  : Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'آية ${aya.numberInSurah}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isActive ? Colors.amber : Colors.white38,
+                                fontFamily: 'Tajawal',
+                              ),
+                            ),
+                          ),
+                          if (isActive)
+                            const Icon(
+                              Icons.volume_up_rounded,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: Colors.amber),
+      ),
+      error: (err, stack) => const Center(
+        child: Text(
+          'تعذر تحميل نص السورة الكريمة',
+          style: TextStyle(
+            color: Colors.white70,
+            fontFamily: 'Tajawal',
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPlayerControlsSection(
     WidgetRef ref,
     PlayerUiState state,
@@ -307,7 +482,22 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
                 ),
               ),
               _buildIconButton(Icons.share, Colors.white70, onPressed: () {}),
-              _buildIconButton(Icons.list, Colors.white70, onPressed: () {}),
+              IconButton(
+                onPressed: () {
+                  ref
+                      .read(playerLyricsModeProvider.notifier)
+                      .update((s) => !s);
+                },
+                icon: Icon(
+                  ref.watch(playerLyricsModeProvider)
+                      ? Icons.menu_book_rounded
+                      : Icons.menu_book_outlined,
+                  color: ref.watch(playerLyricsModeProvider)
+                      ? Colors.amber
+                      : Colors.white70,
+                  size: 28,
+                ),
+              ),
             ],
           ),
         ],
