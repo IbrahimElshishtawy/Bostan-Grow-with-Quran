@@ -36,3 +36,9 @@
 # Specific for haptics/sound
 -keep class android.view.HapticFeedbackConstants { *; }
 -keep class android.view.SoundEffectConstants { *; }
+
+# Flutter Deferred Components (Play Store Split Install) R8 keep / dontwarn rules
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
