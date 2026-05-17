@@ -9,6 +9,7 @@ import 'package:quranglow/core/data/surah_names_ar.dart';
 
 import 'package:quranglow/core/data/surah_ayah_counts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive/hive.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:quranglow/core/data/daily_verses.dart';
 import 'package:intl/intl.dart';
@@ -227,13 +228,32 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       await HomeWidget.saveWidgetData<String>('widget_time', timeStr);
       await HomeWidget.saveWidgetData<String>('widget_date_time', '$dateStr | $timeStr');
 
-      // Pick 3 random distinct verses for the day (Daily Stable)
-      final daySeed = now.year * 1000 + now.month * 100 + now.day;
-      final random = math.Random(daySeed);
-      final List<int> indices = List.generate(kDailyVerses.length, (i) => i);
-      indices.shuffle(random);
-      
-      final selectedVerses = indices.take(3).map((i) => kDailyVerses[i]).toList();
+      // Try to load dynamic 24h random verses from the same Hive cache used by dailyAyatLocalProvider
+      List<({String text, String ref})>? selectedVerses;
+      try {
+        final box = await Hive.openBox('quran_cache');
+        final cachedListRaw = box.get('daily_ayahs_data');
+        if (cachedListRaw is List) {
+          selectedVerses = cachedListRaw.map((item) {
+            final m = Map<String, dynamic>.from(item as Map);
+            return (
+              text: m['text'] as String,
+              ref: m['ref'] as String,
+            );
+          }).toList();
+        }
+      } catch (e) {
+        debugPrint('Error loading dynamic verses for HomeWidget: $e');
+      }
+
+      // Fallback to static seed-based kDailyVerses if Hive cache is not yet initialized
+      if (selectedVerses == null || selectedVerses.isEmpty) {
+        final daySeed = now.year * 1000 + now.month * 100 + now.day;
+        final random = math.Random(daySeed);
+        final List<int> indices = List.generate(kDailyVerses.length, (i) => i);
+        indices.shuffle(random);
+        selectedVerses = indices.take(3).map((i) => kDailyVerses[i]).toList();
+      }
       
       // Send verses individually for better widget layout control if needed
       for (int i = 0; i < selectedVerses.length; i++) {

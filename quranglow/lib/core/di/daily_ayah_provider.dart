@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 
@@ -29,6 +30,38 @@ final dailyAyatLocalProvider = FutureProvider.autoDispose<List<DailyAyah>>((
   final rnd = Random();
   final quranService = ref.read(quranServiceProvider);
   final box = await Hive.openBox('quran_cache');
+
+  // Check 24-hour cache first
+  final lastCachedTimeStr = box.get('daily_ayahs_timestamp') as String?;
+  final cachedListRaw = box.get('daily_ayahs_data');
+
+  bool useCache = false;
+  if (lastCachedTimeStr != null && cachedListRaw is List) {
+    final lastCachedTime = DateTime.tryParse(lastCachedTimeStr);
+    if (lastCachedTime != null) {
+      final difference = DateTime.now().difference(lastCachedTime);
+      if (difference.inHours < 24) {
+        useCache = true;
+      }
+    }
+  }
+
+  if (useCache && cachedListRaw is List) {
+    try {
+      final list = cachedListRaw.map((item) {
+        final m = Map<String, dynamic>.from(item as Map);
+        return DailyAyah(
+          text: m['text'] as String,
+          ref: m['ref'] as String,
+          surah: m['surah'] as int,
+          ayah: m['ayah'] as int,
+        );
+      }).toList();
+      if (list.length == count) {
+        return list;
+      }
+    } catch (_) {}
+  }
 
   List<String> _surahKeys() => box.keys
       .where((k) => k.toString().startsWith('$editionId-'))
@@ -157,5 +190,46 @@ final dailyAyatLocalProvider = FutureProvider.autoDispose<List<DailyAyah>>((
     );
   }
 
+  try {
+    final dataToCache = out.map((a) => {
+      'text': a.text,
+      'ref': a.ref,
+      'surah': a.surah,
+      'ayah': a.ayah,
+    }).toList();
+    await box.put('daily_ayahs_timestamp', DateTime.now().toIso8601String());
+    await box.put('daily_ayahs_data', dataToCache);
+
+    // Save and update the home screen widget "outside the app"
+    final versesText = out.map((v) => v.text).join('\n\n');
+    final versesRef = out.map((v) => v.ref).join('\n');
+    
+    await HomeWidget.saveWidgetData<String>('widget_quran_verse', versesText);
+    await HomeWidget.saveWidgetData<String>('widget_quran_ref', versesRef);
+    
+    for (int i = 0; i < out.length; i++) {
+      await HomeWidget.saveWidgetData<String>('verse_${i + 1}_text', out[i].text);
+      await HomeWidget.saveWidgetData<String>('verse_${i + 1}_ref', out[i].ref);
+    }
+
+    await HomeWidget.updateWidget(
+      androidName: 'LearningWidgetProvider',
+      iOSName: 'LearningWidgetProvider',
+    );
+  } catch (e) {
+    // Robust error handling to make sure any home widget API issues don't block the app
+    print('Error updating HomeWidget in daily_ayah_provider: $e');
+  }
+
   return out;
 });
+
+/// Clears the 24-hour cache and triggers a fresh fetch of daily verses
+Future<void> refreshDailyAyah(WidgetRef ref) async {
+  try {
+    final box = await Hive.openBox('quran_cache');
+    await box.delete('daily_ayahs_timestamp');
+    await box.delete('daily_ayahs_data');
+  } catch (_) {}
+  ref.invalidate(dailyAyatLocalProvider);
+}

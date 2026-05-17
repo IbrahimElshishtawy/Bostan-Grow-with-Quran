@@ -19,7 +19,7 @@ class DailyAyahCard extends ConsumerWidget {
         SectionTitle(
           'آيات اليوم',
           actionText: 'تحديث',
-          onAction: () => ref.refresh(dailyAyatLocalProvider),
+          onAction: () => refreshDailyAyah(ref),
         ),
         const SizedBox(height: 8),
         ayat.when(
@@ -43,7 +43,7 @@ class DailyAyahCard extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(child: Text('تعذر تحميل آيات اليوم: $e')),
                   TextButton(
-                    onPressed: () => ref.refresh(dailyAyatLocalProvider),
+                    onPressed: () => refreshDailyAyah(ref),
                     child: const Text('إعادة المحاولة'),
                   ),
                 ],
