@@ -917,6 +917,11 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   Future<void> _startListening() async {
     // 🛑 USER REQUEST: Stop Quran audio in recitation mode so only the mic is active
     await _ayahPreviewPlayer.stop();
+    try {
+      ref.read(playerControllerProvider.notifier).pause();
+    } catch (e) {
+      debugPrint('Failed to pause playerController: $e');
+    }
     
     if (!_speechEnabled) {
       await _initSpeech();
