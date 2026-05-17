@@ -7,7 +7,6 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
@@ -496,8 +495,10 @@ class PlayerUiState extends PlaylistState {
       playingStream: playingStream ?? this.playingStream,
       loopModeStream: loopModeStream ?? this.loopModeStream,
       volumeStream: volumeStream ?? this.volumeStream,
-      processingStateStream: processingStateStream ?? this.processingStateStream,
-      totalDurationOverride: totalDurationOverride ?? this.totalDurationOverride,
+      processingStateStream:
+          processingStateStream ?? this.processingStateStream,
+      totalDurationOverride:
+          totalDurationOverride ?? this.totalDurationOverride,
       isPlaying: isPlaying ?? this.isPlaying,
       currentUrl: currentUrl ?? this.currentUrl,
       surahName: surahName ?? this.surahName,
@@ -539,7 +540,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   List<String> _urls = [];
   List<Duration> _ayahOffsets = [];
   bool _disposed = false;
-  int _currentRequestId = 0; // Incremental ID to prevent async load race conditions
+  int _currentRequestId =
+      0; // Incremental ID to prevent async load race conditions
 
   // Local cache for common reciter names to avoid network calls
   static const _kReciterNames = {
@@ -576,12 +578,14 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     final nextReciter = _kReciterNames[editionId] ?? editionId;
 
     if (state.hasValue) {
-      state = AsyncValue.data(state.value!.copyWith(
-        chapter: chapter,
-        editionId: editionId,
-        surahName: nextSurahName,
-        reciterName: nextReciter,
-      ));
+      state = AsyncValue.data(
+        state.value!.copyWith(
+          chapter: chapter,
+          editionId: editionId,
+          surahName: nextSurahName,
+          reciterName: nextReciter,
+        ),
+      );
     } else {
       state = const AsyncValue.loading();
     }
@@ -599,7 +603,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       _urls = urls;
 
       // 2. Resolve Reciter Name (Use cache if possible)
-      _reciterName = _kReciterNames[editionId] ?? await _resolveReciterName(editionId);
+      _reciterName =
+          _kReciterNames[editionId] ?? await _resolveReciterName(editionId);
       if (requestId != _currentRequestId || _disposed || !mounted) return;
 
       // Update AudioHandler metadata
@@ -619,7 +624,10 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         final allAyat = surahData.ayat;
 
         // Fetch explicit durations for perfect timer reporting and gapless preloading
-        final verseDurations = await service.getVerseDurations(editionId, chapter);
+        final verseDurations = await service.getVerseDurations(
+          editionId,
+          chapter,
+        );
         if (requestId != _currentRequestId || _disposed || !mounted) return;
 
         // Calculate total surah duration upfront
@@ -637,7 +645,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         Duration cumulative = Duration.zero;
         for (final a in allAyat) {
           _ayahOffsets.add(cumulative);
-          cumulative += verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
+          cumulative +=
+              verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
         }
         _totalDuration = cumulative;
 
@@ -660,57 +669,48 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           preload: true,
         );
       } on PlayerInterruptedException {
-        debugPrint('Audio loading was interrupted (handled PlayerInterruptedException) for request #$requestId');
-        return;
-      } on PlayerException catch (e) {
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-        debugPrint('Source error with full surah URL: ${e.message}. Falling back to Ayah playlist...');
-        
-        final audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-        
-        _urls = audioMap.values.toList();
-        final playlist = ConcatenatingAudioSource(
-          children: _urls
-              .map((url) => AudioSource.uri(
-                    Uri.parse(url),
-                    headers: const {
-                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                    },
-                  ))
-              .toList(),
+        debugPrint(
+          'Audio loading was interrupted (handled PlayerInterruptedException) for request #$requestId',
         );
-        await _player.stop();
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-        
-        await _player.setAudioSource(playlist, preload: true);
-      } on PlatformException catch (e) {
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-        final code = e.code;
-        final msg = e.message?.toLowerCase() ?? '';
-        if (code == '10000000' ||
-            msg.contains('abort') ||
-            msg.contains('interrupted') ||
-            msg.contains('connection aborted') ||
-            msg.contains('loading interrupted')) {
-          debugPrint('Audio loading was interrupted (handled PlatformException): $e');
-          return;
-        }
-        debugPrint('Platform error loading audio: $e');
-        rethrow;
+        return;
       } catch (e) {
         if (requestId != _currentRequestId || _disposed || !mounted) return;
-        final err = e.toString().toLowerCase();
-        if (err.contains('abort') ||
-            err.contains('interrupted') ||
-            err.contains('10000000') ||
-            err.contains('connection aborted') ||
-            err.contains('loading interrupted')) {
-          debugPrint('Audio loading was interrupted (handled): $e');
-          return;
+        debugPrint(
+          'Source error or PlatformException with full surah URL: $e. Falling back to Ayah playlist...',
+        );
+
+        try {
+          final audioMap = await service.getSurahAudioUrlMap(
+            editionId,
+            chapter,
+          );
+          if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+          _urls = audioMap.values.toList();
+          if (_urls.isEmpty) {
+            throw Exception('لا توجد روابط آيات صوتية متاحة');
+          }
+          final playlist = ConcatenatingAudioSource(
+            children: _urls
+                .map(
+                  (url) => AudioSource.uri(
+                    Uri.parse(url),
+                    headers: const {
+                      'User-Agent':
+                          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    },
+                  ),
+                )
+                .toList(),
+          );
+          await _player.stop();
+          if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+          await _player.setAudioSource(playlist, preload: true);
+        } catch (fallbackError) {
+          debugPrint('Failed to load fallback Ayah playlist: $fallbackError');
+          rethrow;
         }
-        debugPrint('Error loading audio playlist: $e');
-        rethrow;
       }
 
       if (requestId != _currentRequestId || _disposed || !mounted) return;
@@ -723,7 +723,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       _emitState();
     } catch (e, st) {
       if (requestId != _currentRequestId || _disposed || !mounted) return;
-      
+
       final err = e.toString().toLowerCase();
       if (err.contains('abort') ||
           err.contains('interrupted') ||
@@ -799,7 +799,8 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
-        processingStateStream: _player.processingStateStream.cast<ProcessingState>(),
+        processingStateStream: _player.processingStateStream
+            .cast<ProcessingState>(),
         totalDurationOverride: _totalDuration,
         isPlaying: _player.playing,
         currentUrl: _urls.isNotEmpty ? _urls.first : '',
@@ -811,75 +812,111 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   }
 
   Future<void> play() async {
-    await _player.play();
-    if (_disposed || !mounted) return;
-    _emitState();
+    try {
+      await _player.play();
+      if (_disposed || !mounted) return;
+      _emitState();
+    } catch (e) {
+      debugPrint('Error playing audio (handled gracefully): $e');
+    }
   }
 
   Future<void> pause() async {
-    await _player.pause();
-    if (_disposed || !mounted) return;
-    _emitState();
+    try {
+      await _player.pause();
+      if (_disposed || !mounted) return;
+      _emitState();
+    } catch (e) {
+      debugPrint('Error pausing audio (handled gracefully): $e');
+    }
   }
 
   Future<void> next() async {
-    final curPos = _player.position;
-    int nextIdx = 0;
-    for (int i = 0; i < _ayahOffsets.length; i++) {
-      if (_ayahOffsets[i] > curPos + const Duration(milliseconds: 200)) {
-        nextIdx = i;
-        break;
+    try {
+      final curPos = _player.position;
+      int nextIdx = 0;
+      for (int i = 0; i < _ayahOffsets.length; i++) {
+        if (_ayahOffsets[i] > curPos + const Duration(milliseconds: 200)) {
+          nextIdx = i;
+          break;
+        }
       }
+      await _player.seek(_ayahOffsets[nextIdx]);
+      if (_disposed || !mounted) return;
+      _emitState();
+    } catch (e) {
+      debugPrint('Error skipping to next (handled gracefully): $e');
     }
-    await _player.seek(_ayahOffsets[nextIdx]);
-    if (_disposed || !mounted) return;
-    _emitState();
   }
 
   Future<void> previous() async {
-    final curPos = _player.position;
-    int prevIdx = 0;
-    for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
-      if (_ayahOffsets[i] < curPos - const Duration(seconds: 2)) {
-        prevIdx = i;
-        break;
+    try {
+      final curPos = _player.position;
+      int prevIdx = 0;
+      for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
+        if (_ayahOffsets[i] < curPos - const Duration(seconds: 2)) {
+          prevIdx = i;
+          break;
+        }
       }
+      await _player.seek(_ayahOffsets[prevIdx]);
+      if (_disposed || !mounted) return;
+      _emitState();
+    } catch (e) {
+      debugPrint('Error skipping to previous (handled gracefully): $e');
     }
-    await _player.seek(_ayahOffsets[prevIdx]);
-    if (_disposed || !mounted) return;
-    _emitState();
   }
 
   Future<void> seekTo(Duration position) async {
-    await _player.seek(position);
+    try {
+      await _player.seek(position);
+    } catch (e) {
+      debugPrint('Error seeking audio (handled gracefully): $e');
+    }
   }
 
   Future<void> seekToIndex(int index) async {
-    if (index >= 0 && index < _ayahOffsets.length) {
-      await _player.seek(_ayahOffsets[index]);
+    try {
+      if (index >= 0 && index < _ayahOffsets.length) {
+        await _player.seek(_ayahOffsets[index]);
+      }
+    } catch (e) {
+      debugPrint('Error seeking to index (handled gracefully): $e');
     }
   }
 
   Future<void> setSpeed(double speed) async {
-    await _player.setSpeed(speed);
-    if (_disposed || !mounted) return;
-    _emitState();
+    try {
+      await _player.setSpeed(speed);
+      if (_disposed || !mounted) return;
+      _emitState();
+    } catch (e) {
+      debugPrint('Error setting speed (handled gracefully): $e');
+    }
   }
 
   Future<void> toggleLoop() async {
-    final nextMode = _player.loopMode == LoopMode.off
-        ? LoopMode.all
-        : LoopMode.off;
-    await _player.setLoopMode(nextMode);
-    if (_disposed || !mounted) return;
-    _emitState();
+    try {
+      final nextMode = _player.loopMode == LoopMode.off
+          ? LoopMode.all
+          : LoopMode.off;
+      await _player.setLoopMode(nextMode);
+      if (_disposed || !mounted) return;
+      _emitState();
+    } catch (e) {
+      debugPrint('Error toggling loop (handled gracefully): $e');
+    }
   }
 
   Future<void> toggleMute() async {
-    final nextVolume = _player.volume > 0 ? 0.0 : 1.0;
-    await _player.setVolume(nextVolume);
-    if (_disposed || !mounted) return;
-    _emitState();
+    try {
+      final nextVolume = _player.volume > 0 ? 0.0 : 1.0;
+      await _player.setVolume(nextVolume);
+      if (_disposed || !mounted) return;
+      _emitState();
+    } catch (e) {
+      debugPrint('Error toggling mute (handled gracefully): $e');
+    }
   }
 
   Future<void> changeEdition(String editionId) async {
