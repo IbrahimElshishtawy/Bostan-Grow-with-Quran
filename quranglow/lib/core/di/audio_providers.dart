@@ -275,8 +275,6 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
               headers: const {
                 'User-Agent':
                     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Referer': 'https://quranicaudio.com/',
-                'Origin': 'https://quranicaudio.com',
               },
               tag: MediaItem(
                 id: 'surah_$chapter',
@@ -288,7 +286,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
             ),
             initialPosition: Duration.zero,
             preload: true,
-          );
+          ).timeout(const Duration(seconds: 5));
           _loadedFullSurah = true;
           debugPrint('✅ [AudioPlayer] Full Surah loaded successfully.');
         } catch (sourceError) {
@@ -302,7 +300,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
             return;
           }
 
-          debugPrint('⚠️ [AudioPlayer] Full Surah load failed: $sourceError. Switching to fallback Ayah playlist...');
+          debugPrint('⚠️ [AudioPlayer] Full Surah load failed (or timed out): $sourceError. Switching to fallback Ayah playlist...');
         }
 
         // If full Surah loading failed, load the Ayah playlist as fallback
