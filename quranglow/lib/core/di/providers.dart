@@ -463,6 +463,48 @@ class PlayerUiState extends PlaylistState {
     this.reciterName,
     this.currentAyah,
   });
+
+  PlayerUiState copyWith({
+    String? editionId,
+    int? chapter,
+    int? total,
+    Stream<CombinedPositionData>? timelineStream,
+    Stream<Duration?>? durationStream,
+    Stream<Duration>? positionStream,
+    Stream<Duration>? bufferedStream,
+    Stream<int?>? indexStream,
+    Stream<bool>? playingStream,
+    Stream<LoopMode>? loopModeStream,
+    Stream<double>? volumeStream,
+    Stream<ProcessingState>? processingStateStream,
+    Duration? totalDurationOverride,
+    bool? isPlaying,
+    String? currentUrl,
+    String? surahName,
+    String? reciterName,
+    int? currentAyah,
+  }) {
+    return PlayerUiState(
+      editionId: editionId ?? this.editionId,
+      chapter: chapter ?? this.chapter,
+      total: total ?? this.total,
+      timelineStream: timelineStream ?? this.timelineStream,
+      durationStream: durationStream ?? this.durationStream,
+      positionStream: positionStream ?? this.positionStream,
+      bufferedStream: bufferedStream ?? this.bufferedStream,
+      indexStream: indexStream ?? this.indexStream,
+      playingStream: playingStream ?? this.playingStream,
+      loopModeStream: loopModeStream ?? this.loopModeStream,
+      volumeStream: volumeStream ?? this.volumeStream,
+      processingStateStream: processingStateStream ?? this.processingStateStream,
+      totalDurationOverride: totalDurationOverride ?? this.totalDurationOverride,
+      isPlaying: isPlaying ?? this.isPlaying,
+      currentUrl: currentUrl ?? this.currentUrl,
+      surahName: surahName ?? this.surahName,
+      reciterName: reciterName ?? this.reciterName,
+      currentAyah: currentAyah ?? this.currentAyah,
+    );
+  }
 }
 
 final playerControllerProvider =
@@ -474,7 +516,6 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   PlayerController(this.ref) : super(const AsyncValue.loading()) {
     final handler = ref.read(audioHandlerProvider);
     _player = handler.player;
-    // 3. Initialize streams
     _timelineStream = combinedPositionStream(_player).asBroadcastStream();
 
     // Auto-skip failed ayahs to prevent playback reset
@@ -498,6 +539,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   List<String> _urls = [];
   List<Duration> _ayahOffsets = [];
   bool _disposed = false;
+  int _currentRequestId = 0; // Incremental ID to prevent async load race conditions
 
   // Local cache for common reciter names to avoid network calls
   static const _kReciterNames = {
@@ -524,14 +566,32 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     required int chapter,
     required bool autoPlay,
   }) async {
+    final requestId = ++_currentRequestId;
     if (_disposed || !mounted) return;
-    state = const AsyncValue.loading();
+
+    // Immediately push new surah/reciter labels to the UI so it updates instantly without lag/flicker
+    final nextSurahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
+        ? kSurahNamesAr[chapter - 1]
+        : 'سورة $chapter';
+    final nextReciter = _kReciterNames[editionId] ?? editionId;
+
+    if (state.hasValue) {
+      state = AsyncValue.data(state.value!.copyWith(
+        chapter: chapter,
+        editionId: editionId,
+        surahName: nextSurahName,
+        reciterName: nextReciter,
+      ));
+    } else {
+      state = const AsyncValue.loading();
+    }
+
     try {
       final service = ref.read(quranServiceProvider);
 
-      // 1. Get URLs (Checks local files first)
+      // 1. Get URLs
       final urls = await service.getSurahAudioUrls(editionId, chapter);
-      if (_disposed || !mounted) return;
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
       if (urls.isEmpty) {
         throw Exception('لا توجد روابط صوتية متاحة');
       }
@@ -539,39 +599,30 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       _urls = urls;
 
       // 2. Resolve Reciter Name (Use cache if possible)
-      _reciterName =
-          _kReciterNames[editionId] ?? await _resolveReciterName(editionId);
-
-      final surahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
-          ? kSurahNamesAr[chapter - 1]
-          : 'سورة $chapter';
-
-      if (_disposed || !mounted) return;
+      _reciterName = _kReciterNames[editionId] ?? await _resolveReciterName(editionId);
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
 
       // Update AudioHandler metadata
       final handler = ref.read(audioHandlerProvider);
       handler.mediaItem.add(
         MediaItem(
           id: 'surah_$chapter',
-          title: surahName,
+          title: nextSurahName,
           artist: _reciterName,
           album: 'القرآن الكريم',
         ),
       );
 
-      final Map<int, String> audioMap;
       try {
-        audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
         final surahData = await service.getSurahText('quran-uthmani', chapter);
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
         final allAyat = surahData.ayat;
 
         // Fetch explicit durations for perfect timer reporting and gapless preloading
-        final verseDurations = await service.getVerseDurations(
-          editionId,
-          chapter,
-        );
+        final verseDurations = await service.getVerseDurations(editionId, chapter);
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
 
-        // Calculate total surah duration upfront for UI override
+        // Calculate total surah duration upfront
         _totalDuration = verseDurations.values.fold(
           Duration.zero,
           (a, b) => a + b,
@@ -586,19 +637,20 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         Duration cumulative = Duration.zero;
         for (final a in allAyat) {
           _ayahOffsets.add(cumulative);
-          cumulative +=
-              verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
+          cumulative += verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
         }
         _totalDuration = cumulative;
 
         await _player.stop();
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
+
         await _player.setAudioSource(
           AudioSource.uri(
             Uri.parse(fullSurahUrl),
             headers: const {'User-Agent': 'QuranGlow/1.0'},
             tag: MediaItem(
               id: 'surah_$chapter',
-              title: 'سورة $surahName',
+              title: 'سورة $nextSurahName',
               album: _reciterName,
               artist: _reciterName,
               duration: cumulative,
@@ -608,51 +660,52 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           preload: true,
         );
       } on PlayerInterruptedException {
-        // This is normal when the user switches tracks before the current one finishes loading.
-        debugPrint(
-          'Audio loading was interrupted (handled PlayerInterruptedException)',
-        );
+        debugPrint('Audio loading was interrupted (handled PlayerInterruptedException) for request #$requestId');
         return;
       } on PlayerException catch (e) {
-        debugPrint(
-          'Source error with full surah URL: ${e.message}. Falling back to Ayah playlist...',
-        );
-        // FALLBACK: If full surah fails, try individual ayahs
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
+        debugPrint('Source error with full surah URL: ${e.message}. Falling back to Ayah playlist...');
+        
         final audioMap = await service.getSurahAudioUrlMap(editionId, chapter);
-        _urls = audioMap.values.toList(); // Update URLs for UI consistency
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
+        
+        _urls = audioMap.values.toList();
         final playlist = ConcatenatingAudioSource(
           children: _urls
               .map((url) => AudioSource.uri(
                     Uri.parse(url),
                     headers: const {
-                      'User-Agent':
-                          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
                     },
                   ))
               .toList(),
         );
         await _player.stop();
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
+        
         await _player.setAudioSource(playlist, preload: true);
       } on PlatformException catch (e) {
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
         final code = e.code;
         final msg = e.message?.toLowerCase() ?? '';
         if (code == '10000000' ||
             msg.contains('abort') ||
             msg.contains('interrupted') ||
-            msg.contains('connection aborted')) {
-          debugPrint(
-            'Audio loading was interrupted (handled PlatformException): $e',
-          );
+            msg.contains('connection aborted') ||
+            msg.contains('loading interrupted')) {
+          debugPrint('Audio loading was interrupted (handled PlatformException): $e');
           return;
         }
         debugPrint('Platform error loading audio: $e');
         rethrow;
       } catch (e) {
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
         final err = e.toString().toLowerCase();
         if (err.contains('abort') ||
             err.contains('interrupted') ||
             err.contains('10000000') ||
-            err.contains('connection aborted')) {
+            err.contains('connection aborted') ||
+            err.contains('loading interrupted')) {
           debugPrint('Audio loading was interrupted (handled): $e');
           return;
         }
@@ -660,19 +713,34 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         rethrow;
       }
 
-      if (_disposed || !mounted) return;
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
 
       if (autoPlay) {
-        await _player.setLoopMode(
-          LoopMode.off,
-        ); // Ensure sequential, non-repeating playback
+        await _player.setLoopMode(LoopMode.off);
         await _player.play();
       }
 
       _emitState();
     } catch (e, st) {
-      if (_disposed || !mounted) return;
-      state = AsyncValue.error(e, st);
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
+      
+      final err = e.toString().toLowerCase();
+      if (err.contains('abort') ||
+          err.contains('interrupted') ||
+          err.contains('10000000') ||
+          err.contains('connection aborted') ||
+          err.contains('loading interrupted')) {
+        debugPrint('Audio loading was interrupted silently at outer catch: $e');
+        return;
+      }
+
+      debugPrint('Error in _loadSurah: $e');
+      if (state.hasValue) {
+        // Keep the previous UI perfectly intact and restore display states
+        _emitState();
+      } else {
+        state = AsyncValue.error(e, st);
+      }
     }
   }
 
@@ -691,9 +759,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
           return (map['name'] ?? map['englishName'] ?? editionId).toString();
         }
       }
-    } catch (_) {
-      // Offline fallback
-    }
+    } catch (_) {}
     return editionId;
   }
 
@@ -733,7 +799,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         playingStream: _player.playingStream,
         loopModeStream: _player.loopModeStream,
         volumeStream: _player.volumeStream,
-        processingStateStream: _player.processingStateStream,
+        processingStateStream: _player.processingStateStream.cast<ProcessingState>(),
         totalDurationOverride: _totalDuration,
         isPlaying: _player.playing,
         currentUrl: _urls.isNotEmpty ? _urls.first : '',

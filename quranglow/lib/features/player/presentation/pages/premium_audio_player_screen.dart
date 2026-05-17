@@ -26,6 +26,11 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     final playerState = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
 
+    final uiState = playerState.value;
+    final isLoading = playerState.isLoading;
+    final hasError = playerState.hasError;
+    final error = playerState.error;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -33,11 +38,13 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.expand_more, size: 30),
+          color: Colors.white,
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.download_rounded),
+            color: Colors.white,
             onPressed: () => _showPlaylistMenu(context),
           ),
         ],
@@ -47,37 +54,125 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.white60, Colors.blueGrey],
+            colors: [
+              Color(0xFF1E3C72),
+              Color(0xFF2A5298),
+            ], // Gorgeous deep premium blue gradient
           ),
         ),
         child: SafeArea(
-          child: playerState.when(
-            loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
-            error: (err, _) => Center(
-              child: Text(
-                'خطأ: $err',
-                style: const TextStyle(color: Colors.white),
+          child: Column(
+            children: [
+              // Premium thin loading indicator under AppBar
+              if (isLoading)
+                const LinearProgressIndicator(
+                  color: Colors.amber,
+                  backgroundColor: Colors.white12,
+                  minHeight: 3,
+                ),
+
+              Expanded(
+                child: () {
+                  if (uiState != null) {
+                    return Column(
+                      children: [
+                        // Album Art with animated background
+                        Expanded(
+                          child: _buildAlbumArtSection(uiState, isLoading),
+                        ),
+
+                        // Player Controls Section
+                        _buildPlayerControlsSection(
+                          ref,
+                          uiState,
+                          controller,
+                          isLoading,
+                        ),
+
+                        // Playback Speed & Queue
+                        _buildPlaybackOptionsSection(uiState, controller),
+                      ],
+                    );
+                  } else if (isLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.amber),
+                    );
+                  } else if (hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              color: Colors.amber,
+                              size: 64,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'تعذر تحميل الملف الصوتي',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Tajawal',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              error?.toString() ??
+                                  'خطأ في الاتصال بالخادم الرئيسي',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontFamily: 'Tajawal',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                final chapter = ref.read(chapterProvider);
+                                controller.playSurah(chapter);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text(
+                                'إعادة المحاولة',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else {
+                    return const SizedBox();
+                  }
+                }(),
               ),
-            ),
-            data: (state) => Column(
-              children: [
-                // Album Art with animated background
-                Expanded(child: _buildAlbumArtSection(state)),
-
-                // Player Controls Section
-                _buildPlayerControlsSection(ref, state, controller),
-
-                // Playback Speed & Queue
-                _buildPlaybackOptionsSection(state, controller),
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAlbumArtSection(PlayerUiState state) {
+  Widget _buildAlbumArtSection(PlayerUiState state, bool isLoading) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -86,20 +181,22 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           children: [
             // Album art placeholder with glow
             Container(
-              width: 280,
-              height: 280,
+              width: 260,
+              height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: Colors.amber.withValues(
+                      alpha: isLoading ? 0.15 : 0.3,
+                    ),
                     blurRadius: 40,
                     spreadRadius: 20,
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(280),
+                borderRadius: BorderRadius.circular(260),
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -111,7 +208,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
                   child: const Center(
                     child: Icon(
                       Icons.music_note,
-                      size: 120,
+                      size: 100,
                       color: Colors.white,
                     ),
                   ),
@@ -119,7 +216,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 48),
+            const SizedBox(height: 40),
 
             // Title and Subtitle
             Text(
@@ -127,6 +224,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                fontFamily: 'Tajawal',
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,
@@ -136,6 +234,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
               state.reciterName ?? subtitle,
               style: TextStyle(
                 fontSize: 16,
+                fontFamily: 'Tajawal',
                 color: Colors.white.withValues(alpha: 0.8),
               ),
               textAlign: TextAlign.center,
@@ -150,25 +249,26 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     WidgetRef ref,
     PlayerUiState state,
     PlayerController controller,
+    bool isLoading,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         children: [
           // Waveform Visualizer
           _buildWaveformVisualizer(state),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Time and Progress
           _buildProgressBar(state, controller),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
 
           // Main Controls
-          _buildMainControls(state, controller),
+          _buildMainControls(state, controller, isLoading),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Favorite and More buttons
           Row(
@@ -184,14 +284,23 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
                       reciterName: state.reciterName ?? subtitle,
                     ),
                 icon: Icon(
-                  ref.watch(favoritesControllerProvider).any((e) =>
-                          e.editionId == state.editionId &&
-                          e.chapter == state.chapter)
+                  ref
+                          .watch(favoritesControllerProvider)
+                          .any(
+                            (e) =>
+                                e.editionId == state.editionId &&
+                                e.chapter == state.chapter,
+                          )
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
-                  color: ref.watch(favoritesControllerProvider).any((e) =>
-                          e.editionId == state.editionId &&
-                          e.chapter == state.chapter)
+                  color:
+                      ref
+                          .watch(favoritesControllerProvider)
+                          .any(
+                            (e) =>
+                                e.editionId == state.editionId &&
+                                e.chapter == state.chapter,
+                          )
                       ? Colors.redAccent
                       : Colors.white70,
                   size: 28,
@@ -228,7 +337,8 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       builder: (context, snapshot) {
         final posData = snapshot.data;
         final pos = posData?.position ?? Duration.zero;
-        final total = posData?.duration ?? state.totalDurationOverride ?? Duration.zero;
+        final total =
+            posData?.duration ?? state.totalDurationOverride ?? Duration.zero;
 
         final value = (total.inMilliseconds > 0)
             ? pos.inMilliseconds / total.inMilliseconds
@@ -291,7 +401,11 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildMainControls(PlayerUiState state, PlayerController controller) {
+  Widget _buildMainControls(
+    PlayerUiState state,
+    PlayerController controller,
+    bool isLoading,
+  ) {
     return StreamBuilder<bool>(
       stream: state.playingStream,
       builder: (context, playingSnapshot) {
@@ -303,7 +417,8 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
             StreamBuilder<LoopMode>(
               stream: state.loopModeStream,
               builder: (context, loopSnapshot) {
-                final isLoop = (loopSnapshot.data ?? LoopMode.off) != LoopMode.off;
+                final isLoop =
+                    (loopSnapshot.data ?? LoopMode.off) != LoopMode.off;
                 return _buildControlButton(
                   isLoop ? Icons.repeat_one_rounded : Icons.repeat_rounded,
                   isLoop ? Colors.amber : Colors.white70,
@@ -315,16 +430,34 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
               Icons.skip_previous_rounded,
               onPressed: () => controller.previous(),
             ),
-            _buildLargeControlButton(
-              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              isPlay: true,
-              onPressed: () => isPlaying ? controller.pause() : controller.play(),
+            // Play/Pause button with loading spinner overlay when buffering or loading new reciter/surah
+            StreamBuilder<ProcessingState>(
+              stream: state.processingStateStream,
+              builder: (context, procSnapshot) {
+                final procState = procSnapshot.data;
+                final isBuffering =
+                    procState == ProcessingState.loading ||
+                    procState == ProcessingState.buffering ||
+                    isLoading;
+
+                return _buildLargeControlButton(
+                  isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  isPlay: true,
+                  isLoading: isBuffering,
+                  onPressed: () =>
+                      isPlaying ? controller.pause() : controller.play(),
+                );
+              },
             ),
             _buildLargeControlButton(
               Icons.skip_next_rounded,
               onPressed: () => controller.next(),
             ),
-            _buildControlButton(Icons.shuffle, Colors.white70, onPressed: () {}),
+            _buildControlButton(
+              Icons.shuffle,
+              Colors.white70,
+              onPressed: () {},
+            ),
           ],
         );
       },
@@ -351,16 +484,29 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           StreamBuilder<double>(
             stream: state.volumeStream.map((_) => 1.0), // Mock for speed stream
             builder: (context, _) {
-              // Note: Just using a static speed display for now, 
+              // Note: Just using a static speed display for now,
               // as speedStream isn't explicitly in PlaylistState yet
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildSpeedButton('0.75x', onPressed: () => controller.setSpeed(0.75)),
-                    _buildSpeedButton('1.0x', isSelected: true, onPressed: () => controller.setSpeed(1.0)),
-                    _buildSpeedButton('1.25x', onPressed: () => controller.setSpeed(1.25)),
-                    _buildSpeedButton('1.5x', onPressed: () => controller.setSpeed(1.5)),
+                    _buildSpeedButton(
+                      '0.75x',
+                      onPressed: () => controller.setSpeed(0.75),
+                    ),
+                    _buildSpeedButton(
+                      '1.0x',
+                      isSelected: true,
+                      onPressed: () => controller.setSpeed(1.0),
+                    ),
+                    _buildSpeedButton(
+                      '1.25x',
+                      onPressed: () => controller.setSpeed(1.25),
+                    ),
+                    _buildSpeedButton(
+                      '1.5x',
+                      onPressed: () => controller.setSpeed(1.5),
+                    ),
                   ],
                 ),
               );
@@ -373,7 +519,11 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
             child: Row(
               children: [
                 _buildQualityButton('Low', Colors.grey),
-                _buildQualityButton('Normal', Colors.orangeAccent, isSelected: true),
+                _buildQualityButton(
+                  'Normal',
+                  Colors.orangeAccent,
+                  isSelected: true,
+                ),
                 _buildQualityButton('High', Colors.blue),
               ],
             ),
@@ -397,6 +547,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
   Widget _buildLargeControlButton(
     IconData icon, {
     bool isPlay = false,
+    bool isLoading = false,
     required VoidCallback onPressed,
   }) {
     return Container(
@@ -413,18 +564,33 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           ),
         ],
       ),
-      child: IconButton(
-        icon: Icon(
-          icon,
-          color: Colors.indigoAccent.shade700,
-          size: isPlay ? 32 : 24,
-        ),
-        onPressed: onPressed,
-      ),
+      child: isLoading
+          ? Center(
+              child: SizedBox(
+                width: isPlay ? 28 : 20,
+                height: isPlay ? 28 : 20,
+                child: CircularProgressIndicator(
+                  color: Colors.indigoAccent.shade700,
+                  strokeWidth: 3,
+                ),
+              ),
+            )
+          : IconButton(
+              icon: Icon(
+                icon,
+                color: Colors.indigoAccent.shade700,
+                size: isPlay ? 32 : 24,
+              ),
+              onPressed: onPressed,
+            ),
     );
   }
 
-  Widget _buildIconButton(IconData icon, Color color, {VoidCallback? onPressed}) {
+  Widget _buildIconButton(
+    IconData icon,
+    Color color, {
+    VoidCallback? onPressed,
+  }) {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -449,7 +615,9 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(horizontal: 6),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.2),
+          color: isSelected
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -485,7 +653,9 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
+          color: isSelected
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.7),
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
@@ -567,9 +737,9 @@ class WaveformPainter extends CustomPainter {
       final x =
           i * (barWidth + gap) +
           (size.width / 2 - numBars * (barWidth + gap) / 2);
-      
+
       // Animate if active
-      final height = isActive 
+      final height = isActive
           ? 10 + (math.sin(i * 0.5 + time * 5) * 15).abs()
           : 10 + (math.sin(i * 0.5) * 15).abs();
 
@@ -582,5 +752,6 @@ class WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WaveformPainter oldDelegate) => oldDelegate.isActive != isActive || isActive;
+  bool shouldRepaint(WaveformPainter oldDelegate) =>
+      oldDelegate.isActive != isActive || isActive;
 }
