@@ -18,7 +18,10 @@ final audioEditionsProvider = FutureProvider<List<dynamic>>((ref) async {
 final editionIdProvider = StateProvider<String>((ref) => 'ar.alafasy');
 final chapterProvider = StateProvider<int>((ref) => 1);
 
-final surahTextProvider = FutureProvider.family<Surah, int>((ref, chapter) async {
+final surahTextProvider = FutureProvider.family<Surah, int>((
+  ref,
+  chapter,
+) async {
   final service = ref.read(quranServiceProvider);
   return service.getSurahText('quran-uthmani', chapter);
 });
@@ -235,152 +238,166 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         ),
       );
 
-        final surahData = await service.getSurahText('quran-uthmani', chapter);
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-        final allAyat = surahData.ayat;
+      final surahData = await service.getSurahText('quran-uthmani', chapter);
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
+      final allAyat = surahData.ayat;
 
-        final verseDurations = await service.getVerseDurations(
-          editionId,
-          chapter,
+      final verseDurations = await service.getVerseDurations(
+        editionId,
+        chapter,
+      );
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+      _totalDuration = verseDurations.values.fold(
+        Duration.zero,
+        (a, b) => a + b,
+      );
+      _emitState();
+
+      final fullSurahUrl = service.getSurahFullAudioUrl(editionId, chapter);
+      _urls = [fullSurahUrl];
+
+      _ayahOffsets = [];
+      Duration cumulative = Duration.zero;
+      for (final a in allAyat) {
+        _ayahOffsets.add(cumulative);
+        cumulative +=
+            verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
+      }
+      _totalDuration = cumulative;
+
+      await _player.stop();
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+      _loadedFullSurah = false;
+      try {
+        debugPrint(
+          '⏳ [AudioPlayer] Trying to load full Surah URL: $fullSurahUrl',
         );
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-
-        _totalDuration = verseDurations.values.fold(
-          Duration.zero,
-          (a, b) => a + b,
-        );
-        _emitState();
-
-        final fullSurahUrl = service.getSurahFullAudioUrl(editionId, chapter);
-        _urls = [fullSurahUrl];
-
-        _ayahOffsets = [];
-        Duration cumulative = Duration.zero;
-        for (final a in allAyat) {
-          _ayahOffsets.add(cumulative);
-          cumulative +=
-              verseDurations[a.numberInSurah] ?? const Duration(seconds: 5);
-        }
-        _totalDuration = cumulative;
-
-        await _player.stop();
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-
-        _loadedFullSurah = false;
-        try {
-          debugPrint('⏳ [AudioPlayer] Trying to load full Surah URL: $fullSurahUrl');
-          await _player.setAudioSource(
-            AudioSource.uri(
-              Uri.parse(fullSurahUrl),
-              headers: const {
-                'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-              },
-              tag: MediaItem(
-                id: 'surah_$chapter',
-                title: 'سورة $nextSurahName',
-                album: _reciterName,
-                artist: _reciterName,
-                duration: cumulative,
+        await _player
+            .setAudioSource(
+              AudioSource.uri(
+                Uri.parse(fullSurahUrl),
+                headers: const {
+                  'User-Agent':
+                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                },
+                tag: MediaItem(
+                  id: 'surah_$chapter',
+                  title: 'سورة $nextSurahName',
+                  album: _reciterName,
+                  artist: _reciterName,
+                  duration: cumulative,
+                ),
               ),
-            ),
-            initialPosition: Duration.zero,
-            preload: true,
-          ).timeout(const Duration(seconds: 5));
-          _loadedFullSurah = true;
-          debugPrint('✅ [AudioPlayer] Full Surah loaded successfully.');
-        } catch (sourceError) {
-          if (requestId != _currentRequestId || _disposed || !mounted) return;
-
-          final errStr = sourceError.toString().toLowerCase();
-          if (errStr.contains('abort') ||
-              errStr.contains('interrupted') ||
-              errStr.contains('10000000')) {
-            debugPrint('ℹ️ [AudioPlayer] Full Surah load interrupted gracefully.');
-            return;
-          }
-
-          debugPrint('⚠️ [AudioPlayer] Full Surah load failed (or timed out): $sourceError. Switching to fallback Ayah playlist...');
-        }
-
-        // If full Surah loading failed, load the Ayah playlist as fallback
-        if (!_loadedFullSurah) {
-          try {
-            final audioMap = await service.getSurahAudioUrlMap(
-              editionId,
-              chapter,
-            );
-            if (requestId != _currentRequestId || _disposed || !mounted) return;
-
-            _urls = audioMap.values.toList();
-            if (_urls.isEmpty) {
-              throw Exception('لا توجد روابط آيات صوتية متاحة');
-            }
-
-            final playlist = ConcatenatingAudioSource(
-              children: _urls
-                  .map(
-                    (url) => AudioSource.uri(
-                      Uri.parse(url),
-                      headers: const {
-                        'User-Agent':
-                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                        'Referer': 'https://quran.com/',
-                      },
-                    ),
-                  )
-                  .toList(),
-            );
-
-            await _player.stop();
-            if (requestId != _currentRequestId || _disposed || !mounted) return;
-
-            await _player.setAudioSource(playlist, preload: true);
-            _loadedFullSurah = false;
-            debugPrint('✅ [AudioPlayer] Fallback Ayah playlist loaded successfully.');
-          } catch (fallbackError) {
-            if (requestId != _currentRequestId || _disposed || !mounted) return;
-            
-            final errStr = fallbackError.toString().toLowerCase();
-            if (errStr.contains('abort') ||
-                errStr.contains('interrupted') ||
-                errStr.contains('10000000')) {
-              debugPrint('ℹ️ [AudioPlayer] Fallback load interrupted gracefully.');
-              return;
-            }
-            
-            debugPrint('❌ [AudioPlayer] Both full Surah and fallback Ayah playlist failed: $fallbackError');
-          }
-        }
-
+              initialPosition: Duration.zero,
+              preload: true,
+            )
+            .timeout(const Duration(seconds: 5));
+        _loadedFullSurah = true;
+        debugPrint('✅ [AudioPlayer] Full Surah loaded successfully.');
+      } catch (sourceError) {
         if (requestId != _currentRequestId || _disposed || !mounted) return;
 
-        if (autoPlay) {
-          await _player.setLoopMode(LoopMode.off);
-          await _player.play();
-        }
-
-        _emitState();
-      } catch (e, st) {
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-
-        final err = e.toString().toLowerCase();
-        if (err.contains('abort') ||
-            err.contains('interrupted') ||
-            err.contains('10000000') ||
-            err.contains('connection aborted') ||
-            err.contains('loading interrupted')) {
-          debugPrint('Audio loading was interrupted silently at outer catch: $e');
+        final errStr = sourceError.toString().toLowerCase();
+        if (errStr.contains('abort') ||
+            errStr.contains('interrupted') ||
+            errStr.contains('10000000')) {
+          debugPrint(
+            'ℹ️ [AudioPlayer] Full Surah load interrupted gracefully.',
+          );
           return;
         }
 
-        debugPrint('Error in _loadSurah: $e');
-        if (state.hasValue) {
-          _emitState();
-        } else {
-          state = AsyncValue.error(e, st);
+        debugPrint(
+          '⚠️ [AudioPlayer] Full Surah load failed (or timed out): $sourceError. Switching to fallback Ayah playlist...',
+        );
+      }
+
+      // If full Surah loading failed, load the Ayah playlist as fallback
+      if (!_loadedFullSurah) {
+        try {
+          final audioMap = await service.getSurahAudioUrlMap(
+            editionId,
+            chapter,
+          );
+          if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+          _urls = audioMap.values.toList();
+          if (_urls.isEmpty) {
+            throw Exception('لا توجد روابط آيات صوتية متاحة');
+          }
+
+          final playlist = ConcatenatingAudioSource(
+            children: _urls
+                .map(
+                  (url) => AudioSource.uri(
+                    Uri.parse(url),
+                    headers: const {
+                      'User-Agent':
+                          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                      'Referer': 'https://quran.com/',
+                    },
+                  ),
+                )
+                .toList(),
+          );
+
+          await _player.stop();
+          if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+          await _player.setAudioSource(playlist, preload: true);
+          _loadedFullSurah = false;
+          debugPrint(
+            '✅ [AudioPlayer] Fallback Ayah playlist loaded successfully.',
+          );
+        } catch (fallbackError) {
+          if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+          final errStr = fallbackError.toString().toLowerCase();
+          if (errStr.contains('abort') ||
+              errStr.contains('interrupted') ||
+              errStr.contains('10000000')) {
+            debugPrint(
+              'ℹ️ [AudioPlayer] Fallback load interrupted gracefully.',
+            );
+            return;
+          }
+
+          debugPrint(
+            '❌ [AudioPlayer] Both full Surah and fallback Ayah playlist failed: $fallbackError',
+          );
         }
       }
+
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+      if (autoPlay) {
+        await _player.setLoopMode(LoopMode.off);
+        await _player.play();
+      }
+
+      _emitState();
+    } catch (e, st) {
+      if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+      final err = e.toString().toLowerCase();
+      if (err.contains('abort') ||
+          err.contains('interrupted') ||
+          err.contains('10000000') ||
+          err.contains('connection aborted') ||
+          err.contains('loading interrupted')) {
+        debugPrint('Audio loading was interrupted silently at outer catch: $e');
+        return;
+      }
+
+      debugPrint('Error in _loadSurah: $e');
+      if (state.hasValue) {
+        _emitState();
+      } else {
+        state = AsyncValue.error(e, st);
+      }
+    }
   }
 
   Future<String> _resolveReciterName(String editionId) async {
@@ -456,18 +473,18 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   Future<void> _ensureSurahLoaded() async {
     if (_disposed || !mounted) return;
     final currentSource = _player.audioSource;
-    final isRadio = isAudioHandlerReady &&
-        audioHandler.mediaItem.value?.id == 'https://stream.radiojar.com/8s5u5tpdtwzuv';
+    final isRadio =
+        isAudioHandlerReady &&
+        audioHandler.mediaItem.value?.id ==
+            'https://stream.radiojar.com/8s5u5tpdtwzuv';
 
     if (currentSource == null || isRadio) {
-      debugPrint('ℹ️ [AudioPlayer] Surah is not loaded or hijacked by Radio. Reloading Surah...');
+      debugPrint(
+        'ℹ️ [AudioPlayer] Surah is not loaded or hijacked by Radio. Reloading Surah...',
+      );
       final editionId = ref.read(editionIdProvider);
       final chapter = ref.read(chapterProvider).clamp(1, 114);
-      await _loadSurah(
-        editionId: editionId,
-        chapter: chapter,
-        autoPlay: false,
-      );
+      await _loadSurah(editionId: editionId, chapter: chapter, autoPlay: false);
     }
   }
 
