@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 
 class MyAudioHandler extends BaseAudioHandler with SeekHandler {
+  static bool isSpeechActive = false;
   final AudioPlayer _player = AudioPlayer();
   AudioPlayer get player => _player;
   String? _activeUrl;
@@ -39,7 +40,9 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
             _player.setVolume(1.0);
             break;
           case AudioInterruptionType.pause:
-            play();
+            if (!isSpeechActive) {
+              play();
+            }
             break;
           case AudioInterruptionType.unknown:
             break;

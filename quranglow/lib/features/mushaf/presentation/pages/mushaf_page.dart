@@ -12,6 +12,7 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/core/model/aya/aya.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/features/mushaf/presentation/pages/paged_mushaf.dart';
@@ -127,6 +128,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     _ayahPlayerSub?.cancel();
     _ayahPreviewPlayer.dispose();
     _speechToText.stop(); // Safely stop listening on exit
+    MyAudioHandler.isSpeechActive = false;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     WakelockPlus.disable();
@@ -915,6 +917,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   }
 
   Future<void> _startListening() async {
+    MyAudioHandler.isSpeechActive = true;
     // 🛑 USER REQUEST: Stop Quran audio in recitation mode so only the mic is active
     await _ayahPreviewPlayer.stop();
     try {
@@ -926,6 +929,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     if (!_speechEnabled) {
       await _initSpeech();
       if (!_speechEnabled) {
+        MyAudioHandler.isSpeechActive = false;
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -964,6 +968,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   Future<void> _stopListening() async {
     await _speechToText.stop();
+    MyAudioHandler.isSpeechActive = false;
     setState(() => _isListening = false);
   }
 

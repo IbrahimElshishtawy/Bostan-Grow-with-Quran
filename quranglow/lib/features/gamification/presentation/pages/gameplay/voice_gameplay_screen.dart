@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/core/models/quran_models.dart';
 import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
@@ -40,6 +41,13 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
     super.initState();
     _initSpeech();
     _loadLevelData();
+  }
+
+  @override
+  void dispose() {
+    _speechToText.stop();
+    MyAudioHandler.isSpeechActive = false;
+    super.dispose();
   }
 
   Future<void> _initSpeech() async {
@@ -115,6 +123,7 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
       return;
     }
 
+    MyAudioHandler.isSpeechActive = true;
     try {
       ref.read(playerControllerProvider.notifier).pause();
     } catch (e) {
@@ -134,6 +143,7 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
 
   Future<void> _stopListening() async {
     await _speechToText.stop();
+    MyAudioHandler.isSpeechActive = false;
     setState(() => _isListening = false);
   }
 
