@@ -2,6 +2,7 @@
 
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:home_widget/home_widget.dart';
@@ -113,10 +114,9 @@ final dailyAyatLocalProvider = FutureProvider.autoDispose<List<DailyAyah>>((
     out.add(
       DailyAyah(
         text: trimmedText,
-        ref:
-            surahName.trim().isEmpty
-                ? 'آية $ayahNum'
-                : 'سورة $surahName • آية $ayahNum',
+        ref: surahName.trim().isEmpty
+            ? 'آية $ayahNum'
+            : 'سورة $surahName • آية $ayahNum',
         surah: surahNum,
         ayah: ayahNum,
       ),
@@ -134,8 +134,8 @@ final dailyAyatLocalProvider = FutureProvider.autoDispose<List<DailyAyah>>((
       final r = _root(j);
       final parts = k.split('-');
       final surahNum = _parseInt(parts.isNotEmpty ? parts.last : null);
-      final surahName =
-          (r['name_ar'] ?? r['name_arabic'] ?? r['name'] ?? '').toString();
+      final surahName = (r['name_ar'] ?? r['name_arabic'] ?? r['name'] ?? '')
+          .toString();
       final verses = _verses(r);
       if (verses.isEmpty) continue;
 
@@ -191,24 +191,31 @@ final dailyAyatLocalProvider = FutureProvider.autoDispose<List<DailyAyah>>((
   }
 
   try {
-    final dataToCache = out.map((a) => {
-      'text': a.text,
-      'ref': a.ref,
-      'surah': a.surah,
-      'ayah': a.ayah,
-    }).toList();
+    final dataToCache = out
+        .map(
+          (a) => {
+            'text': a.text,
+            'ref': a.ref,
+            'surah': a.surah,
+            'ayah': a.ayah,
+          },
+        )
+        .toList();
     await box.put('daily_ayahs_timestamp', DateTime.now().toIso8601String());
     await box.put('daily_ayahs_data', dataToCache);
 
     // Save and update the home screen widget "outside the app"
     final versesText = out.map((v) => v.text).join('\n\n');
     final versesRef = out.map((v) => v.ref).join('\n');
-    
+
     await HomeWidget.saveWidgetData<String>('widget_quran_verse', versesText);
     await HomeWidget.saveWidgetData<String>('widget_quran_ref', versesRef);
-    
+
     for (int i = 0; i < out.length; i++) {
-      await HomeWidget.saveWidgetData<String>('verse_${i + 1}_text', out[i].text);
+      await HomeWidget.saveWidgetData<String>(
+        'verse_${i + 1}_text',
+        out[i].text,
+      );
       await HomeWidget.saveWidgetData<String>('verse_${i + 1}_ref', out[i].ref);
     }
 
@@ -218,7 +225,9 @@ final dailyAyatLocalProvider = FutureProvider.autoDispose<List<DailyAyah>>((
     );
   } catch (e) {
     // Robust error handling to make sure any home widget API issues don't block the app
-    print('Error updating HomeWidget in daily_ayah_provider: $e');
+    if (kDebugMode) {
+      print('Error updating HomeWidget in daily_ayah_provider: $e');
+    }
   }
 
   return out;

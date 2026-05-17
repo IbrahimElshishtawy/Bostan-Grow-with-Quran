@@ -80,18 +80,23 @@ class _ReminderListState extends ConsumerState<ReminderList> {
       builder: (_) => ReminderEditor(existing: edit),
     );
     if (!mounted || res == null) return;
-    setState(() {
-      if (edit == null) {
+    
+    if (edit == null) {
+      setState(() {
         _items.add(res);
-        ref.read(remindersServiceProvider).saveReminder(res);
-      } else {
+      });
+      await ref.read(remindersServiceProvider).saveReminder(res);
+      await _schedule(res); // Auto-schedule on creation!
+    } else {
+      setState(() {
         edit.title = res.title;
         edit.dateTime = res.dateTime;
         edit.daily = res.daily;
         edit.notes = res.notes;
-        ref.read(remindersServiceProvider).saveReminder(edit);
-      }
-    });
+      });
+      await ref.read(remindersServiceProvider).saveReminder(edit);
+      await _schedule(edit); // Auto-reschedule on edit!
+    }
   }
 
   Future<void> _schedule(Reminder r) async {
@@ -117,6 +122,7 @@ class _ReminderListState extends ConsumerState<ReminderList> {
 
       if (!mounted) return;
       setState(() => r.scheduled = true);
+      await ref.read(remindersServiceProvider).saveReminder(r); // Persist status
       _snack('تمت جدولة التذكير بنجاح');
     } catch (e) {
       _snack('فشلت الجدولة: $e');
@@ -128,6 +134,7 @@ class _ReminderListState extends ConsumerState<ReminderList> {
       await NotificationService.instance.cancel(r.id);
       if (!mounted) return;
       setState(() => r.scheduled = false);
+      await ref.read(remindersServiceProvider).saveReminder(r); // Persist status
       _snack('تم إلغاء التذكير');
     } catch (e) {
       _snack('فشل الإلغاء: $e');

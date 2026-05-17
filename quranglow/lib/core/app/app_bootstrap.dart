@@ -16,6 +16,7 @@ import 'package:quranglow/core/service/setting/location_service.dart';
 import 'package:quranglow/core/service/setting/notification_service.dart';
 import 'package:quranglow/core/service/setting/prayer_times_service.dart';
 import 'package:quranglow/core/service/sync/firebase_sync_service.dart';
+import 'package:quranglow/core/service/sync/reminders_service.dart';
 import 'package:quranglow/core/storage/hive_storage_impl.dart';
 import 'package:quranglow/firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -174,6 +175,39 @@ class AppBootstrap {
     await NotificationService.instance.scheduleEveningAzkarReminder(
       enabled: settings.azkarEveningEnabled,
     );
+
+    // Reschedule custom user reminders saved in DB/Firestore to survive phone reboots/app updates
+    try {
+      final userReminders = await RemindersService().fetchReminders();
+      for (final r in userReminders) {
+        if (r.scheduled) {
+          if (r.dateTime.isBefore(DateTime.now())) {
+            if (r.daily) {
+              await NotificationService.instance.scheduleReminder(
+                id: r.id,
+                title: r.title.isNotEmpty ? r.title : 'تذكير',
+                body: r.notes?.isNotEmpty == true ? r.notes! : 'موعد تذكيرك الآن',
+                when: r.dateTime,
+                daily: r.daily,
+              );
+            } else {
+              r.scheduled = false;
+              await RemindersService().saveReminder(r);
+            }
+          } else {
+            await NotificationService.instance.scheduleReminder(
+              id: r.id,
+              title: r.title.isNotEmpty ? r.title : 'تذكير',
+              body: r.notes?.isNotEmpty == true ? r.notes! : 'موعد تذكيرك الآن',
+              when: r.dateTime,
+              daily: r.daily,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[BOOTSTRAP] Custom reminders sync skipped: $e');
+    }
 
     if (settings.azkarAfterPrayerEnabled) {
       final locationService = LocationService();

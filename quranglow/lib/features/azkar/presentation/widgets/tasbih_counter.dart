@@ -70,7 +70,7 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
         // Cycle to next dhikr automatically!
         _selectedDhikrIndex = (_selectedDhikrIndex + 1) % DhikrQuickList.items.length;
         
-        HapticFeedback.vibrate();
+        HapticFeedback.heavyImpact(); // Strong premium haptic on round completion
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('أتممت دورة $_rounds بنجاح! انتقلت إلى: ${DhikrQuickList.items[_selectedDhikrIndex]}'),
@@ -85,9 +85,13 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
     });
 
     if (settings.tasbihVibrate) {
-      HapticFeedback.vibrate();
+      // High-fidelity snappy haptic response mimicking a physical mechanical rosary button!
+      HapticFeedback.selectionClick();
+      HapticFeedback.lightImpact();
     }
     if (settings.tasbihSound) {
+      // Play standard platform click/tap sound which is reliable and works outside mute state
+      Feedback.forTap(context);
       SystemSound.play(SystemSoundType.click);
     }
 
