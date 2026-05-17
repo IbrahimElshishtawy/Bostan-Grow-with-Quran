@@ -30,6 +30,11 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
   void initState() {
     super.initState();
     _tab = TabController(length: 4, vsync: this);
+    _tab.addListener(() {
+      if (!_tab.indexIsChanging) {
+        _loadScheduledReminders();
+      }
+    });
     
     // Initialize local meta from the central source
     _azkarMeta = AzkarData.categoryMeta.map((key, meta) => MapEntry(
@@ -46,6 +51,15 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
       setState(() {
         _scheduledIds.clear();
         _scheduledIds.addAll(reminders.where((r) => r.scheduled).map((r) => r.id));
+        
+        // Dynamically update the times in _azkarMeta with the actual scheduled custom times
+        _azkarMeta = AzkarData.categoryMeta.map((key, staticMeta) {
+          final activeReminder = reminders.where((r) => r.id == staticMeta.id && r.scheduled).firstOrNull;
+          final time = activeReminder != null 
+              ? TimeOfDay.fromDateTime(activeReminder.dateTime) 
+              : TimeOfDay(hour: staticMeta.hour, minute: staticMeta.minute);
+          return MapEntry(key, (time: time, id: staticMeta.id));
+        });
       });
     }
   }
@@ -148,7 +162,7 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
             _buildCategoryCard(context, 'أذكار المساء', Icons.nights_stay_rounded, const Color(0xFF6366F1)),
             _buildCategoryCard(context, 'أذكار النوم', Icons.bedtime_rounded, const Color(0xFFA855F7)),
             _buildCategoryCard(context, 'أذكار الاستيقاظ', Icons.wb_twilight_rounded, const Color(0xFFEAB308)),
-            _buildCategoryCard(context, 'أذكار الصلاة', Icons.mosque_rounded, const Color(0xFF10B981)),
+            _buildCategoryCard(context, 'أذكار بعد الصلاة', Icons.mosque_rounded, const Color(0xFF10B981)),
             _buildCategoryCard(context, 'تسابيح منوعة', Icons.star_rounded, const Color(0xFF64748B)),
           ],
         ),
@@ -256,13 +270,14 @@ class _AzkarTasbihPageState extends ConsumerState<AzkarTasbihPage> with SingleTi
             ),
 
           InkWell(
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ZikrReaderPage(category: title),
                 ),
               );
+              _loadScheduledReminders();
             },
             borderRadius: BorderRadius.circular(26),
             child: Center(

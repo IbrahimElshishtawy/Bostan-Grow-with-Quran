@@ -316,30 +316,8 @@ class QuranService {
   /// Returns the URL for a single audio file containing the entire Surah.
   /// This is useful for continuous playback with correct total duration.
   String getSurahFullAudioUrl(String editionId, int surah) {
-    // Map AlQuran.cloud edition IDs to download.quranicaudio.com reciter paths
-    final Map<String, String> reciterMap = {
-      'ar.alafasy': 'mishaari_raashid_al_3afaasee',
-      'ar.abdulsamad': 'abdul_basit_murattal',
-      'ar.abdullahbasfar': 'abdullaah_basfar',
-      'ar.abdurrahmaansudais': 'abdurrahmaan_as-sudays',
-      'ar.ahmedajamy': 'ahmed_ibn_3ali_al-3ajamy',
-      'ar.alajmy': 'ahmed_ibn_3ali_al-3ajamy',
-      'ar.hanirifai': 'haani_ar-rifaa3ee',
-      'ar.hudhaify': 'al-huthaifee',
-      'ar.husary': 'mahmood_khaleel_al-husaree',
-      'ar.minshawi': 'muhammad_siddeeq_al-minshaawee',
-      'ar.mahermuaiqly': 'maher_almuaiqly',
-      'ar.saoodshuraym': 'sa3ood_ash-shuraym',
-    };
-
-    final reciterPath = reciterMap[editionId];
-    if (reciterPath != null) {
-      // Use QuranicAudio CDN (Extremely reliable)
-      final paddedSurah = surah.toString().padLeft(3, '0');
-      return 'https://download.quranicaudio.com/quran/$reciterPath/$paddedSurah.mp3';
-    }
-
-    // Fallback to Islamic Network CDN with User-Agent headers (handled in player)
+    // Use Islamic Network CDN (Cloudflare-backed, fast, and unblocked globally/in Egypt) as the primary option
+    // to avoid ISP-level blocking on download.quranicaudio.com which causes SSL handshake failures.
     return 'https://cdn.islamic.network/quran/audio-surah/128/$editionId/$surah.mp3';
   }
 
