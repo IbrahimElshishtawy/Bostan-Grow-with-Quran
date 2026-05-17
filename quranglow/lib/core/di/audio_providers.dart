@@ -8,6 +8,7 @@ import 'package:quranglow/core/di/core_providers.dart';
 import 'package:quranglow/core/di/service_providers.dart';
 import 'package:quranglow/core/model/book/Play_list_State.dart';
 import 'package:quranglow/core/model/book/surah.dart';
+import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/features/player/presentation/widgets/CombinedPositionData.dart';
 
 final audioEditionsProvider = FutureProvider<List<dynamic>>((ref) async {
@@ -125,15 +126,26 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
       if (_ayahOffsets.isEmpty) return;
 
       int newAyahIndex = 0;
-      for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
-        if (pos >= _ayahOffsets[i]) {
-          newAyahIndex = i;
-          break;
+      if (_loadedFullSurah) {
+        for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
+          if (pos >= _ayahOffsets[i]) {
+            newAyahIndex = i;
+            break;
+          }
         }
+      } else {
+        newAyahIndex = _player.currentIndex ?? 0;
       }
 
       final currentUi = state.value;
       if (currentUi == null || currentUi.currentAyah != newAyahIndex) {
+        _emitState();
+      }
+    });
+
+    _indexSub = _player.currentIndexStream.listen((idx) {
+      if (_disposed || !mounted) return;
+      if (!_loadedFullSurah) {
         _emitState();
       }
     });
@@ -146,10 +158,12 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   late final Stream<CombinedPositionData> _timelineStream;
   StreamSubscription<bool>? _playingSub;
   StreamSubscription<Duration>? _posSub;
+  StreamSubscription<int?>? _indexSub;
   String _reciterName = '';
   List<String> _urls = [];
   List<Duration> _ayahOffsets = [];
   bool _disposed = false;
+  bool _loadedFullSurah = false;
   int _currentRequestId = 0;
 
   static const _kReciterNames = {
@@ -221,7 +235,6 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         ),
       );
 
-      try {
         final surahData = await service.getSurahText('quran-uthmani', chapter);
         if (requestId != _currentRequestId || _disposed || !mounted) return;
         final allAyat = surahData.ayat;
@@ -253,94 +266,123 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
         await _player.stop();
         if (requestId != _currentRequestId || _disposed || !mounted) return;
 
-        await _player.setAudioSource(
-          AudioSource.uri(
-            Uri.parse(fullSurahUrl),
-            headers: const {'User-Agent': 'QuranGlow/1.0'},
-            tag: MediaItem(
-              id: 'surah_$chapter',
-              title: 'سورة $nextSurahName',
-              album: _reciterName,
-              artist: _reciterName,
-              duration: cumulative,
-            ),
-          ),
-          initialPosition: Duration.zero,
-          preload: true,
-        );
-      } on PlayerInterruptedException {
-        debugPrint(
-          'Audio loading was interrupted (handled PlayerInterruptedException) for request #$requestId',
-        );
-        return;
-      } catch (e) {
-        if (requestId != _currentRequestId || _disposed || !mounted) return;
-        debugPrint(
-          'Source error or PlatformException with full surah URL: $e. Falling back to Ayah playlist...',
-        );
-
+        _loadedFullSurah = false;
         try {
-          final audioMap = await service.getSurahAudioUrlMap(
-            editionId,
-            chapter,
+          debugPrint('⏳ [AudioPlayer] Trying to load full Surah URL: $fullSurahUrl');
+          await _player.setAudioSource(
+            AudioSource.uri(
+              Uri.parse(fullSurahUrl),
+              headers: const {
+                'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': 'https://quranicaudio.com/',
+                'Origin': 'https://quranicaudio.com',
+              },
+              tag: MediaItem(
+                id: 'surah_$chapter',
+                title: 'سورة $nextSurahName',
+                album: _reciterName,
+                artist: _reciterName,
+                duration: cumulative,
+              ),
+            ),
+            initialPosition: Duration.zero,
+            preload: true,
           );
+          _loadedFullSurah = true;
+          debugPrint('✅ [AudioPlayer] Full Surah loaded successfully.');
+        } catch (sourceError) {
           if (requestId != _currentRequestId || _disposed || !mounted) return;
 
-          _urls = audioMap.values.toList();
-          if (_urls.isEmpty) {
-            throw Exception('لا توجد روابط آيات صوتية متاحة');
+          final errStr = sourceError.toString().toLowerCase();
+          if (errStr.contains('abort') ||
+              errStr.contains('interrupted') ||
+              errStr.contains('10000000')) {
+            debugPrint('ℹ️ [AudioPlayer] Full Surah load interrupted gracefully.');
+            return;
           }
-          final playlist = ConcatenatingAudioSource(
-            children: _urls
-                .map(
-                  (url) => AudioSource.uri(
-                    Uri.parse(url),
-                    headers: const {
-                      'User-Agent':
-                          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                    },
-                  ),
-                )
-                .toList(),
-          );
-          await _player.stop();
-          if (requestId != _currentRequestId || _disposed || !mounted) return;
 
-          await _player.setAudioSource(playlist, preload: true);
-        } catch (fallbackError) {
-          debugPrint('Failed to load fallback Ayah playlist: $fallbackError');
-          rethrow;
+          debugPrint('⚠️ [AudioPlayer] Full Surah load failed: $sourceError. Switching to fallback Ayah playlist...');
+        }
+
+        // If full Surah loading failed, load the Ayah playlist as fallback
+        if (!_loadedFullSurah) {
+          try {
+            final audioMap = await service.getSurahAudioUrlMap(
+              editionId,
+              chapter,
+            );
+            if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+            _urls = audioMap.values.toList();
+            if (_urls.isEmpty) {
+              throw Exception('لا توجد روابط آيات صوتية متاحة');
+            }
+
+            final playlist = ConcatenatingAudioSource(
+              children: _urls
+                  .map(
+                    (url) => AudioSource.uri(
+                      Uri.parse(url),
+                      headers: const {
+                        'User-Agent':
+                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Referer': 'https://quran.com/',
+                      },
+                    ),
+                  )
+                  .toList(),
+            );
+
+            await _player.stop();
+            if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+            await _player.setAudioSource(playlist, preload: true);
+            _loadedFullSurah = false;
+            debugPrint('✅ [AudioPlayer] Fallback Ayah playlist loaded successfully.');
+          } catch (fallbackError) {
+            if (requestId != _currentRequestId || _disposed || !mounted) return;
+            
+            final errStr = fallbackError.toString().toLowerCase();
+            if (errStr.contains('abort') ||
+                errStr.contains('interrupted') ||
+                errStr.contains('10000000')) {
+              debugPrint('ℹ️ [AudioPlayer] Fallback load interrupted gracefully.');
+              return;
+            }
+            
+            debugPrint('❌ [AudioPlayer] Both full Surah and fallback Ayah playlist failed: $fallbackError');
+          }
+        }
+
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+        if (autoPlay) {
+          await _player.setLoopMode(LoopMode.off);
+          await _player.play();
+        }
+
+        _emitState();
+      } catch (e, st) {
+        if (requestId != _currentRequestId || _disposed || !mounted) return;
+
+        final err = e.toString().toLowerCase();
+        if (err.contains('abort') ||
+            err.contains('interrupted') ||
+            err.contains('10000000') ||
+            err.contains('connection aborted') ||
+            err.contains('loading interrupted')) {
+          debugPrint('Audio loading was interrupted silently at outer catch: $e');
+          return;
+        }
+
+        debugPrint('Error in _loadSurah: $e');
+        if (state.hasValue) {
+          _emitState();
+        } else {
+          state = AsyncValue.error(e, st);
         }
       }
-
-      if (requestId != _currentRequestId || _disposed || !mounted) return;
-
-      if (autoPlay) {
-        await _player.setLoopMode(LoopMode.off);
-        await _player.play();
-      }
-
-      _emitState();
-    } catch (e, st) {
-      if (requestId != _currentRequestId || _disposed || !mounted) return;
-
-      final err = e.toString().toLowerCase();
-      if (err.contains('abort') ||
-          err.contains('interrupted') ||
-          err.contains('10000000') ||
-          err.contains('connection aborted') ||
-          err.contains('loading interrupted')) {
-        debugPrint('Audio loading was interrupted silently at outer catch: $e');
-        return;
-      }
-
-      debugPrint('Error in _loadSurah: $e');
-      if (state.hasValue) {
-        _emitState();
-      } else {
-        state = AsyncValue.error(e, st);
-      }
-    }
   }
 
   Future<String> _resolveReciterName(String editionId) async {
@@ -370,12 +412,16 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     final chapter = ref.read(chapterProvider).clamp(1, 114);
 
     int ayahIndex = 0;
-    final pos = _player.position;
-    for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
-      if (pos >= _ayahOffsets[i]) {
-        ayahIndex = i;
-        break;
+    if (_loadedFullSurah) {
+      final pos = _player.position;
+      for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
+        if (pos >= _ayahOffsets[i]) {
+          ayahIndex = i;
+          break;
+        }
       }
+    } else {
+      ayahIndex = _player.currentIndex ?? 0;
     }
 
     final surahName = (chapter >= 1 && chapter <= kSurahNamesAr.length)
@@ -409,8 +455,27 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     );
   }
 
+  Future<void> _ensureSurahLoaded() async {
+    if (_disposed || !mounted) return;
+    final currentSource = _player.audioSource;
+    final isRadio = isAudioHandlerReady &&
+        audioHandler.mediaItem.value?.id == 'https://stream.radiojar.com/8s5u5tpdtwzuv';
+
+    if (currentSource == null || isRadio) {
+      debugPrint('ℹ️ [AudioPlayer] Surah is not loaded or hijacked by Radio. Reloading Surah...');
+      final editionId = ref.read(editionIdProvider);
+      final chapter = ref.read(chapterProvider).clamp(1, 114);
+      await _loadSurah(
+        editionId: editionId,
+        chapter: chapter,
+        autoPlay: false,
+      );
+    }
+  }
+
   Future<void> play() async {
     try {
+      await _ensureSurahLoaded();
       await _player.play();
       if (_disposed || !mounted) return;
       _emitState();
@@ -431,15 +496,20 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
 
   Future<void> next() async {
     try {
-      final curPos = _player.position;
-      int nextIdx = 0;
-      for (int i = 0; i < _ayahOffsets.length; i++) {
-        if (_ayahOffsets[i] > curPos + const Duration(milliseconds: 200)) {
-          nextIdx = i;
-          break;
+      await _ensureSurahLoaded();
+      if (_loadedFullSurah) {
+        final curPos = _player.position;
+        int nextIdx = 0;
+        for (int i = 0; i < _ayahOffsets.length; i++) {
+          if (_ayahOffsets[i] > curPos + const Duration(milliseconds: 200)) {
+            nextIdx = i;
+            break;
+          }
         }
+        await _player.seek(_ayahOffsets[nextIdx]);
+      } else {
+        await _player.seekToNext();
       }
-      await _player.seek(_ayahOffsets[nextIdx]);
       if (_disposed || !mounted) return;
       _emitState();
     } catch (e) {
@@ -449,15 +519,20 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
 
   Future<void> previous() async {
     try {
-      final curPos = _player.position;
-      int prevIdx = 0;
-      for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
-        if (_ayahOffsets[i] < curPos - const Duration(seconds: 2)) {
-          prevIdx = i;
-          break;
+      await _ensureSurahLoaded();
+      if (_loadedFullSurah) {
+        final curPos = _player.position;
+        int prevIdx = 0;
+        for (int i = _ayahOffsets.length - 1; i >= 0; i--) {
+          if (_ayahOffsets[i] < curPos - const Duration(seconds: 2)) {
+            prevIdx = i;
+            break;
+          }
         }
+        await _player.seek(_ayahOffsets[prevIdx]);
+      } else {
+        await _player.seekToPrevious();
       }
-      await _player.seek(_ayahOffsets[prevIdx]);
       if (_disposed || !mounted) return;
       _emitState();
     } catch (e) {
@@ -467,6 +542,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
 
   Future<void> seekTo(Duration position) async {
     try {
+      await _ensureSurahLoaded();
       await _player.seek(position);
     } catch (e) {
       debugPrint('Error seeking audio (handled gracefully): $e');
@@ -475,8 +551,15 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
 
   Future<void> seekToIndex(int index) async {
     try {
-      if (index >= 0 && index < _ayahOffsets.length) {
-        await _player.seek(_ayahOffsets[index]);
+      await _ensureSurahLoaded();
+      if (_loadedFullSurah) {
+        if (index >= 0 && index < _ayahOffsets.length) {
+          await _player.seek(_ayahOffsets[index]);
+        }
+      } else {
+        if (index >= 0 && index < _urls.length) {
+          await _player.seek(Duration.zero, index: index);
+        }
       }
     } catch (e) {
       debugPrint('Error seeking to index (handled gracefully): $e');
@@ -553,6 +636,7 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
     _disposed = true;
     _playingSub?.cancel();
     _posSub?.cancel();
+    _indexSub?.cancel();
     _player.dispose();
     super.dispose();
   }
