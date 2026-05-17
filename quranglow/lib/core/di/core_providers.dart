@@ -5,6 +5,7 @@ import 'package:quranglow/core/api/api_cache_manager.dart';
 import 'package:quranglow/core/api/api_interceptor.dart';
 import 'package:quranglow/core/api/fawaz_cdn_source.dart';
 import 'package:quranglow/core/api/alquran_cloud_source.dart';
+import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/core/storage/local_storage.dart';
 import 'package:quranglow/core/storage/hive_storage_impl.dart';
 import 'package:quranglow/core/service/audio/my_audio_handler.dart';

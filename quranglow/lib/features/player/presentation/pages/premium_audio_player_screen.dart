@@ -7,7 +7,6 @@ import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/features/player/presentation/providers/favorites_controller.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:quranglow/features/player/presentation/widgets/CombinedPositionData.dart';
-import 'package:quranglow/core/model/book/surah.dart';
 import 'dart:math' as math;
 
 class PremiumAudioPlayerScreen extends ConsumerStatefulWidget {
@@ -273,7 +272,7 @@ class _PremiumAudioPlayerScreenState
 
             // Title and Subtitle
             Text(
-              state.surahName ?? title,
+              state.surahName ?? widget.title,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -284,7 +283,7 @@ class _PremiumAudioPlayerScreenState
             ),
             const SizedBox(height: 8),
             Text(
-              state.reciterName ?? subtitle,
+              state.reciterName ?? widget.subtitle,
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Tajawal',
@@ -336,7 +335,10 @@ class _PremiumAudioPlayerScreenState
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 4,
+                  ),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: isActive
@@ -357,7 +359,9 @@ class _PremiumAudioPlayerScreenState
                         aya.text,
                         style: TextStyle(
                           fontSize: isActive ? 21 : 17,
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontFamily: 'Uthmanic',
                           color: isActive ? Colors.amber : Colors.white70,
                           height: 1.6,
@@ -404,9 +408,8 @@ class _PremiumAudioPlayerScreenState
           ),
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.amber),
-      ),
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: Colors.amber)),
       error: (err, stack) => const Center(
         child: Text(
           'تعذر تحميل نص السورة الكريمة',
@@ -455,8 +458,8 @@ class _PremiumAudioPlayerScreenState
                     .toggleFavorite(
                       editionId: state.editionId,
                       chapter: state.chapter,
-                      surahName: state.surahName ?? title,
-                      reciterName: state.reciterName ?? subtitle,
+                      surahName: state.surahName ?? widget.title,
+                      reciterName: state.reciterName ?? widget.subtitle,
                     ),
                 icon: Icon(
                   ref
@@ -484,9 +487,7 @@ class _PremiumAudioPlayerScreenState
               _buildIconButton(Icons.share, Colors.white70, onPressed: () {}),
               IconButton(
                 onPressed: () {
-                  ref
-                      .read(playerLyricsModeProvider.notifier)
-                      .update((s) => !s);
+                  ref.read(playerLyricsModeProvider.notifier).update((s) => !s);
                 },
                 icon: Icon(
                   ref.watch(playerLyricsModeProvider)
