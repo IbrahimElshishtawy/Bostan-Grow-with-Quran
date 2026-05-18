@@ -40,7 +40,7 @@ class DhikrQuickList extends StatelessWidget {
                 avatar: Icon(
                   Icons.auto_awesome_rounded,
                   size: 16,
-                  color: isSelected ? primaryColor : (isDark ? Colors.white30 : Colors.black30),
+                  color: isSelected ? primaryColor : (isDark ? Colors.white30 : Colors.black38),
                 ),
                 selected: isSelected,
                 selectedColor: activeBgColor,

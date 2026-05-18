@@ -251,6 +251,7 @@ class _SpiritualHeader extends StatelessWidget {
     required this.isDark,
   });
 
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -288,155 +289,177 @@ class _SpiritualHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Beautiful glowing circular badge for rounds count
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? [const Color(0xFF234231), const Color(0xFF15291E)]
-                        : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
+              // Title / Header Icon & Label
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome_mosaic_rounded,
+                    size: 18,
+                    color: isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32),
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFF4CAF50).withOpacity(0.15),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
+                  const SizedBox(width: 8),
+                  Text(
+                    'الذكر الحالي',
+                    style: TextStyle(
+                      color: subtitleColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Tajawal',
                     ),
-                  ],
+                  ),
+                ],
+              ),
+              // Sleek circular buttons for Reset & Settings
+              Row(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onReset,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F8F4),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE8F5E9),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.restart_alt_rounded,
+                          color: isDark ? Colors.white70 : const Color(0xFF2E7D32),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onOpenSettings,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F8F4),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE8F5E9),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          color: isDark ? Colors.white70 : const Color(0xFF2E7D32),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Inner Glassmorphic Card for Dhikr Text
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFF4CAF50).withOpacity(0.1),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                selectedDhikr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 20,
+                  height: 1.4,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Tajawal',
                 ),
-                child: Row(
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Stretched, prominent bottom dashboard bar for Rounds and Target
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF234231), const Color(0xFF15291E)]
+                    : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFF4CAF50).withOpacity(0.15),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Rounds Metric
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.rotate_right_rounded,
-                      size: 16,
+                      size: 20,
                       color: isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Text(
                       'الجولات: $rounds',
                       style: TextStyle(
                         color: textColor,
                         fontWeight: FontWeight.w900,
                         fontFamily: 'Tajawal',
-                        fontSize: 13,
+                        fontSize: 15,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '|',
-                      style: TextStyle(
-                        color: (isDark ? Colors.white38 : const Color(0xFF2E7D32).withOpacity(0.3)),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
+                  ],
+                ),
+                // Premium Divider
+                Container(
+                  height: 20,
+                  width: 1.5,
+                  color: isDark ? Colors.white24 : const Color(0xFF2E7D32).withOpacity(0.2),
+                ),
+                // Target Metric
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Icon(
                       Icons.flag_rounded,
-                      size: 15,
+                      size: 20,
                       color: isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
                     Text(
                       'الهدف: $target',
                       style: TextStyle(
                         color: textColor,
                         fontWeight: FontWeight.w900,
                         fontFamily: 'Tajawal',
-                        fontSize: 13,
+                        fontSize: 15,
                       ),
                     ),
                   ],
-                ),
-              ),
-              const Spacer(),
-              // Sleek circular buttons for Reset & Settings
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: onReset,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F8F4),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE8F5E9),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.restart_alt_rounded,
-                      color: isDark ? Colors.white70 : const Color(0xFF2E7D32),
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: onOpenSettings,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F8F4),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE8F5E9),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.tune_rounded,
-                      color: isDark ? Colors.white70 : const Color(0xFF2E7D32),
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.black.withOpacity(0.15) : const Color(0xFFF9FBF9),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.03) : const Color(0xFFE8F5E9).withOpacity(0.5),
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'الذكر الحالي',
-                  style: TextStyle(
-                    color: subtitleColor.withOpacity(0.8),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Tajawal',
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  selectedDhikr,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 20,
-                    height: 1.4,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Tajawal',
-                  ),
                 ),
               ],
             ),
