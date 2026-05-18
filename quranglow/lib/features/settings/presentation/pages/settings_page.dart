@@ -5,7 +5,6 @@ import 'package:quranglow/features/settings/presentation/widgets/appearance_sect
 import 'package:quranglow/features/settings/presentation/widgets/notifications_section.dart';
 import 'package:quranglow/features/settings/presentation/widgets/offline_section.dart';
 import 'package:quranglow/features/settings/presentation/widgets/smart_learning_section.dart';
-import 'package:quranglow/features/settings/presentation/widgets/tasbih_section.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -31,8 +30,6 @@ class SettingsPage extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           children: const [
             AppearanceSection(),
-            SizedBox(height: 12),
-            TasbihSection(),
             SizedBox(height: 12),
             SmartLearningSection(),
             SizedBox(height: 12),

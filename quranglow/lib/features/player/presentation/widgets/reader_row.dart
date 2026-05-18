@@ -109,7 +109,7 @@ class ReaderRow extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -341,8 +341,10 @@ class _SelectionSheetState extends State<SelectionSheet> {
                             item['name'],
                             style: TextStyle(
                               color: isSelected
-                                  ? Colors.tealAccent
-                                  : Colors.white,
+                                  ? (Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.tealAccent
+                                      : Colors.teal.shade700)
+                                  : Theme.of(context).colorScheme.onSurface,
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,

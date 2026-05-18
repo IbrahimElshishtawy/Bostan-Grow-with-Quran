@@ -94,31 +94,7 @@ class TasbihSection extends ConsumerWidget {
                     );
                   }).toList(),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Divider(height: 1),
-                ),
-                // 📳 Vibration Switch
-                _buildModernSwitch(
-                  context,
-                  icon: Icons.vibration_rounded,
-                  title: 'الاهتزاز عند العد',
-                  subtitle: 'نبضة خفيفة مع كل ضغطة',
-                  value: st.tasbihVibrate,
-                  onChanged: (val) =>
-                      ref.read(settingsProvider.notifier).setTasbihVibrate(val),
-                ),
-                const SizedBox(height: 16),
-                // 🔊 Sound Switch
-                _buildModernSwitch(
-                  context,
-                  icon: Icons.music_note_rounded,
-                  title: 'صوت العد',
-                  subtitle: 'تنبيه صوتي هادئ عند الضغط',
-                  value: st.tasbihSound,
-                  onChanged: (val) =>
-                      ref.read(settingsProvider.notifier).setTasbihSound(val),
-                ),
+
               ],
             ),
           ),
@@ -128,53 +104,5 @@ class TasbihSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildModernSwitch(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            icon,
-            color: Theme.of(context).colorScheme.primary,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-        Switch.adaptive(
-          value: value,
-          onChanged: onChanged,
-          activeColor: Theme.of(context).colorScheme.primary,
-        ),
-      ],
-    );
-  }
+
 }
