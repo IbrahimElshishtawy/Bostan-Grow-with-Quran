@@ -10,6 +10,18 @@ import 'package:quranglow/core/storage/local_storage.dart';
 import 'package:quranglow/core/storage/hive_storage_impl.dart';
 import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/core/service/audio/audio_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:quranglow/core/network/network_info.dart';
+
+final networkInfoProvider = Provider<NetworkInfo>((ref) => NetworkInfo());
+
+final isOnlineProvider = StreamProvider<bool>((ref) async* {
+  final netInfo = ref.watch(networkInfoProvider);
+  yield await netInfo.isConnected;
+  await for (final results in netInfo.onStatusChanged) {
+    yield !results.contains(ConnectivityResult.none);
+  }
+});
 
 final httpClientProvider = Provider<http.Client>((ref) => http.Client());
 

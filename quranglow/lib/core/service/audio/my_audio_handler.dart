@@ -113,10 +113,13 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
         },
       );
       await play();
+    } on PlayerInterruptedException {
+      debugPrint('[AUDIO] Loading was interrupted by a new request. Quietly ignoring.');
+    } on PlayerException catch (e) {
+      debugPrint('❌ AUDIO PLAYER ERROR [playUri]: $e');
     } catch (e, stack) {
-      debugPrint('❌ AUDIO ERROR [playUri]: $e');
+      debugPrint('❌ AUDIO GENERAL ERROR [playUri]: $e');
       debugPrint('Stack: $stack');
-      // just_audio throws this if a new setUrl/load is called before this one finishes.
       final errorStr = e.toString().toLowerCase();
       if (errorStr.contains('abort') || 
           errorStr.contains('interrupted') ||

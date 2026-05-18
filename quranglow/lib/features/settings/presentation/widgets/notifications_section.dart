@@ -85,6 +85,10 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                 subtitle: 'تنبيهات المواقيت خارج التطبيق',
                 value: st.prayerNotificationsEnabled,
                 onChanged: (val) async {
+                  if (val) {
+                    await NotificationService.instance
+                        .requestPermissionsIfNeededFromUI(context);
+                  }
                   await ref
                       .read(settingsProvider.notifier)
                       .setPrayerNotificationsEnabled(val);
@@ -143,6 +147,10 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                 subtitle: 'وردك اليومي في وقت محدد',
                 value: st.dailyReminderEnabled,
                 onChanged: (val) async {
+                  if (val) {
+                    await NotificationService.instance
+                        .requestPermissionsIfNeededFromUI(context);
+                  }
                   await ref
                       .read(settingsProvider.notifier)
                       .setDailyReminderEnabled(val);
@@ -185,6 +193,10 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                 subtitle: 'صلّ وسلم على نبينا محمد ﷺ',
                 value: st.salawatEnabled,
                 onChanged: (val) async {
+                  if (val) {
+                    await NotificationService.instance
+                        .requestPermissionsIfNeededFromUI(context);
+                  }
                   await ref
                       .read(settingsProvider.notifier)
                       .setSalawatEnabled(val);
@@ -230,9 +242,15 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                 title: 'أذكار الصباح',
                 subtitle: 'تذكير يومي عند الساعة 8 صباحاً',
                 value: st.azkarMorningEnabled,
-                onChanged: (val) => ref
-                    .read(settingsProvider.notifier)
-                    .setAzkarMorningEnabled(val),
+                onChanged: (val) async {
+                  if (val) {
+                    await NotificationService.instance
+                        .requestPermissionsIfNeededFromUI(context);
+                  }
+                  await ref
+                      .read(settingsProvider.notifier)
+                      .setAzkarMorningEnabled(val);
+                },
               ),
               const Divider(height: 24),
               _buildModernSwitch(
@@ -240,9 +258,15 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                 title: 'أذكار المساء',
                 subtitle: 'تذكير يومي عند الساعة 6 مساءً',
                 value: st.azkarEveningEnabled,
-                onChanged: (val) => ref
-                    .read(settingsProvider.notifier)
-                    .setAzkarEveningEnabled(val),
+                onChanged: (val) async {
+                  if (val) {
+                    await NotificationService.instance
+                        .requestPermissionsIfNeededFromUI(context);
+                  }
+                  await ref
+                      .read(settingsProvider.notifier)
+                      .setAzkarEveningEnabled(val);
+                },
               ),
               const Divider(height: 24),
               _buildModernSwitch(
@@ -250,9 +274,15 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                 title: 'أذكار بعد الصلاة',
                 subtitle: 'تذكير بالأذكار بعد كل صلاة بـ 15 دقيقة',
                 value: st.azkarAfterPrayerEnabled,
-                onChanged: (val) => ref
-                    .read(settingsProvider.notifier)
-                    .setAzkarAfterPrayerEnabled(val),
+                onChanged: (val) async {
+                  if (val) {
+                    await NotificationService.instance
+                        .requestPermissionsIfNeededFromUI(context);
+                  }
+                  await ref
+                      .read(settingsProvider.notifier)
+                      .setAzkarAfterPrayerEnabled(val);
+                },
               ),
             ],
           ),
@@ -272,6 +302,10 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                 subtitle: 'رسائل تحفيزية عند الانقطاع عن التلاوة',
                 value: st.smartLearningEnabled,
                 onChanged: (val) async {
+                  if (val) {
+                    await NotificationService.instance
+                        .requestPermissionsIfNeededFromUI(context);
+                  }
                   await ref
                       .read(settingsProvider.notifier)
                       .setSmartLearningEnabled(val);

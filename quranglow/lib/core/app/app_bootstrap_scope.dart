@@ -28,6 +28,9 @@ class _AppBootstrapScopeState extends State<AppBootstrapScope>
 
   Future<void> _tryAsk() async {
     if (!mounted || _asked) return;
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
     _asked = true;
     await NotificationService.instance.requestPermissionsIfNeededFromUI(
       context,

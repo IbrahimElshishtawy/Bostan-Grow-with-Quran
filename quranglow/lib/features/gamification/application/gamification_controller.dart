@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive/hive.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:quranglow/core/data/daily_verses.dart';
+import 'package:quranglow/core/service/setting/notification_service.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri/hijri_calendar.dart';
 
@@ -120,6 +121,21 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       state = AsyncValue.data(gameState);
       
       _updateHomeWidget(gameState);
+      
+      // Schedule welcoming notifications if they haven't started learning yet
+      final hasStartedFirstStage = levels.isNotEmpty &&
+          (levels.first.isListenCompleted ||
+              levels.first.isReadCompleted ||
+              levels.first.isWriteCompleted ||
+              levels.first.isMemorizeCompleted ||
+              levels.first.isQuizCompleted ||
+              updatedProfile.levelsCompleted > 0);
+      
+      unawaited(
+        NotificationService.instance.scheduleFirstStageReminders(
+          hasStartedFirstStage: hasStartedFirstStage,
+        ),
+      );
       
       // Catch up and start heartbeat ticker
       await _processHeartsRegeneration();
@@ -486,6 +502,13 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       state = AsyncValue.data(newState);
       
       _updateHomeWidget(newState);
+
+      // Cancel welcoming notifications since the user has started their learning journey
+      unawaited(
+        NotificationService.instance.scheduleFirstStageReminders(
+          hasStartedFirstStage: true,
+        ),
+      );
 
       // ---------------------------------------------------------
       // 💾 ATOMIC DISK PERSISTENCE: SAVE ALL UPDATED MEMORY DATA DIRECTLY

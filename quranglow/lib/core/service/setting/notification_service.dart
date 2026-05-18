@@ -542,6 +542,61 @@ class NotificationService {
     }
   }
 
+  static const _firstStagePromptIdBase = 5000;
+
+  Future<void> scheduleFirstStageReminders({
+    required bool hasStartedFirstStage,
+  }) async {
+    if (!_isSupported) return;
+    
+    final settings = await SettingsService().load();
+    final enabled = settings.smartLearningEnabled;
+    
+    // Cancel any existing first stage prompts
+    await _plugin.cancel(_firstStagePromptIdBase);
+    await _plugin.cancel(_firstStagePromptIdBase + 1);
+
+    if (!enabled || hasStartedFirstStage) return;
+
+    final mode = await _androidScheduleMode();
+    const android = AndroidNotificationDetails(
+      _smartLearningChannelId,
+      'تنبيهات التعلم النشط',
+      channelDescription: 'تذكير ذكي عند الانقطاع عن القراءة أو التعلم',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+      playSound: true,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    );
+    const ios = DarwinNotificationDetails();
+    const mac = DarwinNotificationDetails();
+
+    final now = tz.TZDateTime.now(tz.local);
+
+    // 1. Encouraging/enthusiastic notification after 24 hours (1 day)
+    await _plugin.zonedSchedule(
+      _firstStagePromptIdBase,
+      'رحلتك في بستان النور تنتظرك! ✨',
+      'ابدأ خطوتك الأولى في فهم آيات القرآن وتدبرها الآن. نحن بانتظارك لتنال أول نجمة! 🌟',
+      now.add(const Duration(days: 1)),
+      const NotificationDetails(android: android, iOS: ios, macOS: mac),
+      androidScheduleMode: mode,
+    );
+
+    // 2. Sad/reflective notification after 3 days (72 hours) if still not started
+    await _plugin.zonedSchedule(
+      _firstStagePromptIdBase + 1,
+      'محزونون لغيابك عن بستان القرآن.. 😔',
+      'مضت ثلاثة أيام ولم تبدأ خطوتك الأولى بعد. لا تحرم قلبك من ربيع آيات الله، ابدأ الآن ولو بآية واحدة.',
+      now.add(const Duration(days: 3)),
+      const NotificationDetails(android: android, iOS: ios, macOS: mac),
+      androidScheduleMode: mode,
+    );
+  }
+
   Future<void> showAdhanPreview({
     required String title,
     required String body,
@@ -673,12 +728,13 @@ class NotificationService {
           androidScheduleMode: mode,
         );
 
-        // 2. Schedule the "Did you pray?" follow-up notification (15 minutes later)
-        final followUpTime = scheduled.add(const Duration(minutes: 15));
+        // 2. Schedule the "Did you pray?" follow-up notification (5 minutes later)
+        final followUpTime = scheduled.add(const Duration(minutes: 5));
+        final religiousMsg = _getReligiousReminderTitleAndBody(key);
         await _plugin.zonedSchedule(
           _prayerFollowUpId(dayIndex, prayerIndex),
-          'هل صليت ${_arabicPrayerName(key)}؟',
-          _getPrayerMotivation(key),
+          religiousMsg['title']!,
+          religiousMsg['body']!,
           followUpTime,
           NotificationDetails(
             android: AndroidNotificationDetails(
@@ -710,15 +766,39 @@ class NotificationService {
     }
   }
 
-  String _getPrayerMotivation(String prayerKey) {
-    final motivations = [
-      'الصلاة هي عماد الدين ونور المؤمن، لا تدع الدنيا تشغلك عن لقاء خالقك.',
-      'تذكر أن أول ما يحاسب عليه العبد يوم القيامة الصلاة، فاجعلها قرة عينك.',
-      'الصلاة صلة بين العبد وربه، وهي راحة للقلب وطمأنينة للنفس.',
-      'أقم صلاتك تنعم بحياتك، فما بين الرجل والكفر أو الشرك إلا ترك الصلاة.',
-    ];
-    // Return a motivation based on some hash or index, or just pick one
-    return motivations[DateTime.now().millisecond % motivations.length];
+  Map<String, String> _getReligiousReminderTitleAndBody(String prayerKey) {
+    switch (prayerKey) {
+      case 'Fajr':
+        return {
+          'title': 'حبيبي في الله، حان وقت صلاة الفجر 🤍',
+          'body': 'الجمال والراحة ينتظرانك في وقوفك بين يدي الله.. لا تفوّت الصلاة، أقبل إليها بقلبٍ مشتاق ✨',
+        };
+      case 'Dhuhr':
+        return {
+          'title': 'نور صلاتك يناديك لصلاة الظهر 🕊️',
+          'body': 'ارحل بقلبك عن الدنيا لدقائق معدودة، لتغتسل من هموم يومك في رحاب الصلاة 🌿',
+        };
+      case 'Asr':
+        return {
+          'title': 'صلاة العصر يا رفيق الجنة 🌟',
+          'body': 'أرح قلبك وأقم فرضك، فلا تفوّت صلاة العصر فإنها صلاة وسطى عظيمة الأجر 🤍',
+        };
+      case 'Maghrib':
+        return {
+          'title': 'حان وقت السكينة.. صلاة المغرب 🌅',
+          'body': 'خمس دقائق مضت على الأذان، صلاتك هي صلتك بخالقك ومصدر طمأنينتك.. قم إليها الآن 🌱',
+        };
+      case 'Isha':
+        return {
+          'title': 'خِتام يومك الجميل.. صلاة العشاء 🌙',
+          'body': 'أنهِ يومك بوقوفٍ خاشع بين يدي ربك لتنعم بليلة هادئة ونفس مطمئنة. أقم صلاتك يا طيب 💎',
+        };
+      default:
+        return {
+          'title': 'نداء من الله.. حان وقت الصلاة 🤍',
+          'body': 'الصلاة هي صلتك بربك، ونور لقلبك، فلا تدع شواغل الدنيا تؤخرك عن لقائه 🕊️',
+        };
+    }
   }
 
   int _prayerFollowUpId(int dayIndex, int prayerIndex) {
