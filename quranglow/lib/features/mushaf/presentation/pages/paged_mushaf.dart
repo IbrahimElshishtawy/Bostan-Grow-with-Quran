@@ -69,19 +69,25 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
   @override
   void didUpdateWidget(PagedMushaf oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialSelectedAyah != oldWidget.initialSelectedAyah && widget.initialSelectedAyah != null) {
-      final found = widget.ayat.indexWhere(
-        (a) => a.numberInSurah == widget.initialSelectedAyah!,
-      );
-      if (found != -1) {
+    if (widget.initialSelectedAyah != oldWidget.initialSelectedAyah) {
+      if (widget.initialSelectedAyah == null) {
         setState(() {
-          _currentAyahIdx0 = found;
+          _currentAyahIdx0 = null;
         });
-        final p = _pageIndexForAyah(found);
-        if (_controller.hasClients && _controller.page?.round() != p) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) animateToPage(p);
+      } else {
+        final found = widget.ayat.indexWhere(
+          (a) => a.numberInSurah == widget.initialSelectedAyah!,
+        );
+        if (found != -1) {
+          setState(() {
+            _currentAyahIdx0 = found;
           });
+          final p = _pageIndexForAyah(found);
+          if (_controller.hasClients && _controller.page?.round() != p) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) animateToPage(p);
+            });
+          }
         }
       }
     }

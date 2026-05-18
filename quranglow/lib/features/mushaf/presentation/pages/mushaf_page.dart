@@ -323,12 +323,16 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       if (singleOnly) {
         // Single Ayah playback
         final a = allAyat[startAyahNumber - 1];
-        String? url = a.audioUrl ?? audioMap[startAyahNumber];
+        String? url = audioMap[startAyahNumber] ?? a.audioUrl;
         if (url != null && url.trim().isNotEmpty) {
           await _ayahPreviewPlayer.setAudioSource(
             ProgressiveAudioSource(
               Uri.parse(url),
               duration: verseDurations[startAyahNumber],
+              headers: const {
+                'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+              },
               tag: MediaItem(
                 id: 'ayah_${a.number}',
                 title: 'الآية ${a.numberInSurah}',
@@ -351,12 +355,16 @@ class _MushafPageState extends ConsumerState<MushafPage> {
           final List<AudioSource> sources = [];
           for (int i = 0; i < allAyat.length; i++) {
             final a = allAyat[i];
-            String? url = a.audioUrl ?? audioMap[a.numberInSurah];
+            String? url = audioMap[a.numberInSurah] ?? a.audioUrl;
             if (url != null && url.trim().isNotEmpty) {
               sources.add(
                 ProgressiveAudioSource(
                   Uri.parse(url),
                   duration: verseDurations[a.numberInSurah],
+                  headers: const {
+                    'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                  },
                   tag: MediaItem(
                     id: 'ayah_${a.number}',
                     title: 'الآية ${a.numberInSurah}',
@@ -682,6 +690,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
               MushafTopBar(
                 visible: _uiVisible,
+                onHide: () => setState(() => _uiVisible = false),
                 asyncSurah: asyncSurah,
                 chapter: _chapter,
                 onBack: () {
@@ -761,10 +770,14 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                     onOpenTafsir: () =>
                         _openTafsirForAyah(_lastAyahNumber ?? 1),
                     onPlay: () {
-                      final ayahNum = _lastAyahNumber;
-                      final surah = asyncSurah.valueOrNull;
-                      if (ayahNum == null || surah == null) return;
-                      _playAyahAudio(surah.ayat, ayahNum, singleOnly: true);
+                      if (isPlaying) {
+                        _ayahPreviewPlayer.stop();
+                      } else {
+                        final ayahNum = _lastAyahNumber;
+                        final surah = asyncSurah.valueOrNull;
+                        if (ayahNum == null || surah == null) return;
+                        _playAyahAudio(surah.ayat, ayahNum, singleOnly: true);
+                      }
                     },
                     onCopy: () {
                       final text = selectedAyahText;
@@ -777,17 +790,26 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                       final surah = asyncSurah.valueOrNull;
                       if (surah == null || _lastAyahNumber == null) return;
                       if (_lastAyahNumber! < surah.ayat.length) {
+                        final next = _lastAyahNumber! + 1;
                         setState(() {
-                          _lastAyahNumber = _lastAyahNumber! + 1;
+                          _lastAyahNumber = next;
                         });
+                        if (isPlaying) {
+                          _playAyahAudio(surah.ayat, next, singleOnly: true);
+                        }
                       }
                     },
                     onSwipeRight: () {
-                      if (_lastAyahNumber == null) return;
+                      final surah = asyncSurah.valueOrNull;
+                      if (surah == null || _lastAyahNumber == null) return;
                       if (_lastAyahNumber! > 1) {
+                        final prev = _lastAyahNumber! - 1;
                         setState(() {
-                          _lastAyahNumber = _lastAyahNumber! - 1;
+                          _lastAyahNumber = prev;
                         });
+                        if (isPlaying) {
+                          _playAyahAudio(surah.ayat, prev, singleOnly: true);
+                        }
                       }
                     },
                   );

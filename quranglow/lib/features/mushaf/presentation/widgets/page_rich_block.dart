@@ -106,6 +106,15 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
           widget.onLongPressIndex(widget.range.start + localIndex),
     );
 
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Premium, extremely soft glowing gold highlight matching the QuranGlow brand
+    final selectionColor = isDark
+        ? const Color(0x2AD4AF37) // Soft glowing gold mist in dark mode
+        : const Color(0x1AD4AF37); // Soothing gold wash in light mode
+
     final spans = builder.buildSpans(
       ayat: subAyat,
       currentAyahIndex: localCurrentIndex,
@@ -114,11 +123,8 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
       isHifzMode: widget.isHifzMode,
       revealedWords: widget.revealedWords,
       mistakenWords: widget.mistakenWords,
+      selectionColor: selectionColor,
     );
-
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
     final textColor = isDark ? cs.onSurface : const Color(0xFF2E2212);
 
@@ -144,107 +150,120 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
             child: Container(
               width: c.maxWidth,
               height: c.maxHeight,
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-              alignment: Alignment.center,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.center,
-                child: SizedBox(
-                  width: c.maxWidth - 48,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (widget.surahName != null) ...[
-                        Builder(
-                          builder: (context) {
-                            // Strip duplicate "سورة" prefix if the API name already contains it
-                            String cleanName = widget.surahName!.trim();
-                            if (RegExp(r'^سورة\s+سو').hasMatch(cleanName)) {
-                              cleanName = cleanName.replaceFirst(
-                                RegExp(r'^سورة\s+'),
-                                '',
-                              );
-                            }
-                            final isDark =
-                                Theme.of(context).brightness == Brightness.dark;
-                            return _SurahTitleBanner(
-                              name: cleanName,
-                              fontScale: fontScale,
-                              isDark: isDark,
-                              frameColor: widget.ayahNumberColor,
-                            );
-                          },
-                        ),
-                      ],
-                      if (widget.showBasmala) ...[
-                        Text(
-                          widget.basmalaText,
-                          textAlign: TextAlign.center,
-                          textDirection: TextDirection.rtl,
-                          style: TextStyle(
-                            color: textColor,
-                            fontFamily: 'KFGQPC Uthmanic Script',
-                            fontFamilyFallback: const [
-                              'Hafs',
-                              'Noto Naskh Arabic',
-                              'Scheherazade',
-                            ],
-                            height: 2.0,
-                            fontSize: (widget.fontSize + 3) * fontScale,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      RichText(
-                        textAlign: TextAlign.justify,
-                        textDirection: TextDirection.rtl,
-                        strutStyle: StrutStyle(
-                          fontSize: widget.fontSize * fontScale,
-                          height: 2.25,
-                        ),
-                        text: TextSpan(
-                          style: TextStyle(
-                            color: textColor,
-                            fontFamily: 'KFGQPC Uthmanic Script',
-                            fontFamilyFallback: const [
-                              'Hafs',
-                              'Noto Naskh Arabic',
-                              'Scheherazade',
-                            ],
-                            height: 2.25,
-                            fontSize: widget.fontSize * fontScale,
-                            letterSpacing: 0.2,
-                          ),
-                          children: spans,
-                        ),
-                      ),
-                      if (currentTopics.isNotEmpty) ...[
-                        const SizedBox(height: 20),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: currentTopics
-                              .map(
-                                (topic) => Chip(
-                                  label: Text(
-                                    topic.title,
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                  backgroundColor: cs.secondaryContainer
-                                      .withValues(alpha: 0.6),
-                                  labelStyle: TextStyle(
-                                    color: cs.onSecondaryContainer,
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: c.maxWidth + 100,
+                          height: c.maxHeight + 100,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (widget.surahName != null) ...[
+                                Builder(
+                                  builder: (context) {
+                                    // Strip duplicate "سورة" prefix if the API name already contains it
+                                    String cleanName = widget.surahName!.trim();
+                                    if (RegExp(
+                                      r'^سورة\s+سو',
+                                    ).hasMatch(cleanName)) {
+                                      cleanName = cleanName.replaceFirst(
+                                        RegExp(r'^سورة\s+'),
+                                        '',
+                                      );
+                                    }
+                                    final isDark =
+                                        Theme.of(context).brightness ==
+                                        Brightness.dark;
+                                    return _SurahTitleBanner(
+                                      name: cleanName,
+                                      fontScale: fontScale,
+                                      isDark: isDark,
+                                      frameColor: widget.ayahNumberColor,
+                                    );
+                                  },
+                                ),
+                              ],
+                              if (widget.showBasmala) ...[
+                                Text(
+                                  widget.basmalaText,
+                                  textAlign: TextAlign.center,
+                                  textDirection: TextDirection.rtl,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontFamily: 'KFGQPC Uthmanic Script',
+                                    fontFamilyFallback: const [
+                                      'Hafs',
+                                      'Noto Naskh Arabic',
+                                      'Scheherazade',
+                                    ],
+                                    height: 1.8,
+                                    fontSize: (widget.fontSize + 3) * fontScale,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              )
-                              .toList(growable: false),
+                                const SizedBox(height: 12),
+                              ],
+                              RichText(
+                                textAlign: TextAlign.justify,
+                                textDirection: TextDirection.rtl,
+                                strutStyle: StrutStyle(
+                                  fontSize: widget.fontSize * fontScale,
+                                  height: 1.8,
+                                ),
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontFamily: 'KFGQPC Uthmanic Script',
+                                    fontFamilyFallback: const [
+                                      'Hafs',
+                                      'Noto Naskh Arabic',
+                                      'Scheherazade',
+                                    ],
+                                    height: 1.8,
+                                    fontSize: widget.fontSize * fontScale,
+                                    letterSpacing: 0.2,
+                                  ),
+                                  children: spans,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ],
+                      ),
+                    ),
                   ),
-                ),
+                  if (currentTopics.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      alignment: WrapAlignment.center,
+                      children: currentTopics
+                          .map(
+                            (topic) => Chip(
+                              label: Text(
+                                topic.title,
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              backgroundColor: cs.secondaryContainer.withValues(
+                                alpha: 0.6,
+                              ),
+                              labelStyle: TextStyle(
+                                color: cs.onSecondaryContainer,
+                              ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -283,21 +302,28 @@ class _SurahTitleBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Traditional Mushaf ink colors or custom unified color
-    final Color finalFrameColor = frameColor ?? (isDark
-        ? const Color.fromARGB(255, 89, 212, 67) // warm gold on dark
-        : const Color(0xFF8B6914)); // deep Quran-ink gold on light
+    final Color finalFrameColor =
+        frameColor ??
+        (isDark
+            ? const Color.fromARGB(255, 89, 212, 67) // warm gold on dark
+            : const Color(0xFF8B6914)); // deep Quran-ink gold on light
 
     final Color bgColor = Colors.transparent;
 
-    final Color textColor = frameColor ?? (isDark
-        ? const Color(0xFFF0D98C)
-        : const Color(0xFF3A2200)); // dark Quran ink
+    final Color textColor =
+        frameColor ??
+        (isDark
+            ? const Color(0xFFF0D98C)
+            : const Color(0xFF3A2200)); // dark Quran ink
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20, top: 8),
-      height: 96,
+      margin: const EdgeInsets.only(bottom: 12, top: 4),
+      height: 72,
       child: CustomPaint(
-        painter: _MushafFramePainter(frameColor: finalFrameColor, bgColor: bgColor),
+        painter: _MushafFramePainter(
+          frameColor: finalFrameColor,
+          bgColor: bgColor,
+        ),
         child: Center(
           child: Padding(
             // Keep text away from the pointed side ornaments
@@ -319,7 +345,9 @@ class _SurahTitleBanner extends StatelessWidget {
                   letterSpacing: 0.8,
                   shadows: [
                     Shadow(
-                      color: finalFrameColor.withValues(alpha: isDark ? 0.5 : 0.2),
+                      color: finalFrameColor.withValues(
+                        alpha: isDark ? 0.5 : 0.2,
+                      ),
                       blurRadius: 6,
                       offset: const Offset(0, 1),
                     ),

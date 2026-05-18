@@ -607,7 +607,34 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
   }
 
   Widget _buildIntervalSelector(BuildContext context, AppSettings st) {
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final goldColor = isDark ? const Color(0xFFD4AF37) : const Color(0xFFC5A85C);
+
+    final unselectedBg = isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03);
+    final unselectedBorder = BorderSide(
+      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+      width: 1,
+    );
+    final unselectedLabelStyle = TextStyle(
+      color: isDark ? Colors.white70 : Colors.black87,
+      fontFamily: 'Tajawal',
+      fontWeight: FontWeight.bold,
+      fontSize: 13,
+    );
+
+    final selectedBg = goldColor.withOpacity(0.18);
+    final selectedBorder = BorderSide(
+      color: goldColor,
+      width: 1.5,
+    );
+    final selectedLabelStyle = TextStyle(
+      color: goldColor,
+      fontFamily: 'Tajawal',
+      fontWeight: FontWeight.w900,
+      fontSize: 13,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -622,11 +649,20 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          children: [15, 30, 60, 120].map((mins) {
+          runSpacing: 8,
+          children: [5, 10, 15, 30, 60, 120].map((mins) {
             final isSelected = st.salawatIntervalMinutes == mins;
             return ChoiceChip(
               label: Text(
-                mins >= 60 ? 'كل ${mins ~/ 60} ساعة' : 'كل $mins دقيقة',
+                switch (mins) {
+                  5 => 'كل 5 دقائق',
+                  10 => 'كل 10 دقائق',
+                  15 => 'كل 15 دقيقة',
+                  30 => 'كل 30 دقيقة',
+                  60 => 'كل ساعة',
+                  120 => 'كل ساعتين',
+                  _ => mins >= 60 ? 'كل ${mins ~/ 60} ساعة' : 'كل $mins دقيقة',
+                },
               ),
               selected: isSelected,
               onSelected: (val) async {
@@ -640,17 +676,15 @@ class _NotificationsSectionState extends ConsumerState<NotificationsSection> {
                   );
                 }
               },
-              selectedColor: cs.tertiary,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : cs.onSurface,
-                fontWeight: FontWeight.bold,
-              ),
-              backgroundColor: cs.tertiary.withOpacity(0.05),
+              selectedColor: selectedBg,
+              backgroundColor: unselectedBg,
+              labelStyle: isSelected ? selectedLabelStyle : unselectedLabelStyle,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              side: BorderSide.none,
+              side: isSelected ? selectedBorder : unselectedBorder,
               showCheckmark: false,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             );
           }).toList(),
         ),
