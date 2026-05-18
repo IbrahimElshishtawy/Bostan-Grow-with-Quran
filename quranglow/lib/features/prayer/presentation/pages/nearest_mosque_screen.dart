@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:quranglow/core/widgets/pro_app_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quranglow/core/di/providers.dart';
 
 class MosqueData {
   final String name;
@@ -15,14 +17,14 @@ class MosqueData {
   MosqueData({required this.name, required this.location, required this.distanceKm});
 }
 
-class NearestMosqueScreen extends StatefulWidget {
+class NearestMosqueScreen extends ConsumerStatefulWidget {
   const NearestMosqueScreen({super.key});
 
   @override
-  State<NearestMosqueScreen> createState() => _NearestMosqueScreenState();
+  ConsumerState<NearestMosqueScreen> createState() => _NearestMosqueScreenState();
 }
 
-class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerProviderStateMixin {
+class _NearestMosqueScreenState extends ConsumerState<NearestMosqueScreen> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   
   Position? _currentPos;
@@ -321,6 +323,41 @@ class _NearestMosqueScreenState extends State<NearestMosqueScreen> with TickerPr
   }
 
   Widget _buildBody(ColorScheme cs, bool isDark) {
+    final isOnlineAsync = ref.watch(isOnlineProvider);
+    final isOnline = isOnlineAsync.value ?? true;
+    if (!isOnline) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.wifi_off_rounded, size: 64, color: cs.primary.withOpacity(0.5)),
+              const SizedBox(height: 16),
+              const Text(
+                'لا يوجد اتصال بالإنترنت',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Tajawal',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'من فضلك قم بتشغيل الإنترنت للوصول إلى كامل المحتوى والتحميل',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontFamily: 'Tajawal',
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (_isLoading) {
       return Center(
         child: Column(

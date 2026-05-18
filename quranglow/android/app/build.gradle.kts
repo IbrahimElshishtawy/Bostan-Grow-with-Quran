@@ -69,11 +69,16 @@ android {
 
     buildTypes {
         release {
-            if (hasReleaseSigning) {
-                signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
             } else {
-                signingConfig = signingConfigs.getByName("debug")
+                signingConfigs.getByName("debug")
             }
+            
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
@@ -81,7 +86,11 @@ android {
 flutter {
     source = "../.."
 }
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5") 
-}
 
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    
+    // 🔥 REQUIRED for HomeWidget & Native Kotlin logic
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.9.10"))
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
+}

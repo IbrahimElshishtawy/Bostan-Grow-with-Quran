@@ -170,14 +170,20 @@ class _DrawerHeader extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'بُستان',
-                        style: TextStyle(
-                          color: cs.onSurface,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 28,
-                          fontFamily: 'ScheherazadeNew',
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'بُستان',
+                            style: TextStyle(
+                              color: cs.onSurface,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 28,
+                              fontFamily: 'ScheherazadeNew',
+                            ),
+                          ),
+                          const _TextDownloadButton(),
+                        ],
                       ),
                       Text(
                         'تلاوة • تدبر • تقدّم',
@@ -199,6 +205,160 @@ class _DrawerHeader extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TextDownloadButton extends ConsumerStatefulWidget {
+  const _TextDownloadButton();
+
+  @override
+  ConsumerState<_TextDownloadButton> createState() => _TextDownloadButtonState();
+}
+
+class _TextDownloadButtonState extends ConsumerState<_TextDownloadButton> {
+  double? _progress;
+  bool _isDownloaded = false;
+  bool _checking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStatus();
+  }
+
+  Future<void> _checkStatus() async {
+    final downloaded = await ref.read(quranServiceProvider).isQuranTextDownloaded();
+    if (mounted) {
+      setState(() {
+        _isDownloaded = downloaded;
+        _checking = false;
+      });
+    }
+  }
+
+  Future<void> _startDownload() async {
+    final isOnlineAsync = ref.read(isOnlineProvider);
+    final isOnline = isOnlineAsync.value ?? true;
+    if (!isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'لا يوجد اتصال بالإنترنت لتحميل نصوص القرآن',
+            style: TextStyle(fontFamily: 'Tajawal'),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _progress = 0.0;
+    });
+
+    ref.read(quranServiceProvider).downloadQuranText().listen(
+      (p) {
+        if (mounted) {
+          setState(() {
+            _progress = p;
+          });
+        }
+      },
+      onDone: () {
+        if (mounted) {
+          setState(() {
+            _progress = null;
+            _isDownloaded = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'تم تحميل نصوص القرآن بالكامل بنجاح للقراءة دون إنترنت!',
+                style: TextStyle(fontFamily: 'Tajawal'),
+              ),
+              backgroundColor: Colors.teal,
+            ),
+          );
+        }
+      },
+      onError: (e) {
+        if (mounted) {
+          setState(() {
+            _progress = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'فشل تحميل نصوص القرآن: $e',
+                style: const TextStyle(fontFamily: 'Tajawal'),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    
+    if (_checking) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+
+    if (_progress != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: cs.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.primary.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                value: _progress,
+                strokeWidth: 2,
+                color: cs.primary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '${(_progress! * 100).toInt()}%',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: cs.primary,
+                fontFamily: 'Tajawal',
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_isDownloaded) {
+      return const SizedBox.shrink();
+    }
+
+    return IconButton(
+      icon: Icon(
+        Icons.cloud_download_rounded,
+        color: cs.onSurfaceVariant.withOpacity(0.7),
+      ),
+      tooltip: 'تحميل نصوص القرآن للقراءة دون إنترنت',
+      onPressed: _startDownload,
     );
   }
 }
@@ -337,9 +497,16 @@ class _TemporalCardState extends State<_TemporalCard> {
   );
 }
 
-class _ReciterSection extends ConsumerWidget {
+class _ReciterSection extends ConsumerStatefulWidget {
   final AsyncValue<dynamic> settingsAsync;
   const _ReciterSection({required this.settingsAsync});
+
+  @override
+  ConsumerState<_ReciterSection> createState() => _ReciterSectionState();
+}
+
+class _ReciterSectionState extends ConsumerState<_ReciterSection> {
+  bool _isExpanded = false;
 
   static const _allReciters = [
     (id: 'ar.alafasy', name: 'مشاري العفاسي', desc: 'كويت - مرتلاً'),
@@ -370,57 +537,121 @@ class _ReciterSection extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return settingsAsync.when(
+    return widget.settingsAsync.when(
       data: (settings) {
         final currentReader = settings.readerEditionId;
+        final selectedReciter = _allReciters.firstWhere(
+          (r) => r.id == currentReader,
+          orElse: () => _allReciters.first,
+        );
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 8, bottom: 12),
-              child: Row(
-                children: [
-                  Icon(Icons.mic_none_rounded, size: 14, color: cs.primary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'اختر قارئك المفضل',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      fontFamily: 'Tajawal',
-                      color: cs.onSurfaceVariant,
-                    ),
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _isExpanded ? cs.primary.withOpacity(0.08) : cs.surfaceContainerHighest.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isExpanded ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.3),
                   ),
-                ],
-              ),
-            ),
-            Container(
-              height: 300,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.3),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.mic_none_rounded, 
+                      size: 20, 
+                      color: _isExpanded ? cs.primary : cs.onSurfaceVariant
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'قارئك المفضل',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'Tajawal',
+                              color: _isExpanded ? cs.primary : cs.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'القارئ الحالي: ${selectedReciter.name}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Tajawal',
+                              color: cs.onSurfaceVariant.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _isExpanded ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: _isExpanded ? cs.primary : cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: ListView.separated(
-                padding: const EdgeInsets.all(8),
-                itemCount: _allReciters.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 4),
-                itemBuilder: (context, index) {
-                  final r = _allReciters[index];
-                  final isSelected = currentReader == r.id;
-                  return _ReciterTile(
-                    name: r.name,
-                    desc: r.desc,
-                    isSelected: isSelected,
-                    onTap: () =>
-                        ref.read(settingsProvider.notifier).setReader(r.id),
-                  );
-                },
+            ),
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _allReciters.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 4),
+                    itemBuilder: (context, index) {
+                      final r = _allReciters[index];
+                      final isSelected = currentReader == r.id;
+                      return _ReciterTile(
+                        name: r.name,
+                        desc: r.desc,
+                        isSelected: isSelected,
+                        onTap: () {
+                          ref.read(settingsProvider.notifier).setReader(r.id);
+                          setState(() {
+                            _isExpanded = false;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
               ),
+              crossFadeState: _isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 250),
             ),
           ],
         );

@@ -159,7 +159,7 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
       data: (gameState) {
         // ✨ JOURNEY COMPLETION CELEBRATION TRIGGER
         // If the user has finished all levels but hasn't seen the grand achievement dialog yet!
-        if (gameState.overallProgress >= 1.0 && 
+        if (gameState.overallProgress >= 1.0 &&
             !gameState.userProfile.hasSeenJourneyCompletionDialog) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
@@ -169,7 +169,9 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                 builder: (context) => const GrandAchievementDialog(),
               );
               // Mark as seen so it doesn't pop up again!
-              ref.read(gamificationControllerProvider.notifier).markJourneyCompletionAsSeen();
+              ref
+                  .read(gamificationControllerProvider.notifier)
+                  .markJourneyCompletionAsSeen();
             }
           });
         }
@@ -196,7 +198,12 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
         final activeLevel = levels[activeIdx];
         final activeLevelTitle = activeLevel.surahName;
 
-        return _buildContent(gameState, activeLevelTitle, activeIdx + 1, activeLevel);
+        return _buildContent(
+          gameState,
+          activeLevelTitle,
+          activeIdx + 1,
+          activeLevel,
+        );
       },
     );
   }
@@ -233,11 +240,11 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: isDark
+      child: Container(
+        color: isDark
             ? const Color(0xFF111A14)
             : const Color(0xFFFDFBF7),
-        body: Stack(
+        child: Stack(
           children: [
             // 1. Premium Generated Visual Background Layer
             Positioned.fill(
@@ -377,26 +384,28 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          GestureDetector(
-                            onTap: () => Scaffold.of(context).openDrawer(),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.1)
-                                    : Colors.black.withValues(alpha: 0.06),
-                                shape: BoxShape.circle,
-                                border: Border.all(
+                          Builder(
+                            builder: (builderContext) => GestureDetector(
+                              onTap: () => Scaffold.of(builderContext).openDrawer(),
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
                                   color: isDark
-                                      ? Colors.white.withValues(alpha: 0.15)
-                                      : Colors.black.withValues(alpha: 0.08),
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.black.withValues(alpha: 0.06),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.15)
+                                        : Colors.black.withValues(alpha: 0.08),
+                                  ),
                                 ),
-                              ),
-                              child: Icon(
-                                Icons.menu_rounded,
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF1A2E21),
+                                child: Icon(
+                                  Icons.menu_rounded,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1A2E21),
+                                ),
                               ),
                             ),
                           ),
@@ -428,6 +437,8 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 13),
 
                     const SizedBox(height: 13),
 
@@ -473,7 +484,8 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (context) => StationTasksSheet(level: activeLevel),
+                          builder: (context) =>
+                              StationTasksSheet(level: activeLevel),
                         );
 
                         // 2. Background aesthetic: Fast scroll back into focus range!
@@ -546,6 +558,9 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
     if (activeVisualIdx == -1) activeVisualIdx = 0;
 
+    // Cache the Y coordinate for the auto-scroll logic in initState
+    _cachedActiveNodeY = offsets[activeVisualIdx].dy;
+
     return SizedBox(
       height: mapTotalHeight,
       child: Stack(
@@ -607,4 +622,3 @@ class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen> {
     );
   }
 }
-

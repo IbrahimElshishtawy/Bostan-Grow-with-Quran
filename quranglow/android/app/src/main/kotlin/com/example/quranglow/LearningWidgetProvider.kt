@@ -21,11 +21,15 @@ class LearningWidgetProvider : HomeWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.learning_widget_layout).apply {
                 val streakValue = widgetData.getString("streak_value", "0")
                 val levelValue = widgetData.getString("level_value", "1")
-                val stationTitle = widgetData.getString("station_title", "الورد القرآني")
+                val dateTime = widgetData.getString("widget_date_time", "")
+                val quranVerse = widgetData.getString("widget_quran_verse", "بستان القرآن")
+                val quranRef = widgetData.getString("widget_quran_ref", "")
                 
                 setTextViewText(R.id.widget_streak_value, "🔥 $streakValue")
                 setTextViewText(R.id.widget_level, "مستوى $levelValue")
-                setTextViewText(R.id.widget_station_title, stationTitle)
+                setTextViewText(R.id.widget_date_time, dateTime)
+                setTextViewText(R.id.widget_quran_verse, quranVerse)
+                setTextViewText(R.id.widget_quran_ref, quranRef)
 
                 // Update Alphas for tasks (0.3 for incomplete, 1.0f for complete)
                 val listenDone = widgetData.getString("task_listen", "0") == "1"

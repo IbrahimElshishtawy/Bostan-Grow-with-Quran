@@ -6,6 +6,7 @@ import 'package:quranglow/core/model/setting/reader_settings.dart';
 import 'package:quranglow/core/theme/app_themes.dart';
 import 'package:quranglow/core/theme/theme_controller.dart';
 import 'package:quranglow/core/widgets/error_boundary.dart';
+import 'package:quranglow/core/widgets/restart_app.dart';
 import 'package:quranglow/features/splash/presentation/pages/splash_screen.dart';
 import 'package:quranglow/features/ui/routes/app_router.dart';
 
@@ -88,12 +89,39 @@ class QuranGlowApp extends ConsumerWidget {
           body: Center(child: CircularProgressIndicator()),
         ),
       ),
-      error: (_, _) => _buildApp(
+      error: (err, stack) => _buildApp(
         theme: buildLightTheme(fontFamily: 'System', fontScale: 1),
         darkTheme: buildDarkTheme(fontFamily: 'System', fontScale: 1),
-        home: const Scaffold(
+        home: Scaffold(
           backgroundColor: Colors.white,
-          body: Center(child: Text('حدث خطأ في تحميل الإعدادات')),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'حدث خطأ في تحميل التطبيق',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    err.toString(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => RestartApp.restartApp(context),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
       data: (settings) => _buildApp(

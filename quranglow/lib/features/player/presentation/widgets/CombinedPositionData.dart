@@ -5,8 +5,8 @@ import 'package:audio_service/audio_service.dart';
 class CombinedPositionData {
   final Duration position;
   final Duration bufferedPosition;
-  final Duration total;
-  CombinedPositionData(this.position, this.bufferedPosition, this.total);
+  final Duration duration;
+  CombinedPositionData(this.position, this.bufferedPosition, this.duration);
 }
 
 Stream<CombinedPositionData> combinedPositionStream(AudioPlayer player) {

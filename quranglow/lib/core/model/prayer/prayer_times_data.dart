@@ -12,6 +12,14 @@ class PrayerTimesData {
   final Map<String, DateTime> prayers;
   final String nextPrayerName;
   final DateTime nextPrayerTime;
+  
+  factory PrayerTimesData.empty() => PrayerTimesData(
+    timezone: 'UTC',
+    methodName: 'Offline',
+    prayers: {},
+    nextPrayerName: 'None',
+    nextPrayerTime: DateTime.now(),
+  );
 }
 
 class PrayerScheduleDay {

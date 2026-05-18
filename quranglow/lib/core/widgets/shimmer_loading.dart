@@ -179,7 +179,7 @@ class PlayerSkeleton extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 22),
 
             // Title and Subtitle Skeletons
             Row(
@@ -196,8 +196,7 @@ class PlayerSkeleton extends StatelessWidget {
                 _buildSkeletonPill(width: 40, height: 40, color: barColor),
               ],
             ),
-            const Spacer(),
-
+            const SizedBox(height: 80),
             // Progress Slider Placeholder
             Container(
               height: 6,
@@ -207,7 +206,7 @@ class PlayerSkeleton extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 8),
 
             // Transport Slider Placeholder (Next/Prev/Play)
             Row(

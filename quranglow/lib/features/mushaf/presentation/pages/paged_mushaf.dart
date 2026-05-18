@@ -191,25 +191,38 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
 
                       // 2. The Immersive Interactive Quran Text Block
                       Expanded(
-                        child: PageRichBlock(
-                          ayat: widget.ayat,
-                          range: r,
-                          showBasmala:
-                              widget.showBasmala &&
-                              pageIndex == 0 &&
-                              widget.surahNumber > 1,
-                          basmalaText: widget.basmalaText,
-                          currentAyahIndex: _currentAyahIdx0,
-                          onTapIndex: _onAyahTap,
-                          onLongPressIndex: _onAyahLongPress,
-                          onBackgroundTap:
-                              widget.onBackgroundTap, // Direct pass down
-                          ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
-                          surahName: pageIndex == 0 ? widget.surahName : null,
-                          isHifzMode: widget.isHifzMode,
-                          revealedWords: widget.revealedWords,
-                          mistakenWords: widget.mistakenWords,
-                          fontSize: widget.fontSize,
+                        child: Stack(
+                          children: [
+                            // 📖 Page Context Header (Juz, Hizb, Side)
+                            _buildMushafHeader(context, pageIndex, r),
+
+                            Padding(
+                              padding: const EdgeInsets.only(top: 40),
+                              child: PageRichBlock(
+                                ayat: widget.ayat,
+                                range: r,
+                                showBasmala:
+                                    widget.showBasmala &&
+                                    pageIndex == 0 &&
+                                    widget.surahNumber > 1,
+                                basmalaText: widget.basmalaText,
+                                currentAyahIndex: _currentAyahIdx0,
+                                onTapIndex: _onAyahTap,
+                                onLongPressIndex: _onAyahLongPress,
+                                onBackgroundTap:
+                                    widget.onBackgroundTap, // Direct pass down
+                                ayahNumberColor: widget.ayahNumberColor ?? cs.primary,
+                                surahName: pageIndex == 0 ? widget.surahName : null,
+                                isHifzMode: widget.isHifzMode,
+                                revealedWords: widget.revealedWords,
+                                mistakenWords: widget.mistakenWords,
+                                fontSize: widget.fontSize,
+                              ),
+                            ),
+                            
+                            // 📖 Professional Page Side Indicator (Inner Shadow)
+                            _buildPageSideIndicator(context, pageIndex),
+                          ],
                         ),
                       ),
 
@@ -327,6 +340,79 @@ class PagedMushafState extends State<PagedMushaf> with WidgetsBindingObserver {
       if (_pages[p].contains(idx0)) return p;
     }
     return 0;
+  }
+
+  Widget _buildMushafHeader(BuildContext context, int localPageIndex, PageRange range) {
+    final absPage = quran.getPageNumber(widget.surahNumber, widget.ayat[range.start].numberInSurah);
+    final juz = quran.getJuzNumber(widget.surahNumber, widget.ayat[range.start].numberInSurah);
+    // The Quran has 604 pages and 60 Hizbs → each Hizb ≈ 10.06 pages.
+    // Ceiling division gives the correct Hizb number (1–60).
+    final hizb = ((absPage - 1) ~/ 10) + 1;
+
+    final isRightPage = absPage % 2 != 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left side of header
+          isRightPage 
+            ? _headerInfo(context, 'الجزء ${_toArabicDigits(juz)}', Icons.auto_stories_rounded)
+            : _headerInfo(context, 'الحزب ${_toArabicDigits(hizb)}', Icons.format_list_numbered_rtl_rounded),
+          
+          // Right side of header
+          isRightPage 
+            ? _headerInfo(context, 'الحزب ${_toArabicDigits(hizb)}', Icons.format_list_numbered_rtl_rounded)
+            : _headerInfo(context, 'الجزء ${_toArabicDigits(juz)}', Icons.auto_stories_rounded),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerInfo(BuildContext context, String text, IconData icon) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: cs.primary.withOpacity(0.5)),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: cs.onSurfaceVariant.withOpacity(0.7),
+            fontFamily: 'Tajawal',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPageSideIndicator(BuildContext context, int localPageIndex) {
+    final range = _pages[localPageIndex];
+    final absPage = quran.getPageNumber(widget.surahNumber, widget.ayat[range.start].numberInSurah);
+    final isRightPage = absPage % 2 != 0;
+    final cs = Theme.of(context).colorScheme;
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: isRightPage ? Alignment.centerRight : Alignment.centerLeft,
+              end: isRightPage ? Alignment.centerLeft : Alignment.centerRight,
+              colors: [
+                cs.onSurface.withValues(alpha: 0.04), // Inner "binding" shadow
+                Colors.transparent,
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.05, 1.0],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   String _toArabicDigits(int number) {

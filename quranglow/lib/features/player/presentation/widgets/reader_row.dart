@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
+import 'package:quranglow/core/di/providers.dart';
 
 class ReaderRow extends StatelessWidget {
   const ReaderRow({
@@ -109,7 +110,7 @@ class ReaderRow extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -210,7 +211,11 @@ class _SelectionButton extends StatelessWidget {
   }
 }
 
-class SelectionSheet extends StatefulWidget {
+final downloadedSurahsProvider = FutureProvider<Map<String, List<int>>>((ref) {
+  return ref.watch(quranServiceProvider).getDownloadedSurahsAndReciters();
+});
+
+class SelectionSheet extends ConsumerStatefulWidget {
   const SelectionSheet({
     super.key,
     required this.title,
@@ -225,16 +230,74 @@ class SelectionSheet extends StatefulWidget {
   final ValueChanged<dynamic> onSelected;
 
   @override
-  State<SelectionSheet> createState() => _SelectionSheetState();
+  ConsumerState<SelectionSheet> createState() => _SelectionSheetState();
 }
 
-class _SelectionSheetState extends State<SelectionSheet> {
-  late List<Map<String, dynamic>> filteredItems = widget.items;
+class _SelectionSheetState extends ConsumerState<SelectionSheet> {
+  late List<Map<String, dynamic>> filteredItems = [];
   final TextEditingController _searchController = TextEditingController();
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initItems();
+      _initialized = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SelectionSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _initItems();
+  }
+
+  void _initItems() {
+    final isOnlineAsync = ref.read(isOnlineProvider);
+    final isOnline = isOnlineAsync.value ?? true;
+    
+    List<Map<String, dynamic>> list = widget.items;
+    
+    if (!isOnline) {
+      final downloadedAsync = ref.read(downloadedSurahsProvider);
+      final downloaded = downloadedAsync.value ?? {};
+      
+      if (widget.title == 'اختر القارئ') {
+        list = widget.items.where((item) => downloaded.containsKey(item['id'])).toList();
+      } else if (widget.title == 'اختر السورة') {
+        final currentEditionId = ref.read(editionIdProvider);
+        final downloadedSurahIds = downloaded[currentEditionId] ?? [];
+        list = widget.items.where((item) => downloadedSurahIds.contains(item['id'])).toList();
+      }
+    }
+    
+    setState(() {
+      filteredItems = list;
+    });
+  }
 
   void _filter(String query) {
+    final isOnlineAsync = ref.read(isOnlineProvider);
+    final isOnline = isOnlineAsync.value ?? true;
+    
+    List<Map<String, dynamic>> list = widget.items;
+    
+    if (!isOnline) {
+      final downloadedAsync = ref.read(downloadedSurahsProvider);
+      final downloaded = downloadedAsync.value ?? {};
+      
+      if (widget.title == 'اختر القارئ') {
+        list = widget.items.where((item) => downloaded.containsKey(item['id'])).toList();
+      } else if (widget.title == 'اختر السورة') {
+        final currentEditionId = ref.read(editionIdProvider);
+        final downloadedSurahIds = downloaded[currentEditionId] ?? [];
+        list = widget.items.where((item) => downloadedSurahIds.contains(item['id'])).toList();
+      }
+    }
+
     setState(() {
-      filteredItems = widget.items
+      filteredItems = list
           .where(
             (item) =>
                 item['name'].toString().contains(query) ||
@@ -271,13 +334,20 @@ class _SelectionSheetState extends State<SelectionSheet> {
                   Text(
                     widget.title,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -288,16 +358,28 @@ class _SelectionSheetState extends State<SelectionSheet> {
               child: TextField(
                 controller: _searchController,
                 onChanged: _filter,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black87,
+                ),
                 decoration: InputDecoration(
                   hintText: 'بحث...',
-                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white54
+                        : Colors.black45,
+                  ),
                   prefixIcon: Icon(
                     Icons.search_rounded,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white54
+                        : Colors.black45,
                   ),
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.black.withOpacity(0.05),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -307,8 +389,43 @@ class _SelectionSheetState extends State<SelectionSheet> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: widget.items.isEmpty
-                  ? const SelectionShimmer()
+              child: filteredItems.isEmpty
+                  ? (widget.items.isEmpty
+                      ? const SelectionShimmer()
+                      : Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.wifi_off_rounded,
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                  size: 64,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'لا توجد تنزيلات متوفرة حالياً',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Tajawal',
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'من فضلك قم بتشغيل الإنترنت للوصول إلى كامل المحتوى والتحميل',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                    fontFamily: 'Tajawal',
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ))
                   : ListView.builder(
                       controller: scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -327,22 +444,32 @@ class _SelectionSheetState extends State<SelectionSheet> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? Colors.teal
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white.withOpacity(0.05)
+                                      : Colors.black.withOpacity(0.05)),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
                               isSelected
                                   ? Icons.check_rounded
                                   : Icons.music_note_rounded,
-                              color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                              color: isSelected
+                                  ? Colors.white
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white54
+                                      : Colors.black45),
                             ),
                           ),
                           title: Text(
                             item['name'],
                             style: TextStyle(
                               color: isSelected
-                                  ? Colors.tealAccent
-                                  : Colors.white,
+                                  ? (Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.tealAccent
+                                      : Colors.teal.shade700)
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black87),
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -352,7 +479,9 @@ class _SelectionSheetState extends State<SelectionSheet> {
                               ? Text(
                                   item['subtitle'],
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white60
+                                        : Colors.black54,
                                     fontSize: 12,
                                   ),
                                 )

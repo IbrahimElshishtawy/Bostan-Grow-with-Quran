@@ -24,6 +24,15 @@ class SettingsService {
   static const _kSalawatIntervalMinutes = 'settings.salawatIntervalMinutes';
   static const _kPrayerNotificationsEnabled =
       'settings.prayerNotificationsEnabled';
+  static const _kAzkarMorningEnabled = 'settings.azkarMorningEnabled';
+  static const _kAzkarEveningEnabled = 'settings.azkarEveningEnabled';
+  static const _kAzkarAfterPrayerEnabled = 'settings.azkarAfterPrayerEnabled';
+
+  static const _kAdhanSoundEnabled = 'settings.adhanSoundEnabled';
+  static const _kDailyReminderSoundEnabled = 'settings.dailyReminderSoundEnabled';
+  static const _kSalawatSoundEnabled = 'settings.salawatSoundEnabled';
+  static const _kSmartLearningEnabled = 'settings.smartLearningEnabled';
+  static const _kSmartLearningStrictness = 'settings.smartLearningStrictness';
 
   Future<AppSettings> load() async {
     final sp = await SharedPreferences.getInstance();
@@ -43,17 +52,27 @@ class SettingsService {
         sp.getString(_kAudioDownloadMode) ?? AudioDownloadMode.fullSurah.name;
     final tasbihTarget = sp.getInt(_kTasbihTarget) ?? 33;
     final tasbihVibrate = sp.getBool(_kTasbihVibrate) ?? true;
-    final tasbihSound = sp.getBool(_kTasbihSound) ?? false;
+    final tasbihSound = sp.getBool(_kTasbihSound) ?? true;
     final adhanSoundId = sp.getString(_kAdhanSoundId) ?? 'makkah';
+    final adhanSoundEnabled = sp.getBool(_kAdhanSoundEnabled) ?? true;
     final dailyReminderEnabled = sp.getBool(_kDailyReminderEnabled) ?? false;
+    final dailyReminderSoundEnabled =
+        sp.getBool(_kDailyReminderSoundEnabled) ?? true;
     final dailyReminderHour = sp.getInt(_kDailyReminderHour) ?? 7;
     final dailyReminderMinute = sp.getInt(_kDailyReminderMinute) ?? 30;
     final dailyReminderKindStr =
         sp.getString(_kDailyReminderKind) ?? DailyReminderKind.quran.name;
     final salawatEnabled = sp.getBool(_kSalawatEnabled) ?? false;
+    final salawatSoundEnabled = sp.getBool(_kSalawatSoundEnabled) ?? true;
     final salawatIntervalMinutes = sp.getInt(_kSalawatIntervalMinutes) ?? 5;
     final prayerNotificationsEnabled =
         sp.getBool(_kPrayerNotificationsEnabled) ?? false;
+    final smartLearningEnabled = sp.getBool(_kSmartLearningEnabled) ?? false;
+    final smartLearningStrictness = sp.getInt(_kSmartLearningStrictness) ?? 1;
+    final azkarMorningEnabled = sp.getBool(_kAzkarMorningEnabled) ?? false;
+    final azkarEveningEnabled = sp.getBool(_kAzkarEveningEnabled) ?? false;
+    final azkarAfterPrayerEnabled = sp.getBool(_kAzkarAfterPrayerEnabled) ?? false;
+
     final colorScheme = AppColorScheme.values.firstWhere(
       (e) => e.name == colorSchemeStr,
       orElse: () => AppColorScheme.green,
@@ -78,13 +97,21 @@ class SettingsService {
       tasbihVibrate: tasbihVibrate,
       tasbihSound: tasbihSound,
       adhanSoundId: adhanSoundId,
+      adhanSoundEnabled: adhanSoundEnabled,
       dailyReminderEnabled: dailyReminderEnabled,
+      dailyReminderSoundEnabled: dailyReminderSoundEnabled,
       dailyReminderHour: dailyReminderHour,
       dailyReminderMinute: dailyReminderMinute,
       dailyReminderKind: dailyReminderKind,
       salawatEnabled: salawatEnabled,
+      salawatSoundEnabled: salawatSoundEnabled,
       salawatIntervalMinutes: salawatIntervalMinutes,
       prayerNotificationsEnabled: prayerNotificationsEnabled,
+      smartLearningEnabled: smartLearningEnabled,
+      smartLearningStrictness: smartLearningStrictness,
+      azkarMorningEnabled: azkarMorningEnabled,
+      azkarEveningEnabled: azkarEveningEnabled,
+      azkarAfterPrayerEnabled: azkarAfterPrayerEnabled,
     );
   }
 
@@ -148,9 +175,19 @@ class SettingsService {
     await sp.setString(_kAdhanSoundId, v);
   }
 
+  Future<void> setAdhanSoundEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kAdhanSoundEnabled, v);
+  }
+
   Future<void> setDailyReminderEnabled(bool v) async {
     final sp = await SharedPreferences.getInstance();
     await sp.setBool(_kDailyReminderEnabled, v);
+  }
+
+  Future<void> setDailyReminderSoundEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kDailyReminderSoundEnabled, v);
   }
 
   Future<void> setDailyReminderTime(TimeOfDay v) async {
@@ -169,6 +206,11 @@ class SettingsService {
     await sp.setBool(_kSalawatEnabled, v);
   }
 
+  Future<void> setSalawatSoundEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kSalawatSoundEnabled, v);
+  }
+
   Future<void> setSalawatIntervalMinutes(int v) async {
     final sp = await SharedPreferences.getInstance();
     await sp.setInt(_kSalawatIntervalMinutes, v);
@@ -177,5 +219,30 @@ class SettingsService {
   Future<void> setPrayerNotificationsEnabled(bool v) async {
     final sp = await SharedPreferences.getInstance();
     await sp.setBool(_kPrayerNotificationsEnabled, v);
+  }
+
+  Future<void> setSmartLearningEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kSmartLearningEnabled, v);
+  }
+
+  Future<void> setSmartLearningStrictness(int v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setInt(_kSmartLearningStrictness, v);
+  }
+
+  Future<void> setAzkarMorningEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kAzkarMorningEnabled, v);
+  }
+
+  Future<void> setAzkarEveningEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kAzkarEveningEnabled, v);
+  }
+
+  Future<void> setAzkarAfterPrayerEnabled(bool v) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_kAzkarAfterPrayerEnabled, v);
   }
 }

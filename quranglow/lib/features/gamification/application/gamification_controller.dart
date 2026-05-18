@@ -9,7 +9,12 @@ import 'package:quranglow/core/data/surah_names_ar.dart';
 
 import 'package:quranglow/core/data/surah_ayah_counts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive/hive.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:quranglow/core/data/daily_verses.dart';
+import 'package:quranglow/core/service/setting/notification_service.dart';
+import 'package:intl/intl.dart';
+import 'package:hijri/hijri_calendar.dart';
 
 /// Static service to trigger soft satisfying Islamic-inspired UI haptics and sounds
 class PremiumFeedbackService {
@@ -117,6 +122,21 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       
       _updateHomeWidget(gameState);
       
+      // Schedule welcoming notifications if they haven't started learning yet
+      final hasStartedFirstStage = levels.isNotEmpty &&
+          (levels.first.isListenCompleted ||
+              levels.first.isReadCompleted ||
+              levels.first.isWriteCompleted ||
+              levels.first.isMemorizeCompleted ||
+              levels.first.isQuizCompleted ||
+              updatedProfile.levelsCompleted > 0);
+      
+      unawaited(
+        NotificationService.instance.scheduleFirstStageReminders(
+          hasStartedFirstStage: hasStartedFirstStage,
+        ),
+      );
+      
       // Catch up and start heartbeat ticker
       await _processHeartsRegeneration();
       _startHeartsTicker();
@@ -212,6 +232,56 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       await HomeWidget.saveWidgetData<String>('task_write', currentLevel.isWriteCompleted ? '1' : '0');
       await HomeWidget.saveWidgetData<String>('task_memorize', currentLevel.isMemorizeCompleted ? '1' : '0');
       await HomeWidget.saveWidgetData<String>('task_quiz', currentLevel.isQuizCompleted ? '1' : '0');
+
+      // Add Date, Time & Random Verses
+      final now = DateTime.now();
+      final hijri = HijriCalendar.now();
+      
+      final dateStr = '${DateFormat('EEEE، d MMMM', 'ar').format(now)} • ${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear}هـ';
+      final timeStr = DateFormat('HH:mm').format(now);
+      
+      await HomeWidget.saveWidgetData<String>('widget_date', dateStr);
+      await HomeWidget.saveWidgetData<String>('widget_time', timeStr);
+      await HomeWidget.saveWidgetData<String>('widget_date_time', '$dateStr | $timeStr');
+
+      // Try to load dynamic 24h random verses from the same Hive cache used by dailyAyatLocalProvider
+      List<({String text, String ref})>? selectedVerses;
+      try {
+        final box = await Hive.openBox('quran_cache');
+        final cachedListRaw = box.get('daily_ayahs_data');
+        if (cachedListRaw is List) {
+          selectedVerses = cachedListRaw.map((item) {
+            final m = Map<String, dynamic>.from(item as Map);
+            return (
+              text: m['text'] as String,
+              ref: m['ref'] as String,
+            );
+          }).toList();
+        }
+      } catch (e) {
+        debugPrint('Error loading dynamic verses for HomeWidget: $e');
+      }
+
+      // Fallback to static seed-based kDailyVerses if Hive cache is not yet initialized
+      if (selectedVerses == null || selectedVerses.isEmpty) {
+        final daySeed = now.year * 1000 + now.month * 100 + now.day;
+        final random = math.Random(daySeed);
+        final List<int> indices = List.generate(kDailyVerses.length, (i) => i);
+        indices.shuffle(random);
+        selectedVerses = indices.take(3).map((i) => kDailyVerses[i]).toList();
+      }
+      
+      // Send verses individually for better widget layout control if needed
+      for (int i = 0; i < selectedVerses.length; i++) {
+        await HomeWidget.saveWidgetData<String>('verse_${i + 1}_text', selectedVerses[i].text);
+        await HomeWidget.saveWidgetData<String>('verse_${i + 1}_ref', selectedVerses[i].ref);
+      }
+
+      final versesText = selectedVerses.map((v) => v.text).join('\n\n');
+      final versesRef = selectedVerses.map((v) => v.ref).join('\n');
+      
+      await HomeWidget.saveWidgetData<String>('widget_quran_verse', versesText);
+      await HomeWidget.saveWidgetData<String>('widget_quran_ref', versesRef);
 
       await HomeWidget.updateWidget(
         androidName: 'LearningWidgetProvider',
@@ -432,6 +502,13 @@ class GameificationController extends StateNotifier<AsyncValue<GameState>> {
       state = AsyncValue.data(newState);
       
       _updateHomeWidget(newState);
+
+      // Cancel welcoming notifications since the user has started their learning journey
+      unawaited(
+        NotificationService.instance.scheduleFirstStageReminders(
+          hasStartedFirstStage: true,
+        ),
+      );
 
       // ---------------------------------------------------------
       // 💾 ATOMIC DISK PERSISTENCE: SAVE ALL UPDATED MEMORY DATA DIRECTLY

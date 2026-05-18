@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/core/models/quran_models.dart';
 import 'package:quranglow/core/providers/app_providers.dart';
 import 'package:quranglow/features/gamification/domain/models/gamification_models.dart';
@@ -41,6 +43,7 @@ class _InteractiveMemorizeDialogState
   @override
   void initState() {
     super.initState();
+    MyAudioHandler.isSpeechModeActive = true;
 
     // Ensure immediate check for existing heart balance before startup!
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,6 +76,9 @@ class _InteractiveMemorizeDialogState
   @override
   void dispose() {
     _textController.dispose();
+    _speechToText.stop();
+    MyAudioHandler.isSpeechActive = false;
+    MyAudioHandler.isSpeechModeActive = false;
     super.dispose();
   }
 
@@ -103,8 +109,16 @@ class _InteractiveMemorizeDialogState
 
     if (_isListening) {
       await _speechToText.stop();
+      MyAudioHandler.isSpeechActive = false;
       if (mounted) setState(() => _isListening = false);
     } else {
+      MyAudioHandler.isSpeechActive = true;
+      try {
+        ref.read(playerControllerProvider.notifier).pause();
+      } catch (e) {
+        debugPrint('Failed to pause playerController: $e');
+      }
+
       setState(() {
         _isListening = true;
         _speechInput = "";
@@ -141,6 +155,7 @@ class _InteractiveMemorizeDialogState
 
       if (match) {
         _speechToText.stop();
+        MyAudioHandler.isSpeechActive = false;
         setState(() {
           _isListening = false;
           _isRevealed = true;

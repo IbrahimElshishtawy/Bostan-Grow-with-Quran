@@ -2,11 +2,14 @@ import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 
 class MyAudioHandler extends BaseAudioHandler with SeekHandler {
+  static bool isSpeechActive = false;
+  static bool isSpeechModeActive = false;
   final AudioPlayer _player = AudioPlayer();
   AudioPlayer get player => _player;
   String? _activeUrl;
@@ -20,6 +23,8 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
 
+    bool playOnInterruptionEnd = false;
+
     // Handle audio focus and interruptions (e.g., phone call, other music app)
     session.interruptionEventStream.listen((event) {
       if (event.begin) {
@@ -29,6 +34,7 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
             break;
           case AudioInterruptionType.pause:
           case AudioInterruptionType.unknown:
+            playOnInterruptionEnd = _player.playing;
             pause();
             break;
         }
@@ -38,7 +44,10 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
             _player.setVolume(1.0);
             break;
           case AudioInterruptionType.pause:
-            play();
+            if (playOnInterruptionEnd && !isSpeechActive && !isSpeechModeActive) {
+              play();
+            }
+            playOnInterruptionEnd = false;
             break;
           case AudioInterruptionType.unknown:
             break;
@@ -82,11 +91,11 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
       MediaItem(
         id: nextUrl,
         title: title ?? 'القرآن الكريم',
-        artist: artist ?? 'QuranGlow',
+        artist: artist ?? 'بُستان',
         album: album ?? 'المصحف المرتل',
         artUri: artworkUri,
         displayTitle: title ?? 'القرآن الكريم',
-        displaySubtitle: artist ?? 'QuranGlow',
+        displaySubtitle: artist ?? 'بُستان',
         displayDescription: album,
       ),
     );
@@ -96,15 +105,25 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       // Small pause to allow the engine to settle if switching rapidly
       await _player.stop(); 
-      await _player.setUrl(nextUrl);
+      await _player.setUrl(
+        nextUrl,
+        headers: const {
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+      );
       await play();
-    } catch (e) {
-      // just_audio throws this if a new setUrl/load is called before this one finishes.
-      // We can safely ignore it as the new request will take over.
+    } on PlayerInterruptedException {
+      debugPrint('[AUDIO] Loading was interrupted by a new request. Quietly ignoring.');
+    } on PlayerException catch (e) {
+      debugPrint('❌ AUDIO PLAYER ERROR [playUri]: $e');
+    } catch (e, stack) {
+      debugPrint('❌ AUDIO GENERAL ERROR [playUri]: $e');
+      debugPrint('Stack: $stack');
       final errorStr = e.toString().toLowerCase();
       if (errorStr.contains('abort') || 
           errorStr.contains('interrupted') ||
-          errorStr.contains('1001') || // Common code for interruption
+          errorStr.contains('1001') || 
           errorStr.contains('loading interrupted')) {
         return;
       }

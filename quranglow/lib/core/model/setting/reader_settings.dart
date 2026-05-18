@@ -16,13 +16,21 @@ class AppSettings {
   final bool tasbihVibrate;
   final bool tasbihSound;
   final String adhanSoundId;
+  final bool adhanSoundEnabled;
   final bool dailyReminderEnabled;
+  final bool dailyReminderSoundEnabled;
   final int dailyReminderHour;
   final int dailyReminderMinute;
   final DailyReminderKind dailyReminderKind;
   final bool salawatEnabled;
+  final bool salawatSoundEnabled;
   final int salawatIntervalMinutes;
   final bool prayerNotificationsEnabled;
+  final bool smartLearningEnabled;
+  final int smartLearningStrictness;
+  final bool azkarMorningEnabled;
+  final bool azkarEveningEnabled;
+  final bool azkarAfterPrayerEnabled;
 
   const AppSettings({
     ThemeMode? themeMode,
@@ -33,15 +41,23 @@ class AppSettings {
     this.audioDownloadMode = AudioDownloadMode.fullSurah,
     this.tasbihTarget = 33,
     this.tasbihVibrate = true,
-    this.tasbihSound = false,
-    this.adhanSoundId = 'makkah',
+    this.tasbihSound = true,
+    this.adhanSoundId = 'azan',
+    this.adhanSoundEnabled = true,
     this.dailyReminderEnabled = false,
+    this.dailyReminderSoundEnabled = true,
     this.dailyReminderHour = 7,
     this.dailyReminderMinute = 30,
     this.dailyReminderKind = DailyReminderKind.quran,
     this.salawatEnabled = false,
+    this.salawatSoundEnabled = true,
     this.salawatIntervalMinutes = 5,
     this.prayerNotificationsEnabled = false,
+    this.smartLearningEnabled = false,
+    this.smartLearningStrictness = 1,
+    this.azkarMorningEnabled = false,
+    this.azkarEveningEnabled = false,
+    this.azkarAfterPrayerEnabled = false,
   }) : _themeMode = themeMode;
 
   ThemeMode get themeMode => _themeMode ?? ThemeMode.system;
@@ -62,13 +78,21 @@ class AppSettings {
     bool? tasbihVibrate,
     bool? tasbihSound,
     String? adhanSoundId,
+    bool? adhanSoundEnabled,
     bool? dailyReminderEnabled,
+    bool? dailyReminderSoundEnabled,
     int? dailyReminderHour,
     int? dailyReminderMinute,
     DailyReminderKind? dailyReminderKind,
     bool? salawatEnabled,
+    bool? salawatSoundEnabled,
     int? salawatIntervalMinutes,
     bool? prayerNotificationsEnabled,
+    bool? smartLearningEnabled,
+    int? smartLearningStrictness,
+    bool? azkarMorningEnabled,
+    bool? azkarEveningEnabled,
+    bool? azkarAfterPrayerEnabled,
   }) => AppSettings(
     themeMode: themeMode ?? this.themeMode,
     fontScale: fontScale ?? this.fontScale,
@@ -80,14 +104,25 @@ class AppSettings {
     tasbihVibrate: tasbihVibrate ?? this.tasbihVibrate,
     tasbihSound: tasbihSound ?? this.tasbihSound,
     adhanSoundId: adhanSoundId ?? this.adhanSoundId,
+    adhanSoundEnabled: adhanSoundEnabled ?? this.adhanSoundEnabled,
     dailyReminderEnabled: dailyReminderEnabled ?? this.dailyReminderEnabled,
+    dailyReminderSoundEnabled:
+        dailyReminderSoundEnabled ?? this.dailyReminderSoundEnabled,
     dailyReminderHour: dailyReminderHour ?? this.dailyReminderHour,
     dailyReminderMinute: dailyReminderMinute ?? this.dailyReminderMinute,
     dailyReminderKind: dailyReminderKind ?? this.dailyReminderKind,
     salawatEnabled: salawatEnabled ?? this.salawatEnabled,
+    salawatSoundEnabled: salawatSoundEnabled ?? this.salawatSoundEnabled,
     salawatIntervalMinutes:
         salawatIntervalMinutes ?? this.salawatIntervalMinutes,
     prayerNotificationsEnabled:
         prayerNotificationsEnabled ?? this.prayerNotificationsEnabled,
+    smartLearningEnabled: smartLearningEnabled ?? this.smartLearningEnabled,
+    smartLearningStrictness:
+        smartLearningStrictness ?? this.smartLearningStrictness,
+    azkarMorningEnabled: azkarMorningEnabled ?? this.azkarMorningEnabled,
+    azkarEveningEnabled: azkarEveningEnabled ?? this.azkarEveningEnabled,
+    azkarAfterPrayerEnabled:
+        azkarAfterPrayerEnabled ?? this.azkarAfterPrayerEnabled,
   );
 }

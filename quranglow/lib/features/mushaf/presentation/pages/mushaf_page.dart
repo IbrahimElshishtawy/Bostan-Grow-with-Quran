@@ -12,6 +12,8 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/core/service/audio/audio_locator.dart';
+import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/core/model/aya/aya.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/features/mushaf/presentation/pages/paged_mushaf.dart';
@@ -23,6 +25,7 @@ import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_audio_bar.
 import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_card.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
+import 'package:quranglow/features/ui/routes/app_routes.dart';
 
 final surahProvider = FutureProvider.autoDispose
     .family<Surah, (int chapter, String editionId)>((ref, args) async {
@@ -65,7 +68,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   StreamSubscription? _ayahPlayerSub;
 
   final _pos = PositionStore();
-  final _ayahPreviewPlayer = AudioPlayer();
+  AudioPlayer get _ayahPreviewPlayer => audioHandler.player;
   final GlobalKey<PagedMushafState> _pagedMushafKey =
       GlobalKey<PagedMushafState>();
 
@@ -77,6 +80,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       {}; // Surah Ayah Number -> Set of wrong/skipped word indices
   int _consumedSpokenWordsCount =
       0; // Tracker for real-time session stream offsets
+
+  // 🎵 Audio Session Trackers
+  String? _currentPlayingEdition;
+  int? _currentPlayingChapter;
   bool _speechEnabled = false;
   bool _isListening = false;
   String _wordsSpoken = "";
@@ -120,8 +127,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       _trackingService.endSession();
     }
     _ayahPlayerSub?.cancel();
-    _ayahPreviewPlayer.dispose();
+    _ayahPreviewPlayer.stop();
     _speechToText.stop(); // Safely stop listening on exit
+    MyAudioHandler.isSpeechActive = false;
+    MyAudioHandler.isSpeechModeActive = false;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     WakelockPlus.disable();
@@ -159,20 +168,36 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   void _goPrev() {
     if (_chapter <= 1) return;
+    
+    final wasPlaying = _ayahPreviewPlayer.playing;
     setState(() {
       _chapter--;
       _lastAyahNumber = null;
     });
     _pagedMushafKey.currentState?.animateToPage(0);
+    
+    // 🎵 Auto-switch audio to new surah if was playing
+    if (wasPlaying) {
+      final surahAsync = ref.read(surahProvider((_chapter, widget.editionId)));
+      surahAsync.whenData((s) => _playAyahAudio(s.ayat, 1));
+    }
   }
 
   void _goNext() {
     if (_chapter >= 114) return;
+    
+    final wasPlaying = _ayahPreviewPlayer.playing;
     setState(() {
       _chapter++;
       _lastAyahNumber = null;
     });
     _pagedMushafKey.currentState?.animateToPage(0);
+
+    // 🎵 Auto-switch audio to new surah if was playing
+    if (wasPlaying) {
+      final surahAsync = ref.read(surahProvider((_chapter, widget.editionId)));
+      surahAsync.whenData((s) => _playAyahAudio(s.ayat, 1));
+    }
   }
 
   Future<void> _saveCurrentPosition() async {
@@ -282,22 +307,46 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   }
 
   Future<void> _playAyahAudio(List<Aya> allAyat, int startAyahNumber, {bool singleOnly = false}) async {
+    if (_voiceReciteMode) {
+      debugPrint('Blocking local playback because voice recitation mode is active.');
+      return;
+    }
     try {
       final audioEdition = _audioEditionId();
-      final audioAsync = ref.read(audioMapProvider((audioEdition, _chapter)));
-      final audioMap = audioAsync.valueOrNull;
+      
+      // 🟢 FIX: Await the future instead of using valueOrNull to prevent failure during loading
+      // Show a subtle loading indicator in a SnackBar if it takes more than 300ms
+      final loadingTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                  SizedBox(width: 16),
+                  Text('جاري تحضير ملفات الصوت...'),
+                ],
+              ),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      });
 
-      if (audioMap == null || audioMap.isEmpty) {
+      final audioMap = await ref.read(audioMapProvider((audioEdition, _chapter)).future);
+      loadingTimer.cancel();
+
+      if (audioMap.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('جاري تحميل بيانات الصوت، يرجى الانتظار ثانية...')),
+          const SnackBar(content: Text('عذراً، لا توجد ملفات صوتية متاحة لهذا القارئ حالياً.')),
         );
         return;
       }
 
       // 1. Prepare source(s)
       final service = ref.read(quranServiceProvider);
-      final verseDurations = await service.getVerseDurations(_audioEditionId(), _chapter);
+      final verseDurations = await service.getVerseDurations(audioEdition, _chapter);
 
       if (singleOnly) {
         // Single Ayah playback
@@ -321,13 +370,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         }
       } else {
         // Continuous playback (Existing logic)
-        final currentSource = _ayahPreviewPlayer.audioSource;
-        bool needsNewSource = true;
-        if (currentSource is AudioSource && currentSource is! ConcatenatingAudioSource) {
-          if (_ayahPreviewPlayer.audioSource?.toString().contains('surah/$_audioEditionId()/$_chapter.mp3') ?? false) {
-            needsNewSource = false;
-          }
-        }
+        bool needsNewSource = _currentPlayingEdition != audioEdition || _currentPlayingChapter != _chapter || _ayahPreviewPlayer.audioSource == null;
 
         if (needsNewSource) {
           final List<AudioSource> sources = [];
@@ -356,6 +399,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
             preload: true,
           );
           await _ayahPreviewPlayer.setLoopMode(LoopMode.off);
+          
+          // Update trackers
+          _currentPlayingEdition = audioEdition;
+          _currentPlayingChapter = _chapter;
         }
 
         final targetIndex = startAyahNumber - 1;
@@ -379,6 +426,55 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('حدث خطأ في مشغل الصوت: ${e.message}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _downloadSurah() async {
+    final surahAsync = ref.read(surahProvider((_chapter, widget.editionId)));
+    final surahData = surahAsync.valueOrNull;
+    if (surahData == null) return;
+
+    final editionId = _audioEditionId();
+    final quranSvc = ref.read(quranServiceProvider);
+    final downloadSvc = ref.read(downloadServiceProvider);
+    final url = quranSvc.getSurahFullAudioUrl(editionId, _chapter);
+
+    try {
+      final dir = await downloadSvc.surahDir(reciter: editionId, surah: _chapter);
+      final savePath = '${dir.path}/full.mp3';
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('بدأ تحميل سورة ${surahData.name}...'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      await downloadSvc.downloadOne(
+        url: url,
+        savePath: savePath,
+        onProgress: (received, total) {
+          // Future: Add real-time UI progress update
+        },
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم تحميل سورة ${surahData.name} بنجاح! 🎉'),
+          backgroundColor: Colors.green.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('فشل التحميل: $e'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -417,6 +513,22 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   @override
   Widget build(BuildContext context) {
     final asyncSurah = ref.watch(surahProvider((_chapter, widget.editionId)));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // 🎧 Listen for reciter change in settings to update active player
+    ref.listen(settingsProvider, (prev, next) {
+      final oldEdition = prev?.valueOrNull?.readerEditionId;
+      final newEdition = next.valueOrNull?.readerEditionId;
+      if (newEdition != null && oldEdition != newEdition && _ayahPreviewPlayer.playing) {
+        debugPrint('Reciter changed from $oldEdition to $newEdition. Updating player...');
+        final surah = asyncSurah.valueOrNull;
+        if (surah != null) {
+          // Restart playback with new reciter at current index
+          final currentIndex = _ayahPreviewPlayer.currentIndex ?? 0;
+          _playAyahAudio(surah.ayat, currentIndex + 1);
+        }
+      }
+    });
 
     // 🎤 Pre-fetch audio map for smooth transition
     ref.listen(audioMapProvider((_audioEditionId(), _chapter)), (prev, next) {
@@ -436,7 +548,6 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       orElse: () => null,
     );
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgGradient = isDark
         ? const [Color(0xFF18140E), Color(0xFF0D0B08)]
         : const [Color(0xFFFFFDF8), Color(0xFFFDF7E8)];
@@ -564,13 +675,20 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 visible: _uiVisible,
                 asyncSurah: asyncSurah,
                 chapter: _chapter,
-                onBack: () => Navigator.pop(context),
+                onBack: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, AppRoutes.gamificationHome);
+                  }
+                },
                 onPrev: _chapter > 1 ? _goPrev : null,
                 onNext: _chapter < 114 ? _goNext : null,
                 onSave: _saveCurrentPosition,
                 onZoomIn: _zoomIn,
                 onZoomOut: _zoomOut,
                 onTafsir: () => _openTafsirForAyah(_lastAyahNumber ?? 1),
+                onDownload: _downloadSurah,
                 onPlayAll: () {
                   final surah = asyncSurah.valueOrNull;
                   if (surah != null) {
@@ -587,7 +705,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                     _uiVisible = false; // Hide standard UI to focus on Hifz
                   });
 
+                  MyAudioHandler.isSpeechModeActive = _voiceReciteMode;
+
                   if (_voiceReciteMode) {
+                    _ayahPreviewPlayer.stop(); // 🛑 Stop any background audio immediately
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text(
@@ -659,6 +780,12 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                     player: _ayahPreviewPlayer,
                     surahName: asyncSurah.valueOrNull?.name ?? 'سورة',
                     onClose: () => _ayahPreviewPlayer.stop(),
+                    onPlay: () {
+                      final surah = asyncSurah.valueOrNull;
+                      if (surah != null) {
+                        _playAyahAudio(surah.ayat, 1);
+                      }
+                    },
                   );
                 },
               ),
@@ -798,9 +925,19 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   }
 
   Future<void> _startListening() async {
+    MyAudioHandler.isSpeechActive = true;
+    // 🛑 USER REQUEST: Stop Quran audio in recitation mode so only the mic is active
+    await _ayahPreviewPlayer.stop();
+    try {
+      ref.read(playerControllerProvider.notifier).pause();
+    } catch (e) {
+      debugPrint('Failed to pause playerController: $e');
+    }
+    
     if (!_speechEnabled) {
       await _initSpeech();
       if (!_speechEnabled) {
+        MyAudioHandler.isSpeechActive = false;
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -839,6 +976,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   Future<void> _stopListening() async {
     await _speechToText.stop();
+    MyAudioHandler.isSpeechActive = false;
     setState(() => _isListening = false);
   }
 
@@ -1022,7 +1160,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
     // 4. 🔥 Evaluate ayah completion with user-requested relaxed 60% threshold!
     final double completionRatio = currentRevealed.length / totalWordCount;
-    if (completionRatio >= 0.55) {
+    if (completionRatio >= 0.60) {
       HapticFeedback.heavyImpact();
 
       // 🛑 IDENTIFY MISTAKES: Find any word indices that were NOT completed before triggering 70% autocomplete!

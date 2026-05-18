@@ -13,33 +13,16 @@ class AdhanSoundOption {
 }
 
 class AdhanSounds {
-  static const makkah = AdhanSoundOption(
-    id: 'makkah',
-    label: 'أذان مكة',
-    resourceName: 'adhan_makkah',
-    assetPath: 'android/app/src/main/res/raw/adhan_makkah.mp3',
+  static const main = AdhanSoundOption(
+    id: 'azan',
+    label: 'أذان بستان (الافتراضي)',
+    resourceName: 'azan',
+    assetPath: 'assets/voice/azan.mp3',
   );
 
-  static const madinah = AdhanSoundOption(
-    id: 'madinah',
-    label: 'أذان المدينة',
-    resourceName: 'adhan_madinah',
-    assetPath: 'android/app/src/main/res/raw/adhan_madinah.mp3',
-  );
-
-  static const alAqsa = AdhanSoundOption(
-    id: 'alaqsa',
-    label: 'أذان الأقصى',
-    resourceName: 'adhan_alaqsa',
-    assetPath: 'android/app/src/main/res/raw/adhan_alaqsa.mp3',
-  );
-
-  static const values = <AdhanSoundOption>[makkah, madinah, alAqsa];
+  static const values = <AdhanSoundOption>[main];
 
   static AdhanSoundOption byId(String id) {
-    for (final option in values) {
-      if (option.id == id) return option;
-    }
-    return makkah;
+    return main;
   }
 }

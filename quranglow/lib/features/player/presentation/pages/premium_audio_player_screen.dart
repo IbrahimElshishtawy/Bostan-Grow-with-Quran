@@ -3,9 +3,13 @@
 /// Premium Spotify-like Audio Player Screen
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/features/player/presentation/providers/favorites_controller.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:quranglow/features/player/presentation/widgets/CombinedPositionData.dart';
 import 'dart:math' as math;
 
-class PremiumAudioPlayerScreen extends ConsumerWidget {
+class PremiumAudioPlayerScreen extends ConsumerStatefulWidget {
   final String title;
   final String subtitle;
   final String duration;
@@ -18,7 +22,65 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PremiumAudioPlayerScreen> createState() =>
+      _PremiumAudioPlayerScreenState();
+}
+
+class _PremiumAudioPlayerScreenState
+    extends ConsumerState<PremiumAudioPlayerScreen> {
+  late final ScrollController _scrollController;
+  int _lastAyahIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToActiveAyah(int ayahIndex) {
+    if (!_scrollController.hasClients || ayahIndex < 0) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+
+      final double targetOffset = ayahIndex * 115.0 - 150.0;
+      final maxExtent = _scrollController.position.maxScrollExtent;
+      final minExtent = _scrollController.position.minScrollExtent;
+
+      _scrollController.animateTo(
+        targetOffset.clamp(minExtent, maxExtent),
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final playerState = ref.watch(playerControllerProvider);
+    final controller = ref.read(playerControllerProvider.notifier);
+
+    final uiState = playerState.value;
+    final isLoading = playerState.isLoading;
+    final hasError = playerState.hasError;
+    final error = playerState.error;
+
+    if (uiState != null && uiState.currentAyah != null) {
+      final currentAyahIndex = uiState.currentAyah!;
+      if (currentAyahIndex != _lastAyahIndex) {
+        _lastAyahIndex = currentAyahIndex;
+        _scrollToActiveAyah(currentAyahIndex);
+      }
+    }
+
+    final showLyrics = ref.watch(playerLyricsModeProvider);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -26,11 +88,13 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.expand_more, size: 30),
+          color: Colors.white,
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.download_rounded),
+            color: Colors.white,
             onPressed: () => _showPlaylistMenu(context),
           ),
         ],
@@ -40,20 +104,119 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.white60, Colors.blueGrey],
+            colors: [
+              Color(0xFF1E3C72),
+              Color(0xFF2A5298),
+            ], // Gorgeous deep premium blue gradient
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Album Art with animated background
-              Expanded(child: _buildAlbumArtSection()),
+              // Premium thin loading indicator under AppBar
+              if (isLoading)
+                const LinearProgressIndicator(
+                  color: Colors.amber,
+                  backgroundColor: Colors.white12,
+                  minHeight: 3,
+                ),
 
-              // Player Controls Section
-              _buildPlayerControlsSection(),
+              Expanded(
+                child: () {
+                  if (uiState != null) {
+                    return Column(
+                      children: [
+                        // Album Art or Live Verses Reader
+                        Expanded(
+                          child: showLyrics
+                              ? _buildLiveVersesSection(uiState, controller)
+                              : _buildAlbumArtSection(uiState, isLoading),
+                        ),
 
-              // Playback Speed & Queue
-              _buildPlaybackOptionsSection(),
+                        // Player Controls Section
+                        _buildPlayerControlsSection(
+                          ref,
+                          uiState,
+                          controller,
+                          isLoading,
+                        ),
+
+                        // Playback Speed & Queue
+                        _buildPlaybackOptionsSection(uiState, controller),
+                      ],
+                    );
+                  } else if (isLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.amber),
+                    );
+                  } else if (hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              color: Colors.amber,
+                              size: 64,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'تعذر تحميل الملف الصوتي',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Tajawal',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              error?.toString() ??
+                                  'خطأ في الاتصال بالخادم الرئيسي',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontFamily: 'Tajawal',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                final chapter = ref.read(chapterProvider);
+                                controller.playSurah(chapter);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text(
+                                'إعادة المحاولة',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else {
+                    return const SizedBox();
+                  }
+                }(),
+              ),
             ],
           ),
         ),
@@ -61,7 +224,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAlbumArtSection() {
+  Widget _buildAlbumArtSection(PlayerUiState state, bool isLoading) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -70,20 +233,22 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           children: [
             // Album art placeholder with glow
             Container(
-              width: 280,
-              height: 280,
+              width: 260,
+              height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: Colors.amber.withValues(
+                      alpha: isLoading ? 0.15 : 0.3,
+                    ),
                     blurRadius: 40,
                     spreadRadius: 20,
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(280),
+                borderRadius: BorderRadius.circular(260),
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -95,7 +260,7 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
                   child: const Center(
                     child: Icon(
                       Icons.music_note,
-                      size: 120,
+                      size: 100,
                       color: Colors.white,
                     ),
                   ),
@@ -103,23 +268,25 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 48),
+            const SizedBox(height: 40),
 
             // Title and Subtitle
             Text(
-              title,
+              state.surahName ?? widget.title,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                fontFamily: 'Tajawal',
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              subtitle,
+              state.reciterName ?? widget.subtitle,
               style: TextStyle(
                 fontSize: 16,
+                fontFamily: 'Tajawal',
                 color: Colors.white.withValues(alpha: 0.8),
               ),
               textAlign: TextAlign.center,
@@ -130,33 +297,208 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPlayerControlsSection() {
+  Widget _buildLiveVersesSection(
+    PlayerUiState state,
+    PlayerController controller,
+  ) {
+    final surahAsync = ref.watch(surahTextProvider(state.chapter));
+
+    return surahAsync.when(
+      data: (surah) {
+        final ayats = surah.ayat;
+        return ShaderMask(
+          shaderCallback: (rect) {
+            return const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black,
+                Colors.black,
+                Colors.transparent,
+              ],
+              stops: [0.0, 0.08, 0.92, 1.0],
+            ).createShader(rect);
+          },
+          blendMode: BlendMode.dstIn,
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+            itemCount: ayats.length,
+            itemBuilder: (context, index) {
+              final aya = ayats[index];
+              final isActive = state.currentAyah == index;
+
+              return GestureDetector(
+                onTap: () {
+                  controller.seekToIndex(index);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 4,
+                  ),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? Colors.amber.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isActive
+                          ? Colors.amber.withValues(alpha: 0.3)
+                          : Colors.white.withValues(alpha: 0.05),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        aya.text,
+                        style: TextStyle(
+                          fontSize: isActive ? 21 : 17,
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          fontFamily: 'Uthmanic',
+                          color: isActive ? Colors.amber : Colors.white70,
+                          height: 1.6,
+                        ),
+                        textDirection: TextDirection.rtl,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? Colors.amber.withValues(alpha: 0.2)
+                                  : Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'آية ${aya.numberInSurah}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isActive ? Colors.amber : Colors.white38,
+                                fontFamily: 'Tajawal',
+                              ),
+                            ),
+                          ),
+                          if (isActive)
+                            const Icon(
+                              Icons.volume_up_rounded,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: Colors.amber)),
+      error: (err, stack) => const Center(
+        child: Text(
+          'تعذر تحميل نص السورة الكريمة',
+          style: TextStyle(
+            color: Colors.white70,
+            fontFamily: 'Tajawal',
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerControlsSection(
+    WidgetRef ref,
+    PlayerUiState state,
+    PlayerController controller,
+    bool isLoading,
+  ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         children: [
           // Waveform Visualizer
-          _buildWaveformVisualizer(),
+          _buildWaveformVisualizer(state),
+
+          const SizedBox(height: 16),
+
+          // Time and Progress
+          _buildProgressBar(state, controller),
 
           const SizedBox(height: 20),
 
-          // Time and Progress
-          _buildProgressBar(),
-
-          const SizedBox(height: 28),
-
           // Main Controls
-          _buildMainControls(),
+          _buildMainControls(state, controller, isLoading),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Favorite and More buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildIconButton(Icons.favorite_border, Colors.white70),
-              _buildIconButton(Icons.share, Colors.white70),
-              _buildIconButton(Icons.list, Colors.white70),
+              IconButton(
+                onPressed: () => ref
+                    .read(favoritesControllerProvider.notifier)
+                    .toggleFavorite(
+                      editionId: state.editionId,
+                      chapter: state.chapter,
+                      surahName: state.surahName ?? widget.title,
+                      reciterName: state.reciterName ?? widget.subtitle,
+                    ),
+                icon: Icon(
+                  ref
+                          .watch(favoritesControllerProvider)
+                          .any(
+                            (e) =>
+                                e.editionId == state.editionId &&
+                                e.chapter == state.chapter,
+                          )
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  color:
+                      ref
+                          .watch(favoritesControllerProvider)
+                          .any(
+                            (e) =>
+                                e.editionId == state.editionId &&
+                                e.chapter == state.chapter,
+                          )
+                      ? Colors.redAccent
+                      : Colors.white70,
+                  size: 28,
+                ),
+              ),
+              _buildIconButton(Icons.share, Colors.white70, onPressed: () {}),
+              IconButton(
+                onPressed: () {
+                  ref.read(playerLyricsModeProvider.notifier).update((s) => !s);
+                },
+                icon: Icon(
+                  ref.watch(playerLyricsModeProvider)
+                      ? Icons.menu_book_rounded
+                      : Icons.menu_book_outlined,
+                  color: ref.watch(playerLyricsModeProvider)
+                      ? Colors.amber
+                      : Colors.white70,
+                  size: 28,
+                ),
+              ),
             ],
           ),
         ],
@@ -164,68 +506,159 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWaveformVisualizer() {
-    return SizedBox(
-      height: 60,
-      child: CustomPaint(
-        painter: WaveformPainter(),
-        size: const Size(double.infinity, 60),
-      ),
+  Widget _buildWaveformVisualizer(PlayerUiState state) {
+    return StreamBuilder<bool>(
+      stream: state.playingStream,
+      builder: (context, snapshot) {
+        final isPlaying = snapshot.data ?? false;
+        return SizedBox(
+          height: 60,
+          child: CustomPaint(
+            painter: WaveformPainter(isActive: isPlaying),
+            size: const Size(double.infinity, 60),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildProgressBar() {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: 0.45,
-            minHeight: 6,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            valueColor: const AlwaysStoppedAnimation(Colors.white),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildProgressBar(PlayerUiState state, PlayerController controller) {
+    return StreamBuilder<CombinedPositionData>(
+      stream: state.timelineStream,
+      builder: (context, snapshot) {
+        final posData = snapshot.data;
+        final pos = posData?.position ?? Duration.zero;
+        final total =
+            posData?.duration ?? state.totalDurationOverride ?? Duration.zero;
+
+        final value = (total.inMilliseconds > 0)
+            ? pos.inMilliseconds / total.inMilliseconds
+            : 0.0;
+
+        return Column(
           children: [
-            Text(
-              '2:15',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                activeTrackColor: Colors.white,
+                inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
+                thumbColor: Colors.white,
+              ),
+              child: Slider(
+                value: value.clamp(0.0, 1.0),
+                onChanged: (v) {
+                  final target = Duration(
+                    milliseconds: (v * total.inMilliseconds).toInt(),
+                  );
+                  controller.seekTo(target);
+                },
               ),
             ),
-            Text(
-              '5:00',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(pos),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(total),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildMainControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildControlButton(Icons.shuffle, Colors.white70, onPressed: () {}),
-        _buildLargeControlButton(Icons.skip_previous),
-        _buildLargeControlButton(Icons.play_arrow, isPlay: true),
-        _buildLargeControlButton(Icons.skip_next),
-        _buildControlButton(Icons.repeat, Colors.white70, onPressed: () {}),
-      ],
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildMainControls(
+    PlayerUiState state,
+    PlayerController controller,
+    bool isLoading,
+  ) {
+    return StreamBuilder<bool>(
+      stream: state.playingStream,
+      builder: (context, playingSnapshot) {
+        final isPlaying = playingSnapshot.data ?? false;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            StreamBuilder<LoopMode>(
+              stream: state.loopModeStream,
+              builder: (context, loopSnapshot) {
+                final isLoop =
+                    (loopSnapshot.data ?? LoopMode.off) != LoopMode.off;
+                return _buildControlButton(
+                  isLoop ? Icons.repeat_one_rounded : Icons.repeat_rounded,
+                  isLoop ? Colors.amber : Colors.white70,
+                  onPressed: () => controller.toggleLoop(),
+                );
+              },
+            ),
+            _buildLargeControlButton(
+              Icons.skip_previous_rounded,
+              onPressed: () => controller.previous(),
+            ),
+            // Play/Pause button with loading spinner overlay when buffering or loading new reciter/surah
+            StreamBuilder<ProcessingState>(
+              stream: state.processingStateStream,
+              builder: (context, procSnapshot) {
+                final procState = procSnapshot.data;
+                final isBuffering =
+                    procState == ProcessingState.loading ||
+                    procState == ProcessingState.buffering ||
+                    isLoading;
+
+                return _buildLargeControlButton(
+                  isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  isPlay: true,
+                  isLoading: isBuffering,
+                  onPressed: () =>
+                      isPlaying ? controller.pause() : controller.play(),
+                );
+              },
+            ),
+            _buildLargeControlButton(
+              Icons.skip_next_rounded,
+              onPressed: () => controller.next(),
+            ),
+            _buildControlButton(
+              Icons.shuffle,
+              Colors.white70,
+              onPressed: () {},
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildPlaybackOptionsSection() {
+  Widget _buildPlaybackOptionsSection(
+    PlayerUiState state,
+    PlayerController controller,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -239,16 +672,36 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Speed selector
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildSpeedButton('0.75x'),
-                _buildSpeedButton('1.0x', isSelected: true),
-                _buildSpeedButton('1.25x'),
-                _buildSpeedButton('1.5x'),
-              ],
-            ),
+          StreamBuilder<double>(
+            stream: state.volumeStream.map((_) => 1.0), // Mock for speed stream
+            builder: (context, _) {
+              // Note: Just using a static speed display for now,
+              // as speedStream isn't explicitly in PlaylistState yet
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildSpeedButton(
+                      '0.75x',
+                      onPressed: () => controller.setSpeed(0.75),
+                    ),
+                    _buildSpeedButton(
+                      '1.0x',
+                      isSelected: true,
+                      onPressed: () => controller.setSpeed(1.0),
+                    ),
+                    _buildSpeedButton(
+                      '1.25x',
+                      onPressed: () => controller.setSpeed(1.25),
+                    ),
+                    _buildSpeedButton(
+                      '1.5x',
+                      onPressed: () => controller.setSpeed(1.5),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           // Quality selector
@@ -257,7 +710,11 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
             child: Row(
               children: [
                 _buildQualityButton('Low', Colors.grey),
-                _buildQualityButton('Normal', Colors.orangeAccent, isSelected: true),
+                _buildQualityButton(
+                  'Normal',
+                  Colors.orangeAccent,
+                  isSelected: true,
+                ),
                 _buildQualityButton('High', Colors.blue),
               ],
             ),
@@ -278,7 +735,12 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLargeControlButton(IconData icon, {bool isPlay = false}) {
+  Widget _buildLargeControlButton(
+    IconData icon, {
+    bool isPlay = false,
+    bool isLoading = false,
+    required VoidCallback onPressed,
+  }) {
     return Container(
       width: isPlay ? 64 : 52,
       height: isPlay ? 64 : 52,
@@ -293,18 +755,33 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
           ),
         ],
       ),
-      child: IconButton(
-        icon: Icon(
-          icon,
-          color: Colors.indigoAccent.shade700,
-          size: isPlay ? 32 : 24,
-        ),
-        onPressed: () {},
-      ),
+      child: isLoading
+          ? Center(
+              child: SizedBox(
+                width: isPlay ? 28 : 20,
+                height: isPlay ? 28 : 20,
+                child: CircularProgressIndicator(
+                  color: Colors.indigoAccent.shade700,
+                  strokeWidth: 3,
+                ),
+              ),
+            )
+          : IconButton(
+              icon: Icon(
+                icon,
+                color: Colors.indigoAccent.shade700,
+                size: isPlay ? 32 : 24,
+              ),
+              onPressed: onPressed,
+            ),
     );
   }
 
-  Widget _buildIconButton(IconData icon, Color color) {
+  Widget _buildIconButton(
+    IconData icon,
+    Color color, {
+    VoidCallback? onPressed,
+  }) {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -312,25 +789,35 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       ),
       child: IconButton(
         icon: Icon(icon, color: color),
-        onPressed: () {},
+        onPressed: onPressed ?? () {},
       ),
     );
   }
 
-  Widget _buildSpeedButton(String label, {bool isSelected = false}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.black87 : Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
+  Widget _buildSpeedButton(
+    String label, {
+    bool isSelected = false,
+    VoidCallback? onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black87 : Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
         ),
       ),
     );
@@ -357,7 +844,9 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
+          color: isSelected
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.7),
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
@@ -418,6 +907,9 @@ class PremiumAudioPlayerScreen extends ConsumerWidget {
 
 /// Custom painter for waveform visualization
 class WaveformPainter extends CustomPainter {
+  final bool isActive;
+  WaveformPainter({this.isActive = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -430,11 +922,17 @@ class WaveformPainter extends CustomPainter {
     const gap = 3.0;
     final numBars = ((size.width / (barWidth + gap)) - 1).toInt();
 
+    final time = DateTime.now().millisecondsSinceEpoch / 500;
+
     for (int i = 0; i < numBars; i++) {
       final x =
           i * (barWidth + gap) +
           (size.width / 2 - numBars * (barWidth + gap) / 2);
-      final height = 10 + (math.sin(i * 0.5) * 15);
+
+      // Animate if active
+      final height = isActive
+          ? 10 + (math.sin(i * 0.5 + time * 5) * 15).abs()
+          : 10 + (math.sin(i * 0.5) * 15).abs();
 
       canvas.drawLine(
         Offset(x, centerY - height / 2),
@@ -445,5 +943,6 @@ class WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WaveformPainter oldDelegate) => false;
+  bool shouldRepaint(WaveformPainter oldDelegate) =>
+      oldDelegate.isActive != isActive || isActive;
 }

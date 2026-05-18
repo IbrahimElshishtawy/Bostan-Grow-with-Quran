@@ -70,7 +70,7 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
         // Cycle to next dhikr automatically!
         _selectedDhikrIndex = (_selectedDhikrIndex + 1) % DhikrQuickList.items.length;
         
-        HapticFeedback.vibrate();
+        HapticFeedback.heavyImpact(); // Strong premium haptic on round completion
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('أتممت دورة $_rounds بنجاح! انتقلت إلى: ${DhikrQuickList.items[_selectedDhikrIndex]}'),
@@ -85,9 +85,13 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
     });
 
     if (settings.tasbihVibrate) {
+      // High-fidelity snappy haptic response mimicking a physical mechanical rosary button!
+      HapticFeedback.selectionClick();
       HapticFeedback.lightImpact();
     }
     if (settings.tasbihSound) {
+      // Play standard platform click/tap sound which is reliable and works outside mute state
+      Feedback.forTap(context);
       SystemSound.play(SystemSoundType.click);
     }
 
@@ -137,6 +141,8 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
             _SpiritualHeader(
               selectedDhikr: DhikrQuickList.items[_selectedDhikrIndex],
               rounds: _rounds,
+              target: settings.tasbihTarget,
+              onReset: () => _reset(settings),
               onOpenSettings: () =>
                   Navigator.pushNamed(context, AppRoutes.setting),
               isDark: isDark,
@@ -163,32 +169,7 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
             ),
             const SizedBox(height: 24),
 
-            // Controls & Metrics
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _MiniControlBox(
-                  icon: Icons.refresh_rounded,
-                  label: 'تصفير',
-                  onTap: () => _reset(settings),
-                  isDark: isDark,
-                ),
-                _InfoMetric(
-                  icon: Icons.flag_rounded,
-                  title: 'الهدف',
-                  value: '${settings.tasbihTarget}',
-                ),
-                _MiniControlBox(
-                  icon: settings.tasbihVibrate
-                      ? Icons.vibration_rounded
-                      : Icons.smartphone_rounded,
-                  label: settings.tasbihVibrate ? 'هزاز' : 'صامت',
-                  onTap: () {},
-                  isDark: isDark,
-                  isActive: settings.tasbihVibrate,
-                ),
-              ],
-            ),
+
 
             const SizedBox(height: 28),
 
@@ -256,105 +237,231 @@ class _TasbihCounterState extends ConsumerState<TasbihCounter>
 class _SpiritualHeader extends StatelessWidget {
   final String selectedDhikr;
   final int rounds;
+  final int target;
   final VoidCallback onOpenSettings;
+  final VoidCallback onReset;
   final bool isDark;
 
   const _SpiritualHeader({
     required this.selectedDhikr,
     required this.rounds,
+    required this.target,
     required this.onOpenSettings,
+    required this.onReset,
     required this.isDark,
   });
 
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     final gradientColors = isDark
-        ? [const Color(0xFF1E3A2F), const Color(0xFF11221B)]
-        : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)];
+        ? [const Color(0xFF1E3A2F), const Color(0xFF0F1E19)]
+        : [const Color(0xFFE8F5E9), const Color(0xFFFFFFFF)];
 
-    final textColor = isDark ? Colors.white : const Color(0xFF1B3B2B);
+    final textColor = isDark ? Colors.white : const Color(0xFF1A3324);
+    final subtitleColor = isDark ? Colors.white70 : const Color(0xFF2E7D32);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
           colors: gradientColors,
         ),
+        border: Border.all(
+          color: isDark ? const Color(0xFF4CAF50).withOpacity(0.1) : const Color(0xFF4CAF50).withOpacity(0.2),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: cs.shadow.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: cs.primary.withOpacity(isDark ? 0.05 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
+              // Title / Header Icon & Label
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome_mosaic_rounded,
+                    size: 18,
+                    color: isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'الذكر الحالي',
+                    style: TextStyle(
+                      color: subtitleColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Tajawal',
+                    ),
+                  ),
+                ],
+              ),
+              // Sleek circular buttons for Reset & Settings
+              Row(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onReset,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F8F4),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE8F5E9),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.restart_alt_rounded,
+                          color: isDark ? Colors.white70 : const Color(0xFF2E7D32),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onOpenSettings,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F8F4),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE8F5E9),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          color: isDark ? Colors.white70 : const Color(0xFF2E7D32),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Inner Glassmorphic Card for Dhikr Text
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFF4CAF50).withOpacity(0.1),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                selectedDhikr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 20,
+                  height: 1.4,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Tajawal',
                 ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.white.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Stretched, prominent bottom dashboard bar for Rounds and Target
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF234231), const Color(0xFF15291E)]
+                    : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFF4CAF50).withOpacity(0.15),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-                child: Row(
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Rounds Metric
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.rotate_right_rounded,
-                      size: 13,
-                      color: textColor.withValues(alpha: 0.7),
+                      size: 20,
+                      color: isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
                     Text(
-                      'جولة: $rounds',
+                      'الجولات: $rounds',
                       style: TextStyle(
                         color: textColor,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w900,
                         fontFamily: 'Tajawal',
-                        fontSize: 11,
+                        fontSize: 15,
                       ),
                     ),
                   ],
                 ),
-              ),
-              IconButton(
-                onPressed: onOpenSettings,
-                icon: Icon(Icons.tune_rounded, color: textColor, size: 18),
-                constraints: const BoxConstraints(),
-                padding: const EdgeInsets.all(6),
-                style: IconButton.styleFrom(
-                  backgroundColor: isDark
-                      ? Colors.white.withValues(alpha: 0.04)
-                      : Colors.white.withValues(alpha: 0.3),
+                // Premium Divider
+                Container(
+                  height: 20,
+                  width: 1.5,
+                  color: isDark ? Colors.white24 : const Color(0xFF2E7D32).withOpacity(0.2),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              selectedDhikr,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 19,
-                height: 1.2,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Tajawal',
-              ),
+                // Target Metric
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.flag_rounded,
+                      size: 20,
+                      color: isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'الهدف: $target',
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Tajawal',
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -463,7 +570,7 @@ class _TasbihDial extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      'من $target',
+                      'تسبيحة',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -557,117 +664,6 @@ class _DialPainter extends CustomPainter {
   }
 }
 
-class _MiniControlBox extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isDark;
-  final bool isActive;
 
-  const _MiniControlBox({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    required this.isDark,
-    this.isActive = true,
-  });
 
-  @override
-  Widget build(BuildContext context) {
-    final color = isActive
-        ? (isDark ? Colors.white : Colors.black87)
-        : (isDark ? Colors.white38 : Colors.black38);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: 60,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.black.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.black.withValues(alpha: 0.05),
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Tajawal',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoMetric extends StatelessWidget {
-  const _InfoMetric({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: 80,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1B3B2B).withValues(alpha: 0.4)
-            : const Color(0xFFE8F5E9).withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
-              : const Color(0xFF4CAF50).withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: const Color(0xFF4CAF50), size: 22),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black54,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Tajawal',
-            ),
-          ),
-          const SizedBox(height: 1),
-          Text(
-            value,
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

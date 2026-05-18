@@ -21,9 +21,9 @@ class TrackCard extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final surahLabel = state.surahName ?? 'سورة ${state.chapter}';
     final reciterLabel = state.reciterName ?? state.editionId;
-    final isFav = ref
-        .watch(favoritesControllerProvider.notifier)
-        .isFavorite(state.editionId, state.chapter);
+    final isFav = ref.watch(favoritesControllerProvider).any(
+          (e) => e.editionId == state.editionId && e.chapter == state.chapter,
+        );
         
     final editions = ref.watch(audioEditionsProvider);
     final ch = ref.watch(chapterProvider).clamp(1, 114);

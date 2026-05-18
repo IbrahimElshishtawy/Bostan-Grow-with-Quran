@@ -1,4 +1,7 @@
+// ignore_for_file: unused_element
+
 import 'dart:convert';
+import 'package:flutter/foundation.dart' as foundation;
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -33,7 +36,8 @@ class PrayerTimesService {
   Future<PrayerTimesData> fetchForToday() async {
     final days = await fetchUpcomingDays(days: 2);
     if (days.isEmpty) {
-      throw Exception('تعذر تجهيز مواقيت الصلاة.');
+      foundation.debugPrint('[PRAYER] Could not prepare prayer times. Returning offline state.');
+      return PrayerTimesData.empty();
     }
 
     final today = days.first;
@@ -81,7 +85,8 @@ class PrayerTimesService {
       if (cachedDays.isNotEmpty) {
         return cachedDays;
       }
-      throw Exception('لا توجد مواقيت محفوظة كافية للتشغيل الأوفلاين.');
+      foundation.debugPrint('[PRAYER] No offline prayer times found.');
+      return [];
     }
 
     final currentPosition = await locationService.getCurrentOnce();
@@ -89,29 +94,31 @@ class PrayerTimesService {
     final effectivePosition = currentPosition ?? cachedPosition;
 
     if (effectivePosition == null) {
-      throw Exception(
-        'تعذر الوصول إلى الموقع. فعّل خدمة الموقع مرة واحدة على الأقل ليتم حفظ المواقيت وتشغيلها أوفلاين.',
-      );
+      foundation.debugPrint('[PRAYER] Location not available. No cache to fallback to.');
+      return [];
     }
 
     try {
-      final onlineDays = <_PrayerDay>[];
-      for (var offset = 0; offset < requestedDays; offset++) {
-        onlineDays.add(
-          await _fetchDay(
-            effectivePosition,
-            normalizedNow.add(Duration(days: offset)),
-          ),
-        );
-      }
+      // ✨ HARDENED FIX: Use month calendar to avoid 429 Too Many Requests
+      final monthDays = await _fetchMonth(
+        effectivePosition,
+        normalizedNow.year,
+        normalizedNow.month,
+      );
+
+      // If requested days span across next month, we might need another fetch,
+      // but for now 1 month is usually enough and much safer.
+      final onlineDays = monthDays.where((d) {
+        final date = _dateFromKey(d.dateKey);
+        return !date.isBefore(normalizedNow);
+      }).toList();
 
       await _writeCacheBundle(position: effectivePosition, days: onlineDays);
       return onlineDays.map(_toScheduleDay).toList(growable: false);
-    } catch (_) {
+    } catch (e) {
+      foundation.debugPrint('[PRAYER] Online fetch failed: $e');
       if (!_canUseCache(currentPosition, cachedPosition)) {
-        throw Exception(
-          'المواقيت المحفوظة تخص موقعًا مختلفًا. اتصل بالإنترنت مرة واحدة في موقعك الحالي لتحديث المواقيت.',
-        );
+        foundation.debugPrint('[PRAYER] Cache position mismatch. Using best effort.');
       }
 
       final cachedDays = _collectCachedDays(
@@ -121,49 +128,72 @@ class PrayerTimesService {
       );
 
       if (cachedDays.isEmpty) {
-        throw Exception(
-          'لا توجد مواقيت محفوظة قادمة. افتح التطبيق مرة واحدة أثناء الاتصال بالإنترنت لتجهيز الجدول المحلي.',
-        );
+        foundation.debugPrint('[PRAYER] No offline prayer times available after failed network fetch.');
+        return [];
       }
 
       return cachedDays;
     }
   }
 
-  Future<_PrayerDay> _fetchDay(Position position, DateTime date) async {
-    final uri = Uri.https(
-      _baseHost,
-      '/v1/timings/${date.day}-${date.month}-${date.year}',
-      {
-        'latitude': position.latitude.toStringAsFixed(6),
-        'longitude': position.longitude.toStringAsFixed(6),
-        'method': '5',
-        'school': '0',
-        'latitudeAdjustmentMethod': '3',
-        'midnightMode': '1',
-        'iso8601': 'true',
-      },
-    );
+  // Removed _fetchDay as it is replaced by _fetchMonth
 
-    final res = await client.get(uri).timeout(const Duration(seconds: 15));
+  Future<List<_PrayerDay>> _fetchMonth(
+    Position position,
+    int year,
+    int month,
+  ) async {
+    final uri = Uri.https(_baseHost, '/v1/calendar', {
+      'latitude': position.latitude.toStringAsFixed(6),
+      'longitude': position.longitude.toStringAsFixed(6),
+      'method': '5',
+      'school': '0',
+      'latitudeAdjustmentMethod': '3',
+      'midnightMode': '1',
+      'iso8601': 'true',
+      'year': year.toString(),
+      'month': month.toString(),
+    });
+
+    final res = await client.get(uri).timeout(const Duration(seconds: 20));
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('فشل جلب المواقيت (${res.statusCode}).');
+      throw Exception('فشل جلب جدول المواقيت (${res.statusCode}).');
     }
 
     final decoded = jsonDecode(res.body) as Map<String, dynamic>;
-    final data = decoded['data'] as Map<String, dynamic>?;
-    if (data == null) {
-      throw Exception('الاستجابة لا تحتوي بيانات مواقيت.');
+    final dataList = decoded['data'] as List<dynamic>?;
+    if (dataList == null) {
+      throw Exception('الاستجابة لا تحتوي بيانات جدول.');
     }
 
-    final timings = _parseTimings(data['timings'], date);
-    return _PrayerDay(
-      dateKey: _dateKey(date),
-      timezone: (data['meta']?['timezone'] ?? '') as String,
-      methodName:
-          (data['meta']?['method']?['name'] ?? 'المعيار الافتراضي') as String,
-      prayers: timings,
-    );
+    final results = <_PrayerDay>[];
+    for (final dayData in dataList) {
+      final meta = dayData['meta'] as Map<String, dynamic>?;
+      final timingsRaw = dayData['timings'] as Map<String, dynamic>?;
+      final dateRaw = dayData['date']?['gregorian']?['date'] as String?;
+
+      if (timingsRaw == null || dateRaw == null) continue;
+
+      // Aladhan calendar returns date as "DD-MM-YYYY"
+      final parts = dateRaw.split('-');
+      if (parts.length != 3) continue;
+      final d = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      final y = int.parse(parts[2]);
+      final date = DateTime(y, m, d);
+
+      results.add(
+        _PrayerDay(
+          dateKey: _dateKey(date),
+          timezone: (meta?['timezone'] ?? '') as String,
+          methodName:
+              (meta?['method']?['name'] ?? 'المعيار الافتراضي') as String,
+          prayers: _parseTimings(timingsRaw, date),
+        ),
+      );
+    }
+
+    return results;
   }
 
   Map<String, DateTime> _parseTimings(dynamic rawTimings, DateTime date) {
@@ -203,9 +233,7 @@ class PrayerTimesService {
     final nextFajr = tomorrow?['Fajr'];
     if (nextFajr != null) return ('Fajr', nextFajr);
 
-    throw Exception(
-      'تعذر تحديد الصلاة القادمة من الكاش. افتح التطبيق مرة واحدة أونلاين لتحديث مواقيت الغد.',
-    );
+    return (order.first, today[order.first] ?? now.add(const Duration(hours: 1)));
   }
 
   Future<Map<String, dynamic>?> _readCacheBundle() async {

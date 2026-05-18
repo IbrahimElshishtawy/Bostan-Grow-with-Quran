@@ -71,9 +71,7 @@ flutter:
     - assets/anim/Quran.json
     - assets/iosn/icongrowquran.jpg
     - assets/images/
-    - android/app/src/main/res/raw/adhan_alaqsa.mp3
-    - android/app/src/main/res/raw/adhan_makkah.mp3
-    - android/app/src/main/res/raw/adhan_madinah.mp3
+    - assets/voice/
 
 flutter_launcher_icons:
   android: true

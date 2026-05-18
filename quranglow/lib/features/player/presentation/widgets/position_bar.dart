@@ -32,7 +32,7 @@ class PositionBar extends ConsumerWidget {
         final playerState = ref.watch(playerControllerProvider).asData?.value;
         final totalOverride = playerState?.totalDurationOverride ?? Duration.zero;
         
-        final total = (totalOverride > timeline.total) ? totalOverride : timeline.total;
+        final total = (totalOverride > timeline.duration) ? totalOverride : timeline.duration;
         final position = timeline.position > total ? total : timeline.position;
         final bufferedPosition = timeline.bufferedPosition > total ? total : timeline.bufferedPosition;
         

@@ -171,7 +171,66 @@ class QuranService {
     return out;
   }
 
-  Future<List> listAudioEditions() => cloud.listAudioEditions();
+  static const Map<String, String> _kReciterNames = {
+    'ar.alafasy': 'مشاري العفاسي',
+    'ar.abdurrahmaansudais': 'عبد الرحمن السديس',
+    'ar.saoodshuraym': 'سعود الشريم',
+    'ar.minshawi': 'محمد صديق المنشاوي',
+    'ar.abdulbasitmurattal': 'عبد الباسط عبد الصمد',
+    'ar.husary': 'محمود خليل الحصري',
+    'ar.hudhaify': 'علي الحذيفي',
+    'ar.ghamadi': 'سعد الغامدي',
+    'ar.mahermuaiqly': 'ماهر المعيقلي',
+  };
+
+  Future<Map<String, List<int>>> getDownloadedSurahsAndReciters() async {
+    final docs = await getApplicationDocumentsDirectory();
+    final root = Directory(p.join(docs.path, 'QuranGlow', 'downloads', 'audio'));
+    final Map<String, List<int>> result = {};
+    if (await root.exists()) {
+      for (final reciter in root.listSync().whereType<Directory>()) {
+        final reciterId = p.basename(reciter.path);
+        final surahs = <int>[];
+        for (final sdir in reciter.listSync().whereType<Directory>()) {
+          final sNum = int.tryParse(p.basename(sdir.path)) ?? 0;
+          if (sNum == 0) continue;
+          final files = sdir
+              .listSync()
+              .whereType<File>()
+              .where((f) => f.path.toLowerCase().endsWith('.mp3'))
+              .toList();
+          if (files.isNotEmpty) {
+            surahs.add(sNum);
+          }
+        }
+        if (surahs.isNotEmpty) {
+          result[reciterId] = surahs;
+        }
+      }
+    }
+    return result;
+  }
+
+  Future<List> listAudioEditions() async {
+    try {
+      return await cloud.listAudioEditions();
+    } catch (e) {
+      final downloaded = await getDownloadedSurahsAndReciters();
+      if (downloaded.isNotEmpty) {
+        return downloaded.keys.map((id) {
+          final name = _kReciterNames[id] ?? id;
+          return {
+            'identifier': id,
+            'id': id,
+            'name': name,
+            'englishName': name,
+          };
+        }).toList();
+      }
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> getSurahAudio(String ed, int s) =>
       cloud.getSurahAudio(ed, s);
 
@@ -282,64 +341,55 @@ class QuranService {
   }
 
   Future<List<String>> getSurahAudioUrls(String editionId, int surah) async {
-    // 1. Get the full list of URLs from the cloud
-    final map = await cloud.getSurahAudio(editionId, surah);
-    final ayahs = _extractAudioAyahs(map);
-    if (ayahs.isEmpty) {
-      throw Exception('No ayah audio URLs found for $editionId in surah $surah');
-    }
+    try {
+      // 1. Get the full list of URLs from the cloud
+      final map = await cloud.getSurahAudio(editionId, surah);
+      final ayahs = _extractAudioAyahs(map);
+      if (ayahs.isEmpty) {
+        throw Exception('No ayah audio URLs found for $editionId in surah $surah');
+      }
 
-    final urls = ayahs
-        .map(_readAudioUrl)
-        .whereType<String>()
-        .where((url) => url.trim().isNotEmpty)
-        .toList();
+      final urls = ayahs
+          .map(_readAudioUrl)
+          .whereType<String>()
+          .where((url) => url.trim().isNotEmpty)
+          .toList();
 
-    // 2. Check for local files and override specific indices
-    final localFiles = await _getLocalDownloadedSurahAudioFiles(
-      editionId,
-      surah,
-    );
-    if (localFiles.isNotEmpty) {
-      for (final file in localFiles) {
-        final ayahNumber = int.tryParse(p.basenameWithoutExtension(file.path));
-        // ayahNumber is 1-based, index is 0-based
-        if (ayahNumber != null && ayahNumber > 0 && ayahNumber <= urls.length) {
-          urls[ayahNumber - 1] = Uri.file(file.path).toString();
+      // 2. Check for local files and override specific indices
+      final localFiles = await _getLocalDownloadedSurahAudioFiles(
+        editionId,
+        surah,
+      );
+      if (localFiles.isNotEmpty) {
+        for (final file in localFiles) {
+          final ayahNumber = int.tryParse(p.basenameWithoutExtension(file.path));
+          // ayahNumber is 1-based, index is 0-based
+          if (ayahNumber != null && ayahNumber > 0 && ayahNumber <= urls.length) {
+            urls[ayahNumber - 1] = Uri.file(file.path).toString();
+          }
         }
       }
-    }
 
-    return urls;
+      return urls;
+    } catch (e) {
+      // Fallback: If offline or API fails, try to load ONLY local downloaded files
+      final localFiles = await _getLocalDownloadedSurahAudioFiles(
+        editionId,
+        surah,
+      );
+      if (localFiles.isNotEmpty) {
+        debugPrint('[QuranService] Offline/Error fallback: Loading ${localFiles.length} local audio files.');
+        return localFiles.map((file) => Uri.file(file.path).toString()).toList();
+      }
+      rethrow;
+    }
   }
 
   /// Returns the URL for a single audio file containing the entire Surah.
   /// This is useful for continuous playback with correct total duration.
   String getSurahFullAudioUrl(String editionId, int surah) {
-    // Map AlQuran.cloud edition IDs to download.quranicaudio.com reciter paths
-    final Map<String, String> reciterMap = {
-      'ar.alafasy': 'mishaari_raashid_al_3afaasee',
-      'ar.abdulsamad': 'abdul_basit_murattal',
-      'ar.abdullahbasfar': 'abdullaah_basfar',
-      'ar.abdurrahmaansudais': 'abdurrahmaan_as-sudays',
-      'ar.ahmedajamy': 'ahmed_ibn_3ali_al-3ajamy',
-      'ar.alajmy': 'ahmed_ibn_3ali_al-3ajamy',
-      'ar.hanirifai': 'haani_ar-rifaa3ee',
-      'ar.hudhaify': 'al-huthaifee',
-      'ar.husary': 'mahmood_khaleel_al-husaree',
-      'ar.minshawi': 'muhammad_siddeeq_al-minshaawee',
-      'ar.mahermuaiqly': 'maher_almuaiqly',
-      'ar.saoodshuraym': 'sa3ood_ash-shuraym',
-    };
-
-    final reciterPath = reciterMap[editionId];
-    if (reciterPath != null) {
-      // Use QuranicAudio CDN (Extremely reliable)
-      final paddedSurah = surah.toString().padLeft(3, '0');
-      return 'https://download.quranicaudio.com/quran/$reciterPath/$paddedSurah.mp3';
-    }
-
-    // Fallback to Islamic Network CDN with User-Agent headers (handled in player)
+    // Use Islamic Network CDN (Cloudflare-backed, fast, and unblocked globally/in Egypt) as the primary option
+    // to avoid ISP-level blocking on download.quranicaudio.com which causes SSL handshake failures.
     return 'https://cdn.islamic.network/quran/audio-surah/128/$editionId/$surah.mp3';
   }
 
@@ -503,5 +553,26 @@ class QuranService {
             .toList()
           ..sort((a, b) => a.path.compareTo(b.path));
     return files;
+  }
+
+  Future<bool> isQuranTextDownloaded() async {
+    final box = await _boxFuture;
+    for (int i = 1; i <= 114; i++) {
+      if (!box.containsKey('quran-uthmani-$i')) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Stream<double> downloadQuranText() async* {
+    for (int i = 1; i <= 114; i++) {
+      try {
+        await getSurahText('quran-uthmani', i);
+      } catch (e) {
+        debugPrint('Failed to download surah $i: $e');
+      }
+      yield i / 114.0;
+    }
   }
 }

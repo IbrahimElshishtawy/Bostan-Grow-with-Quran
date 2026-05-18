@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -18,11 +19,13 @@ class NotificationService {
 
   final _plugin = FlutterLocalNotificationsPlugin();
 
-  bool get _isSupported => !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+  bool get _isSupported =>
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
 
   static const _dailyChannelId = 'daily_reminder_ch';
   static const _salawatChannelId = 'salawat_ch';
   static const _remindersChannelId = 'reminders_ch';
+  static const _smartLearningChannelId = 'smart_learning_ch';
   static const _deviceChannel = MethodChannel('quranglow/device');
   static const _fallbackTimezoneName = 'Africa/Cairo';
 
@@ -35,6 +38,7 @@ class NotificationService {
   static const _azkarMorningId = 3001;
   static const _azkarEveningId = 3002;
   static const _azkarPrayerBaseId = 3100;
+  static const _smartLearningIdBase = 4000;
 
   Future<void> init() async {
     if (!_isSupported) return;
@@ -189,10 +193,44 @@ class NotificationService {
         'أذان الصلوات',
         description: 'تنبيهات الأذان مع صوت أذان مخصص',
         importance: Importance.max,
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
+        playSound: settings.adhanSoundEnabled,
+        sound: settings.adhanSoundEnabled
+            ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
+            : null,
         audioAttributesUsage: AudioAttributesUsage.alarm,
         enableVibration: true,
+        showBadge: true,
+      ),
+    );
+  }
+
+  Future<void> _ensureSalawatChannel(AppSettings settings) async {
+    if (kIsWeb || !Platform.isAndroid) return;
+
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+
+    const channelId = _salawatChannelId;
+
+    try {
+      await android.deleteNotificationChannel(channelId);
+    } catch (_) {}
+
+    await android.createNotificationChannel(
+      AndroidNotificationChannel(
+        channelId,
+        'تذكير الصلاة على النبي ﷺ',
+        description: 'تذكير دوري محلي للصلاة على النبي ﷺ',
+        importance: Importance.max,
+        playSound: settings.salawatSoundEnabled,
+        sound: settings.salawatSoundEnabled
+            ? const RawResourceAndroidNotificationSound('salawat')
+            : null,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
         showBadge: true,
       ),
     );
@@ -223,9 +261,10 @@ class NotificationService {
     await _plugin.cancel(_dailyId);
     if (!enabled) return;
 
+    final settings = await SettingsService().load();
     final mode = await _androidScheduleMode();
 
-    const android = AndroidNotificationDetails(
+    final android = AndroidNotificationDetails(
       _dailyChannelId,
       'التذكير اليومي',
       channelDescription: 'تذكير يومي للورد والذكر والاستعداد للصلاة',
@@ -233,7 +272,9 @@ class NotificationService {
       priority: Priority.high,
       showWhen: true,
       enableVibration: true,
-      playSound: true,
+      playSound: settings.dailyReminderSoundEnabled,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -259,12 +300,7 @@ class NotificationService {
       title,
       body,
       _nextInstanceOf(time),
-      const NotificationDetails(
-        android: android,
-        iOS: ios,
-        macOS: mac,
-        windows: win,
-      ),
+      NotificationDetails(android: android, iOS: ios, macOS: mac, windows: win),
       androidScheduleMode: mode,
       matchDateTimeComponents: DateTimeComponents.time,
     );
@@ -280,9 +316,11 @@ class NotificationService {
     }
     if (!enabled) return;
 
+    final settings = await SettingsService().load();
+    await _ensureSalawatChannel(settings);
     final mode = await _androidScheduleMode();
 
-    const android = AndroidNotificationDetails(
+    final android = AndroidNotificationDetails(
       _salawatChannelId,
       'تذكير الصلاة على النبي ﷺ',
       channelDescription: 'تذكير دوري محلي للصلاة على النبي ﷺ',
@@ -290,7 +328,13 @@ class NotificationService {
       priority: Priority.high,
       showWhen: true,
       enableVibration: true,
-      playSound: true,
+      vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+      playSound: settings.salawatSoundEnabled,
+      sound: settings.salawatSoundEnabled
+          ? const RawResourceAndroidNotificationSound('salawat')
+          : null,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -304,7 +348,7 @@ class NotificationService {
         'الصلاة على النبي ﷺ',
         'اللهم صل وسلم على نبينا محمد ﷺ',
         scheduled,
-        const NotificationDetails(
+        NotificationDetails(
           android: android,
           iOS: ios,
           macOS: mac,
@@ -327,7 +371,7 @@ class NotificationService {
 
     final mode = await _androidScheduleMode();
 
-    const android = AndroidNotificationDetails(
+    final android = AndroidNotificationDetails(
       _remindersChannelId,
       'تذكيرات الأذكار',
       channelDescription: 'تذكيرات الأذكار والمواعيد التي يحددها المستخدم',
@@ -337,6 +381,8 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -369,12 +415,7 @@ class NotificationService {
       title,
       body,
       scheduled,
-      const NotificationDetails(
-        android: android,
-        iOS: ios,
-        macOS: mac,
-        windows: win,
-      ),
+      NotificationDetails(android: android, iOS: ios, macOS: mac, windows: win),
       androidScheduleMode: mode,
       matchDateTimeComponents: daily ? DateTimeComponents.time : null,
     );
@@ -415,45 +456,202 @@ class NotificationService {
     );
   }
 
+  Future<void> scheduleSmartLearningReminders({
+    required bool enabled,
+    int strictness = 1,
+  }) async {
+    if (!_isSupported) return;
+    for (var i = 0; i < 7; i++) {
+      await _plugin.cancel(_smartLearningIdBase + i);
+    }
+    if (!enabled) return;
+
+    final mode = await _androidScheduleMode();
+    const android = AndroidNotificationDetails(
+      _smartLearningChannelId,
+      'تنبيهات التعلم النشط',
+      channelDescription: 'تذكير ذكي عند الانقطاع عن القراءة أو التعلم',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+      playSound: true,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    );
+
+    final now = tz.TZDateTime.now(tz.local);
+
+    final reminders = strictness == 3
+        ? [
+            (
+              delay: 24,
+              title: 'افتقدنا نور تلاوتك',
+              body: 'لا تجعل اليوم يمر دون نصيب من كتاب الله، انضم إلينا الآن.',
+            ),
+            (
+              delay: 36,
+              title: 'وردك اليومي أمانة',
+              body: 'الاستمرارية سر النجاح، القرآن ينير دربك فلا تغفل عنه.',
+            ),
+            (
+              delay: 48,
+              title: 'أين أنت يا محب القرآن؟',
+              body: 'بستانك بانتظارك، لا تبتعد كثيراً عن آيات الله البينات.',
+            ),
+            (
+              delay: 72,
+              title: 'نداء للقلب الذاكر',
+              body: 'اشحن روحك بآيات السكينة، القرآن شفاء لما في الصدور.',
+            ),
+          ]
+        : strictness == 2
+        ? [
+            (
+              delay: 48,
+              title: 'وقت مستقطع للروح',
+              body: 'بضع دقائق مع القرآن كفيلة بتغيير يومك للأفضل.',
+            ),
+            (
+              delay: 96,
+              title: 'تذكير بالورد اليومي',
+              body: 'لا يزال بستانك يزهر بقرائتك، عد لنبع الصفاء.',
+            ),
+          ]
+        : [
+            (
+              delay: 72,
+              title: 'بانتظار عودتك',
+              body: 'اشتقنا لتفاعلك في بستان، القرآن يفتح لك آفاقاً جديدة.',
+            ),
+          ];
+
+    for (var i = 0; i < reminders.length; i++) {
+      final r = reminders[i];
+      await _plugin.zonedSchedule(
+        _smartLearningIdBase + i,
+        r.title,
+        r.body,
+        now.add(Duration(hours: r.delay)),
+        const NotificationDetails(
+          android: android,
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: mode,
+      );
+    }
+  }
+
+  static const _firstStagePromptIdBase = 5000;
+
+  Future<void> scheduleFirstStageReminders({
+    required bool hasStartedFirstStage,
+  }) async {
+    if (!_isSupported) return;
+    
+    final settings = await SettingsService().load();
+    final enabled = settings.smartLearningEnabled;
+    
+    // Cancel any existing first stage prompts
+    await _plugin.cancel(_firstStagePromptIdBase);
+    await _plugin.cancel(_firstStagePromptIdBase + 1);
+
+    if (!enabled || hasStartedFirstStage) return;
+
+    final mode = await _androidScheduleMode();
+    const android = AndroidNotificationDetails(
+      _smartLearningChannelId,
+      'تنبيهات التعلم النشط',
+      channelDescription: 'تذكير ذكي عند الانقطاع عن القراءة أو التعلم',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+      playSound: true,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    );
+    const ios = DarwinNotificationDetails();
+    const mac = DarwinNotificationDetails();
+
+    final now = tz.TZDateTime.now(tz.local);
+
+    // 1. Encouraging/enthusiastic notification after 24 hours (1 day)
+    await _plugin.zonedSchedule(
+      _firstStagePromptIdBase,
+      'رحلتك في بستان النور تنتظرك! ✨',
+      'ابدأ خطوتك الأولى في فهم آيات القرآن وتدبرها الآن. نحن بانتظارك لتنال أول نجمة! 🌟',
+      now.add(const Duration(days: 1)),
+      const NotificationDetails(android: android, iOS: ios, macOS: mac),
+      androidScheduleMode: mode,
+    );
+
+    // 2. Sad/reflective notification after 3 days (72 hours) if still not started
+    await _plugin.zonedSchedule(
+      _firstStagePromptIdBase + 1,
+      'محزونون لغيابك عن بستان القرآن.. 😔',
+      'مضت ثلاثة أيام ولم تبدأ خطوتك الأولى بعد. لا تحرم قلبك من ربيع آيات الله، ابدأ الآن ولو بآية واحدة.',
+      now.add(const Duration(days: 3)),
+      const NotificationDetails(android: android, iOS: ios, macOS: mac),
+      androidScheduleMode: mode,
+    );
+  }
+
   Future<void> showAdhanPreview({
     required String title,
     required String body,
-    AppSettings? settings,
+    required AppSettings settings,
   }) async {
     if (!_isSupported) return;
 
-    final activeSettings = settings ?? await SettingsService().load();
-    await _ensurePrayerChannel(activeSettings);
-    final adhanSound = activeSettings.adhanSound;
-    final mode = await _androidScheduleMode();
-    final scheduled = tz.TZDateTime.now(
-      tz.local,
-    ).add(const Duration(seconds: 1));
-    await _plugin.zonedSchedule(
+    // Request permissions before showing the preview to ensure it works
+    if (Platform.isAndroid) {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await android?.requestNotificationsPermission();
+    } else if (Platform.isIOS) {
+      final ios = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      await ios?.requestPermissions(alert: true, badge: true, sound: true);
+    }
+
+    await _ensurePrayerChannel(settings);
+    final adhanSound = settings.adhanSound;
+
+    final android = AndroidNotificationDetails(
+      _prayerChannelId(adhanSound.id),
+      'أذان الصلوات',
+      channelDescription: 'تنبيهات الأذان مع صوت أذان مخصص',
+      importance: Importance.max,
+      priority: Priority.high,
+      category: AndroidNotificationCategory.alarm,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      showWhen: true,
+      enableVibration: true,
+      playSound: settings.adhanSoundEnabled,
+      sound: settings.adhanSoundEnabled
+          ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
+          : null,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      channelShowBadge: true,
+      fullScreenIntent: true,
+    );
+
+    await _plugin.show(
       991002,
       title,
       body,
-      scheduled,
       NotificationDetails(
-        android: AndroidNotificationDetails(
-          _prayerChannelId(adhanSound.id),
-          'أذان الصلوات',
-          channelDescription: 'تنبيهات الأذان مع صوت أذان مخصص',
-          importance: Importance.max,
-          priority: Priority.high,
-          category: AndroidNotificationCategory.alarm,
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          showWhen: true,
-          enableVibration: true,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
-          channelShowBadge: true,
-        ),
+        android: android,
         iOS: const DarwinNotificationDetails(),
         macOS: const DarwinNotificationDetails(),
         windows: const WindowsNotificationDetails(),
       ),
-      androidScheduleMode: mode,
     );
   }
 
@@ -481,11 +679,14 @@ class NotificationService {
       audioAttributesUsage: AudioAttributesUsage.alarm,
       showWhen: true,
       enableVibration: true,
-      playSound: true,
-      sound: RawResourceAndroidNotificationSound(adhanSound.resourceName),
-      ongoing: true,
-      autoCancel: false,
+      playSound: settings.adhanSoundEnabled,
+      sound: settings.adhanSoundEnabled
+          ? RawResourceAndroidNotificationSound(adhanSound.resourceName)
+          : null,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       channelShowBadge: true,
+      fullScreenIntent: true,
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -512,6 +713,7 @@ class NotificationService {
         final scheduled = tz.TZDateTime.from(time, tz.local);
         if (!scheduled.isAfter(now)) continue;
 
+        // 1. Schedule the main Adhan notification
         await _plugin.zonedSchedule(
           _prayerNotificationId(dayIndex, prayerIndex),
           'حان الآن موعد صلاة ${_arabicPrayerName(key)}',
@@ -525,8 +727,82 @@ class NotificationService {
           ),
           androidScheduleMode: mode,
         );
+
+        // 2. Schedule the "Did you pray?" follow-up notification (5 minutes later)
+        final followUpTime = scheduled.add(const Duration(minutes: 5));
+        final religiousMsg = _getReligiousReminderTitleAndBody(key);
+        await _plugin.zonedSchedule(
+          _prayerFollowUpId(dayIndex, prayerIndex),
+          religiousMsg['title']!,
+          religiousMsg['body']!,
+          followUpTime,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              _prayerChannelId(adhanSound.id),
+              'أذان الصلوات',
+              channelDescription: 'تنبيهات الأذان مع صوت أذان مخصص',
+              importance: Importance.max,
+              priority: Priority.high,
+              category: AndroidNotificationCategory.alarm,
+              audioAttributesUsage: AudioAttributesUsage.alarm,
+              showWhen: true,
+              enableVibration: true,
+              playSound: true,
+              sound: null, // Use standard notification sound for the question
+              icon: '@mipmap/ic_launcher',
+              largeIcon: const DrawableResourceAndroidBitmap(
+                '@mipmap/ic_launcher',
+              ),
+              channelShowBadge: true,
+              styleInformation: const BigTextStyleInformation(''),
+            ),
+            iOS: ios,
+            macOS: mac,
+            windows: win,
+          ),
+          androidScheduleMode: mode,
+        );
       }
     }
+  }
+
+  Map<String, String> _getReligiousReminderTitleAndBody(String prayerKey) {
+    switch (prayerKey) {
+      case 'Fajr':
+        return {
+          'title': 'حبيبي في الله، حان وقت صلاة الفجر 🤍',
+          'body': 'الجمال والراحة ينتظرانك في وقوفك بين يدي الله.. لا تفوّت الصلاة، أقبل إليها بقلبٍ مشتاق ✨',
+        };
+      case 'Dhuhr':
+        return {
+          'title': 'نور صلاتك يناديك لصلاة الظهر 🕊️',
+          'body': 'ارحل بقلبك عن الدنيا لدقائق معدودة، لتغتسل من هموم يومك في رحاب الصلاة 🌿',
+        };
+      case 'Asr':
+        return {
+          'title': 'صلاة العصر يا رفيق الجنة 🌟',
+          'body': 'أرح قلبك وأقم فرضك، فلا تفوّت صلاة العصر فإنها صلاة وسطى عظيمة الأجر 🤍',
+        };
+      case 'Maghrib':
+        return {
+          'title': 'حان وقت السكينة.. صلاة المغرب 🌅',
+          'body': 'خمس دقائق مضت على الأذان، صلاتك هي صلتك بخالقك ومصدر طمأنينتك.. قم إليها الآن 🌱',
+        };
+      case 'Isha':
+        return {
+          'title': 'خِتام يومك الجميل.. صلاة العشاء 🌙',
+          'body': 'أنهِ يومك بوقوفٍ خاشع بين يدي ربك لتنعم بليلة هادئة ونفس مطمئنة. أقم صلاتك يا طيب 💎',
+        };
+      default:
+        return {
+          'title': 'نداء من الله.. حان وقت الصلاة 🤍',
+          'body': 'الصلاة هي صلتك بربك، ونور لقلبك، فلا تدع شواغل الدنيا تؤخرك عن لقائه 🕊️',
+        };
+    }
+  }
+
+  int _prayerFollowUpId(int dayIndex, int prayerIndex) {
+    return _prayerBaseId + 100 + (dayIndex * 10) + prayerIndex;
   }
 
   Future<void> cancelPrayerNotifications() async {
@@ -534,6 +810,7 @@ class NotificationService {
     for (var dayIndex = 0; dayIndex < _prayerScheduleWindowDays; dayIndex++) {
       for (var prayerIndex = 0; prayerIndex < _prayerCount; prayerIndex++) {
         await _plugin.cancel(_prayerNotificationId(dayIndex, prayerIndex));
+        await _plugin.cancel(_prayerFollowUpId(dayIndex, prayerIndex));
       }
     }
   }
@@ -583,6 +860,8 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
     const ios = DarwinNotificationDetails();
     const mac = DarwinNotificationDetails();
@@ -633,7 +912,8 @@ class NotificationService {
     await _plugin.cancelAll();
   }
 
-  static String _prayerChannelId(String soundId) => 'prayer_adhan_ch_$soundId';
+  static String _prayerChannelId(String soundId) =>
+      'adhan_channel_${soundId}_v4';
 
   int _prayerNotificationId(int dayIndex, int prayerIndex) {
     return _prayerBaseId + (dayIndex * 10) + prayerIndex;

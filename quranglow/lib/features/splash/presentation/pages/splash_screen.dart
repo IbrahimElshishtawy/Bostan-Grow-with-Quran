@@ -21,6 +21,28 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 🚀 High-Performance Optimization: Precache heavy home background images 
+    // while the user is watching the beautiful splash animations!
+    precacheImage(const AssetImage('assets/images/app_bg_dark.png'), context);
+    precacheImage(const AssetImage('assets/images/app_bg_light.png'), context);
+    precacheImage(const AssetImage('assets/images/islamic_pattern.png'), context);
+    
+    // 🏰 Precache Level Nodes (Gates) for the Roadmap
+    precacheImage(const AssetImage('assets/images/gate_locked.png'), context);
+    precacheImage(const AssetImage('assets/images/gate_active.png'), context);
+    precacheImage(const AssetImage('assets/images/gate_unlocked.png'), context);
+    precacheImage(const AssetImage('assets/images/quran_completed.png'), context);
+
+    precacheImage(const AssetImage('assets/images/bustan_icon.png'), context);
+    precacheImage(const AssetImage('assets/images/bustan_splash.png'), context);
+    precacheImage(const AssetImage('assets/images/chest.png'), context);
+    precacheImage(const AssetImage('assets/images/subha_icon.png'), context);
+    precacheImage(const AssetImage('assets/images/app_bg_ultra.png'), context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final b = Theme.of(context).brightness;
@@ -76,9 +98,10 @@ class _SplashScreenState extends State<SplashScreen>
                       Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05), // Added for glass effect
                               borderRadius: BorderRadius.circular(44), // Curved square
                               border: Border.all(
-                                color: cs.primary.withOpacity(0.2),
+                                color: Colors.white.withOpacity(0.2), // Lighter border for glass look
                                 width: 1.5,
                               ),
                               boxShadow: [
@@ -91,11 +114,17 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(40),
-                              child: Image.asset(
-                                'assets/images/bustan_icon.png',
-                                height: 180,
-                                width: 180,
-                                fit: BoxFit.cover,
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                child: Opacity(
+                                  opacity: 0.85, // Premium transparency
+                                  child: Image.asset(
+                                    'assets/images/bustan_icon.png',
+                                    height: 180,
+                                    width: 180,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
                               ),
                             ),
                           )
