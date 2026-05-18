@@ -141,102 +141,109 @@ class _PageRichBlockState extends ConsumerState<PageRichBlock> {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: widget.onBackgroundTap,
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: c.maxHeight),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (widget.surahName != null) ...[
-                      Builder(
-                        builder: (context) {
-                          // Strip duplicate "سورة" prefix if the API name already contains it
-                          String cleanName = widget.surahName!.trim();
-                          if (RegExp(r'^سورة\s+سو').hasMatch(cleanName)) {
-                            cleanName = cleanName.replaceFirst(
-                              RegExp(r'^سورة\s+'),
-                              '',
+            child: Container(
+              width: c.maxWidth,
+              height: c.maxHeight,
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+              alignment: Alignment.center,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: c.maxWidth - 48,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (widget.surahName != null) ...[
+                        Builder(
+                          builder: (context) {
+                            // Strip duplicate "سورة" prefix if the API name already contains it
+                            String cleanName = widget.surahName!.trim();
+                            if (RegExp(r'^سورة\s+سو').hasMatch(cleanName)) {
+                              cleanName = cleanName.replaceFirst(
+                                RegExp(r'^سورة\s+'),
+                                '',
+                              );
+                            }
+                            final isDark =
+                                Theme.of(context).brightness == Brightness.dark;
+                            return _SurahTitleBanner(
+                              name: cleanName,
+                              fontScale: fontScale,
+                              isDark: isDark,
+                              frameColor: widget.ayahNumberColor,
                             );
-                          }
-                          final isDark =
-                              Theme.of(context).brightness == Brightness.dark;
-                          return _SurahTitleBanner(
-                            name: cleanName,
-                            fontScale: fontScale,
-                            isDark: isDark,
-                            frameColor: widget.ayahNumberColor,
-                          );
-                        },
-                      ),
-                    ],
-                    if (widget.showBasmala) ...[
-                      Text(
-                        widget.basmalaText,
-                        textAlign: TextAlign.center,
+                          },
+                        ),
+                      ],
+                      if (widget.showBasmala) ...[
+                        Text(
+                          widget.basmalaText,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.rtl,
+                          style: TextStyle(
+                            color: textColor,
+                            fontFamily: 'KFGQPC Uthmanic Script',
+                            fontFamilyFallback: const [
+                              'Hafs',
+                              'Noto Naskh Arabic',
+                              'Scheherazade',
+                            ],
+                            height: 2.0,
+                            fontSize: (widget.fontSize + 3) * fontScale,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      RichText(
+                        textAlign: TextAlign.justify,
                         textDirection: TextDirection.rtl,
-                        style: TextStyle(
-                          color: textColor,
-                          fontFamily: 'KFGQPC Uthmanic Script',
-                          fontFamilyFallback: const [
-                            'Hafs',
-                            'Noto Naskh Arabic',
-                            'Scheherazade',
-                          ],
-                          height: 2.0,
-                          fontSize: (widget.fontSize + 3) * fontScale,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    RichText(
-                      textAlign: TextAlign.justify,
-                      textDirection: TextDirection.rtl,
-                      strutStyle: StrutStyle(
-                        fontSize: widget.fontSize * fontScale,
-                        height: 2.25,
-                      ),
-                      text: TextSpan(
-                        style: TextStyle(
-                          color: textColor,
-                          fontFamily: 'KFGQPC Uthmanic Script',
-                          fontFamilyFallback: const [
-                            'Hafs',
-                            'Noto Naskh Arabic',
-                            'Scheherazade',
-                          ],
-                          height: 2.25,
+                        strutStyle: StrutStyle(
                           fontSize: widget.fontSize * fontScale,
-                          letterSpacing: 0.2,
+                          height: 2.25,
                         ),
-                        children: spans,
+                        text: TextSpan(
+                          style: TextStyle(
+                            color: textColor,
+                            fontFamily: 'KFGQPC Uthmanic Script',
+                            fontFamilyFallback: const [
+                              'Hafs',
+                              'Noto Naskh Arabic',
+                              'Scheherazade',
+                            ],
+                            height: 2.25,
+                            fontSize: widget.fontSize * fontScale,
+                            letterSpacing: 0.2,
+                          ),
+                          children: spans,
+                        ),
                       ),
-                    ),
-                    if (currentTopics.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: currentTopics
-                            .map(
-                              (topic) => Chip(
-                                label: Text(
-                                  topic.title,
-                                  style: const TextStyle(fontSize: 12),
+                      if (currentTopics.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: currentTopics
+                              .map(
+                                (topic) => Chip(
+                                  label: Text(
+                                    topic.title,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  backgroundColor: cs.secondaryContainer
+                                      .withValues(alpha: 0.6),
+                                  labelStyle: TextStyle(
+                                    color: cs.onSecondaryContainer,
+                                  ),
                                 ),
-                                backgroundColor: cs.secondaryContainer
-                                    .withValues(alpha: 0.6),
-                                labelStyle: TextStyle(
-                                  color: cs.onSecondaryContainer,
-                                ),
-                              ),
-                            )
-                            .toList(growable: false),
-                      ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

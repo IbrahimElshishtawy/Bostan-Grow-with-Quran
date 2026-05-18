@@ -24,6 +24,7 @@ import 'package:quranglow/features/mushaf/presentation/widgets/selected_ayah_pan
 import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_audio_bar.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
 import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_card.dart';
+import 'package:quranglow/features/tafsir/presentation/widgets/swipable_tafsir_sheet.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
 
@@ -228,71 +229,20 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     final surah = asyncSurah.valueOrNull;
     if (surah == null) return;
 
-    final ayahText = surah.ayat[ayahNumber - 1].text;
-    final surahName = surah.name;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF0F172A)
-              : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Consumer(
-                builder: (context, ref, child) {
-                  // Use a fixed edition for quick view, or allow settings
-                  const editionId = 'ar.jalalayn'; // Common default
-                  final tafsir = ref.watch(tafsirForAyahProvider((_chapter, ayahNumber, editionId)));
-                  
-                  return ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: [
-                      Text(
-                        'تفسير الآية $ayahNumber - $surahName',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Tajawal',
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      AyahCard(
-                        surahName: surahName,
-                        ayah: ayahNumber,
-                        ayahText: ayahText,
-                      ),
-                      const SizedBox(height: 16),
-                      TafsirCard(
-                        tafsir: tafsir,
-                        editionName: 'تفسير الجلالين',
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+      builder: (ctx) => SwipableTafsirSheet(
+        surahName: surah.name,
+        chapter: _chapter,
+        initialAyahNumber: ayahNumber,
+        ayat: surah.ayat,
+        onAyahChanged: (nextAyahNumber) {
+          setState(() {
+            _lastAyahNumber = nextAyahNumber;
+          });
+        },
       ),
     );
   }
@@ -760,6 +710,23 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                       _copyAyahText(ayahNum, text);
                     },
                     onSave: _saveCurrentPosition,
+                    onSwipeLeft: () {
+                      final surah = asyncSurah.valueOrNull;
+                      if (surah == null || _lastAyahNumber == null) return;
+                      if (_lastAyahNumber! < surah.ayat.length) {
+                        setState(() {
+                          _lastAyahNumber = _lastAyahNumber! + 1;
+                        });
+                      }
+                    },
+                    onSwipeRight: () {
+                      if (_lastAyahNumber == null) return;
+                      if (_lastAyahNumber! > 1) {
+                        setState(() {
+                          _lastAyahNumber = _lastAyahNumber! - 1;
+                        });
+                      }
+                    },
                   );
                 },
               ),

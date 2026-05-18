@@ -12,6 +12,8 @@ class SelectedAyahPanel extends StatelessWidget {
     required this.onCopy,
     required this.onSave,
     this.isPlaying = false,
+    this.onSwipeLeft,
+    this.onSwipeRight,
   });
 
   final bool visible;
@@ -23,6 +25,8 @@ class SelectedAyahPanel extends StatelessWidget {
   final VoidCallback onCopy;
   final VoidCallback onSave;
   final bool isPlaying;
+  final VoidCallback? onSwipeLeft;
+  final VoidCallback? onSwipeRight;
 
   TextStyle _ayahPreviewTextStyle(BuildContext context, Color color) =>
       DefaultTextStyle.of(context).style.copyWith(
@@ -44,24 +48,32 @@ class SelectedAyahPanel extends StatelessWidget {
           offset: visible ? Offset.zero : const Offset(0, 1.1),
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          child: AnimatedOpacity(
-            opacity: visible ? 1 : 0,
-            duration: const Duration(milliseconds: 180),
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHigh.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cs.outlineVariant),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity == null) return;
+                if (details.primaryVelocity! < -150) {
+                  // Swipe Left -> next Ayah
+                  onSwipeLeft?.call();
+                } else if (details.primaryVelocity! > 150) {
+                  // Swipe Right -> previous Ayah
+                  onSwipeRight?.call();
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHigh.withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: cs.outlineVariant),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
