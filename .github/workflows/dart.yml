@@ -6,6 +6,9 @@ on:
       - 'v*'          # عند عمل تاج إصدار
   workflow_dispatch:   # تشغيل يدوي
 
+permissions:
+  contents: write      # صلاحيات كتابة ضرورية لرفع الريليس
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,11 +32,26 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Update pubspec.yaml version from Git Tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # استخراج رقم الإصدار من التاج (مثال: v1.0.2 -> 1.0.2)
+          # وإذا كان التاج v1.0.2+3 يصبح 1.0.2+3
+          TAG_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          echo "Updating pubspec.yaml version to: $TAG_VERSION"
+          sed -i "s/^version: .*/version: $TAG_VERSION/" pubspec.yaml
+
       - name: Pub get
         run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --release
+
+      - name: Prepare APK release file
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # نسخ الـ APK وتسميته باسم جميل متوافق مع رقم الإصدار
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/QuranGlow-${{ github.ref_name }}.apk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -46,4 +64,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: quranglow/build/app/outputs/flutter-apk/app-release.apk
+          files: quranglow/build/app/outputs/flutter-apk/QuranGlow-${{ github.ref_name }}.apk
+          name: "إصدار ${{ github.ref_name }}"
+          body: "تحديث جديد لتطبيق بُستان (QuranGlow) - الإصدار ${{ github.ref_name }} 🎉"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
