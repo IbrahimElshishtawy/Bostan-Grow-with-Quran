@@ -1,153 +1,87 @@
 <div align="center">
 
-<br>
+  <img src="quranglow/assets/iosn/icongrowquran.jpg" alt="QuranGlow Logo" width="150" />
 
-<img src="quranglow/assets/iosn/icongrowquran.jpg" alt="QuranGlow Logo" width="120" />
+  # بستان | توهج القرآن (QuranGlow)
 
-<br><br>
+  **تطبيق قرآني متكامل بلمسة عصرية - اقرأ • استمع • تدبر • تابع**
 
-# QuranGlow
+  [![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+  [![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+  [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+  [![Download APK](https://img.shields.io/badge/Download_APK-0f766e?style=for-the-badge&logo=android&logoColor=white)](https://github.com/IbrahimElshishtawy/QuranGlow/releases/latest)
 
-#### تطبيق قرآني متكامل — اقرأ · استمع · تدبّر · تابع<br>
-
-[![Download APK](https://img.shields.io/badge/Download_APK-0f766e?style=flat-square&logo=android&logoColor=white)](https://github.com/IbrahimElshishtawy/QuranGlow/releases/download/v1.0.0/QuranGlow.apk)
-[![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white)](https://dart.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase&logoColor=black)](https://firebase.google.com)
-[![Android](https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white)](https://github.com/IbrahimElshishtawy/QuranGlow/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-
-<br>
-
-[آخر إصدار](https://github.com/IbrahimElshishtawy/QuranGlow/releases/latest) · 
-[الإبلاغ عن مشكلة](https://github.com/IbrahimElshishtawy/QuranGlow/issues/new) · 
-[اقتراح ميزة](https://github.com/IbrahimElshishtawy/QuranGlow/issues/new?template=feature_request.md)
-
-<br>
 </div>
 
 ---
 
-## 📌 نظرة عامة
-
-**QuranGlow** ليس مجرد قارئ للمصحف — بل مساحة يومية متكاملة تُرافقك في رحلتك مع القرآن الكريم.
-
-صُمّم ليجمع كل ما تحتاجه في مكان واحد: قراءة سلسة، تلاوات عالية الجودة، تفسير فوري، أذكار يومية، اتجاه القبلة، وإحصاءات ذكية لمتابعة تقدّمك كل يوم — كل ذلك بتجربة أنيقة وسريعة.
-
----
-## 📸 لقطات الشاشة
-
-<div align="center" style="border: 2px solid #7EC8E0; padding: 10px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
-  <img src="quranglow/assets/iosn/photo_2026-03-12_20-45-16.jpg" width="80%" style="border-radius: 8px;"/>
-</div>
----
-
-## ✨ المميزات
-
-<table>
-<tr>
-<td width="50%">
-
-### 📖 المصحف
-واجهة قراءة عربية حديثة وسلسة مع دعم كامل للتنقل بين السور والآيات وحفظ المحفوظات.
-
-### 💡 التفسير
-اعرض تفسير أي آية فوراً من داخل شاشة القراءة مباشرةً دون أي انتقال.
-
-### 🎵 الصوتيات
-استمع لتلاوات عالية الجودة مع إمكانية التنزيل للاستماع بدون إنترنت.
-
-### 🔍 البحث
-وصول سريع للسور والآيات والمحتوى مع محفوظات للرجوع السريع.
-
-</td>
-<td width="50%">
-
-### 📿 الأذكار
-أذكار الصباح والمساء مع سبحة رقمية تفاعلية.
-
-### 🧭 اتجاه القبلة
-تحديد اتجاه القبلة بدقة ومواقيت الصلاة من داخل التطبيق.
-
-### 📊 الأهداف والإحصاءات
-تابع تقدّمك اليومي وحقق أهدافك مع نظام ذكي للإحصاءات والمتابعة.
-
-### 🔔 الإشعارات الذكية
-تذكيرات قابلة للتخصيص الكامل مدعومة بـ Firebase لضمان الاستمرارية.
-
-</td>
-</tr>
-</table>
+## 🌟 عن التطبيق
+**بستان (QuranGlow)** هو تطبيق إسلامي شامل مصمم بأحدث التقنيات لتقديم تجربة مستخدم استثنائية (Premium UI/UX). يدمج التطبيق بين قراءة القرآن الكريم والاستماع لأعذب التلاوات، مع نظام مبتكر للتعلم باللعب (Gamification) لتشجيع المستخدمين على الاستمرارية وتكوين عادات إسلامية يومية.
 
 ---
 
-## 📥 التحميل
+## ✨ الميزات الرئيسية
 
-| الطريقة | الرابط |
-|---------|--------|
-| ⬇️ تحميل APK مباشرة | [app-release.apk](https://github.com/IbrahimElshishtawy/QuranGlow/releases/download/v1.0.0/QuranGlow.apk) |
-| 🏷️ صفحة الإصدارات | [GitHub Releases](https://github.com/IbrahimElshishtawy/QuranGlow/releases/latest) |
+### 🎮 نظام التعلم التفاعلي (Gamification)
+* **خرائط التقدم:** مسارات تعلم تفاعلية مستوحاة من أحدث التطبيقات التعليمية.
+* **نقاط الخبرة (XP):** اكسب النقاط مع كل قراءة وتحدي تنجزه.
+* **نظام الاستمرارية (Streaks):** حافظ على وردك اليومي وشاهد شعلة إنجازاتك تضيء.
+* **مستويات متعددة:** رحلة تعلم مقسمة لمستويات (سور، تجويد، مراجعة، تحديات يومية).
 
-> **تنبيه:** عند رفع إصدار جديد، تأكد من تسمية الملف `app-release.apk` بالضبط حتى يعمل رابط التحميل تلقائياً.
+### 🕌 مواقيت الصلاة والقبلة
+* **مواقيت دقيقة:** حساب دقيق لأوقات الصلاة بناءً على موقعك الجغرافي.
+* **عداد تنازلي:** واجهة حية تعرض الوقت المتبقي للصلاة القادمة.
+* **بوصلة القبلة:** بوصلة ذكية وعالية الدقة لتحديد اتجاه الكعبة المشرفة.
 
----
+### 📢 منظومة الأذان والإشعارات
+* **أصوات أذان متعددة:** اختر من بين أعذب الأصوات (مكة، المدينة، الأقصى).
+* **تنبيهات مخصصة:** إشعارات قبل دخول وقت الصلاة لتستعد براحة.
 
-## 🛠️ التقنيات المستخدمة
+### 🎧 مشغل صوتيات احترافي (Premium Player)
+* **تحكم كامل:** تخصيص سرعة التلاوة، واختيار جودة الصوت.
+* **تكرار ذكي:** خيارات تكرار للآيات أو السور للمساعدة في الحفظ.
+* **أشهر القراء:** استمع لنخبة من كبار قراء العالم الإسلامي.
 
-| التقنية | الاستخدام |
-|---------|-----------|
-| [Flutter](https://flutter.dev) | إطار العمل الأساسي للتطبيق |
-| [Riverpod](https://riverpod.dev) | إدارة الحالة |
-| [Hive](https://docs.hivedb.dev) | التخزين المحلي السريع |
-| [Firebase](https://firebase.google.com) | الإشعارات والمزامنة السحابية |
-| [Just Audio](https://pub.dev/packages/just_audio) | تشغيل التلاوات الصوتية |
-| [Flutter Local Notifications](https://pub.dev/packages/flutter_local_notifications) | الإشعارات المحلية |
-
----
-
-
-## 🤝 المساهمة
-
-المساهمات مرحّب بها! إليك كيفية المشاركة:
-
-1. **Fork** المستودع
-2. أنشئ branch جديد: `git checkout -b feature/اسم-الميزة`
-3. طبّق تغييراتك وـ commit: `git commit -m 'إضافة ميزة جديدة'`
-4. ادفع التغييرات: `git push origin feature/اسم-الميزة`
-5. افتح **Pull Request**
-
-> يُرجى فتح [Issue](https://github.com/IbrahimElshishtawy/QuranGlow/issues) أولاً لمناقشة أي تغيير جوهري.
+### 🎨 تصميم عصري وتجربة مستخدم مذهلة
+* **واجهات Glassmorphism:** تصميم إسلامي حديث يعتمد على تأثيرات الزجاج والشفافية.
+* **ألوان مريحة:** لوحة ألوان مستوحاة من الطبيعة الإسلامية (الأخضر الملكي والذهبي).
+* **حركات سلسة (Animations):** تفاعلات بصرية مريحة تزيد من متعة استخدام التطبيق.
 
 ---
 
-## 📄 الترخيص
+## 🛠 التقنيات المستخدمة
 
-هذا المشروع مرخّص تحت رخصة [MIT](LICENSE) — يمكنك الاستخدام والتعديل والتوزيع بحرية.
+تم بناء هذا المشروع ليكون قابلاً للتطوير (Scalable) ومستقراً، وذلك بالاعتماد على:
+
+* **إطار العمل:** [Flutter](https://flutter.dev/)
+* **لغة البرمجة:** Dart
+* **البنية البرمجية:** Clean Architecture
+* **إدارة الحالة:** Riverpod
+* **الخدمات السحابية:** Firebase (Firestore, Auth)
+* **المكتبات الأساسية:** `just_audio` للصوتيات، `lottie` للرسوم المتحركة، `dio` للشبكات.
 
 ---
 
-## 👨‍💻 المطوّر
+## 📸 لقطات من التطبيق (Screenshots)
+> *(قريباً - يمكنك وضع صور التطبيق هنا عن طريق سحبها وإفلاتها)*
 
 <div align="center">
-
-**Ibrahim Elshishtawy**
-
-[![GitHub](https://img.shields.io/badge/GitHub-IbrahimElshishtawy-181717?style=flat-square&logo=github)](https://github.com/IbrahimElshishtawy)
-[![Email](https://img.shields.io/badge/Email-shishtawyhima@gmail.com-EA4335?style=flat-square&logo=gmail&logoColor=white)](mailto:shishtawyhima@gmail.com)
-[![Phone](https://img.shields.io/badge/Phone-01223070571-25D366?style=flat-square&logo=whatsapp&logoColor=white)](tel:+201223070571)
-
+  <img src="" width="200" alt="Home Screen"/>
+  <img src="" width="200" alt="Gamification Screen"/>
+  <img src="" width="200" alt="Prayer Screen"/>
 </div>
 
 ---
 
+## 📥 التحميل والتجربة
+
+يمكنك تجربة التطبيق الآن على أجهزة الأندرويد:
+1. اذهب إلى صفحة [الإصدارات (Releases)](https://github.com/IbrahimElshishtawy/QuranGlow/releases).
+2. قم بتحميل أحدث ملف `APK`.
+3. قم بتثبيته على هاتفك واستمتع!
+
+---
 <div align="center">
-
-<br>
-
-صُنع بـ ❤️ بواسطة [Ibrahim Elshishtawy ](https://github.com/IbrahimElshishtawy) و [Flutter](https://flutter.dev)
-
-<br>
-
-⭐ أعجبك المشروع؟ لا تنسَ تضغط Star!
-
+  <b>صُنع بحب 💚 لخدمة كتاب الله</b><br>
+  المطور: <a href="https://github.com/IbrahimElshishtawy">إبراهيم الشيشتاوي</a>
 </div>
