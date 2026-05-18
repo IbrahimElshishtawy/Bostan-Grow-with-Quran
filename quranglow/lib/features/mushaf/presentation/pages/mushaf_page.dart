@@ -22,8 +22,7 @@ import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_top_bar.da
 import 'package:quranglow/features/mushaf/presentation/widgets/position_store.dart';
 import 'package:quranglow/features/mushaf/presentation/widgets/selected_ayah_panel.dart';
 import 'package:quranglow/features/mushaf/presentation/widgets/mushaf_audio_bar.dart';
-import 'package:quranglow/features/tafsir/presentation/widgets/ayah_card.dart';
-import 'package:quranglow/features/tafsir/presentation/widgets/tafsir_card.dart';
+
 import 'package:quranglow/features/tafsir/presentation/widgets/swipable_tafsir_sheet.dart';
 import 'package:quranglow/core/widgets/shimmer_loading.dart';
 import 'package:quranglow/features/ui/routes/app_routes.dart';
@@ -35,12 +34,13 @@ final surahProvider = FutureProvider.autoDispose
     });
 
 final audioMapProvider =
-    FutureProvider.family<Map<int, String>, (String editionId, int chapter)>(
-  (ref, params) async {
-    final service = ref.read(quranServiceProvider);
-    return service.getSurahAudioUrlMap(params.$1, params.$2);
-  },
-);
+    FutureProvider.family<Map<int, String>, (String editionId, int chapter)>((
+      ref,
+      params,
+    ) async {
+      final service = ref.read(quranServiceProvider);
+      return service.getSurahAudioUrlMap(params.$1, params.$2);
+    });
 
 class MushafPage extends ConsumerStatefulWidget {
   const MushafPage({
@@ -169,14 +169,14 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   void _goPrev() {
     if (_chapter <= 1) return;
-    
+
     final wasPlaying = _ayahPreviewPlayer.playing;
     setState(() {
       _chapter--;
       _lastAyahNumber = null;
     });
     _pagedMushafKey.currentState?.animateToPage(0);
-    
+
     // 🎵 Auto-switch audio to new surah if was playing
     if (wasPlaying) {
       final surahAsync = ref.read(surahProvider((_chapter, widget.editionId)));
@@ -186,7 +186,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
 
   void _goNext() {
     if (_chapter >= 114) return;
-    
+
     final wasPlaying = _ayahPreviewPlayer.playing;
     setState(() {
       _chapter++;
@@ -256,14 +256,20 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     ).showSnackBar(const SnackBar(content: Text('تم نسخ الآية')));
   }
 
-  Future<void> _playAyahAudio(List<Aya> allAyat, int startAyahNumber, {bool singleOnly = false}) async {
+  Future<void> _playAyahAudio(
+    List<Aya> allAyat,
+    int startAyahNumber, {
+    bool singleOnly = false,
+  }) async {
     if (_voiceReciteMode) {
-      debugPrint('Blocking local playback because voice recitation mode is active.');
+      debugPrint(
+        'Blocking local playback because voice recitation mode is active.',
+      );
       return;
     }
     try {
       final audioEdition = _audioEditionId();
-      
+
       // 🟢 FIX: Await the future instead of using valueOrNull to prevent failure during loading
       // Show a subtle loading indicator in a SnackBar if it takes more than 300ms
       final loadingTimer = Timer(const Duration(milliseconds: 300), () {
@@ -272,7 +278,14 @@ class _MushafPageState extends ConsumerState<MushafPage> {
             const SnackBar(
               content: Row(
                 children: [
-                  SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
                   SizedBox(width: 16),
                   Text('جاري تحضير ملفات الصوت...'),
                 ],
@@ -283,20 +296,29 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         }
       });
 
-      final audioMap = await ref.read(audioMapProvider((audioEdition, _chapter)).future);
+      final audioMap = await ref.read(
+        audioMapProvider((audioEdition, _chapter)).future,
+      );
       loadingTimer.cancel();
 
       if (audioMap.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('عذراً، لا توجد ملفات صوتية متاحة لهذا القارئ حالياً.')),
+          const SnackBar(
+            content: Text(
+              'عذراً، لا توجد ملفات صوتية متاحة لهذا القارئ حالياً.',
+            ),
+          ),
         );
         return;
       }
 
       // 1. Prepare source(s)
       final service = ref.read(quranServiceProvider);
-      final verseDurations = await service.getVerseDurations(audioEdition, _chapter);
+      final verseDurations = await service.getVerseDurations(
+        audioEdition,
+        _chapter,
+      );
 
       if (singleOnly) {
         // Single Ayah playback
@@ -320,7 +342,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         }
       } else {
         // Continuous playback (Existing logic)
-        bool needsNewSource = _currentPlayingEdition != audioEdition || _currentPlayingChapter != _chapter || _ayahPreviewPlayer.audioSource == null;
+        bool needsNewSource =
+            _currentPlayingEdition != audioEdition ||
+            _currentPlayingChapter != _chapter ||
+            _ayahPreviewPlayer.audioSource == null;
 
         if (needsNewSource) {
           final List<AudioSource> sources = [];
@@ -344,12 +369,15 @@ class _MushafPageState extends ConsumerState<MushafPage> {
           }
           if (sources.isEmpty) return;
           await _ayahPreviewPlayer.setAudioSource(
-            ConcatenatingAudioSource(children: sources, useLazyPreparation: false),
+            ConcatenatingAudioSource(
+              children: sources,
+              useLazyPreparation: false,
+            ),
             initialIndex: (startAyahNumber - 1).clamp(0, sources.length - 1),
             preload: true,
           );
           await _ayahPreviewPlayer.setLoopMode(LoopMode.off);
-          
+
           // Update trackers
           _currentPlayingEdition = audioEdition;
           _currentPlayingChapter = _chapter;
@@ -393,7 +421,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     final url = quranSvc.getSurahFullAudioUrl(editionId, _chapter);
 
     try {
-      final dir = await downloadSvc.surahDir(reciter: editionId, surah: _chapter);
+      final dir = await downloadSvc.surahDir(
+        reciter: editionId,
+        surah: _chapter,
+      );
       final savePath = '${dir.path}/full.mp3';
 
       if (!mounted) return;
@@ -431,7 +462,6 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     }
   }
 
-
   Future<void> _openAyahActions({
     required int ayahNumber,
     required List<Aya> ayat,
@@ -450,7 +480,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
         onAyahChanged: (nextAyahNumber) {
           setState(() => _lastAyahNumber = nextAyahNumber);
         },
-        onPlayAyah: (ayat, ayahNum) => _playAyahAudio(ayat, ayahNum, singleOnly: true),
+        onPlayAyah: (ayat, ayahNum) =>
+            _playAyahAudio(ayat, ayahNum, singleOnly: true),
         onOpenTafsir: (currentAyahNumber) {
           Navigator.pop(ctx);
           _openTafsirForAyah(currentAyahNumber);
@@ -469,8 +500,12 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     ref.listen(settingsProvider, (prev, next) {
       final oldEdition = prev?.valueOrNull?.readerEditionId;
       final newEdition = next.valueOrNull?.readerEditionId;
-      if (newEdition != null && oldEdition != newEdition && _ayahPreviewPlayer.playing) {
-        debugPrint('Reciter changed from $oldEdition to $newEdition. Updating player...');
+      if (newEdition != null &&
+          oldEdition != newEdition &&
+          _ayahPreviewPlayer.playing) {
+        debugPrint(
+          'Reciter changed from $oldEdition to $newEdition. Updating player...',
+        );
         final surah = asyncSurah.valueOrNull;
         if (surah != null) {
           // Restart playback with new reciter at current index
@@ -535,8 +570,12 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 loading: () => const MushafSkeleton(),
                 error: (e, _) {
                   final errStr = e.toString().toLowerCase();
-                  final isNetworkError = errStr.contains('dio') || errStr.contains('socket') || errStr.contains('network') || errStr.contains('host');
-                  
+                  final isNetworkError =
+                      errStr.contains('dio') ||
+                      errStr.contains('socket') ||
+                      errStr.contains('network') ||
+                      errStr.contains('host');
+
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
@@ -546,18 +585,25 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .errorContainer
+                                  .withValues(alpha: 0.3),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
+                              isNetworkError
+                                  ? Icons.wifi_off_rounded
+                                  : Icons.error_outline_rounded,
                               size: 48,
                               color: Theme.of(context).colorScheme.error,
                             ),
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            isNetworkError ? 'لا يوجد اتصال بالإنترنت' : 'عذراً، تعذر تحميل السورة',
+                            isNetworkError
+                                ? 'لا يوجد اتصال بالإنترنت'
+                                : 'عذراً، تعذر تحميل السورة',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
@@ -566,13 +612,15 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            isNetworkError 
+                            isNetworkError
                                 ? 'يرجى التحقق من اتصالك بالشبكة لسحب بيانات المصحف الشريف.'
                                 : 'حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى لاحقاً.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontFamily: 'Tajawal',
                               height: 1.5,
                             ),
@@ -580,10 +628,21 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                           const SizedBox(height: 28),
                           ElevatedButton.icon(
                             icon: const Icon(Icons.refresh_rounded, size: 20),
-                            label: const Text('إعادة المحاولة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                            label: const Text(
+                              'إعادة المحاولة',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
                             onPressed: () => ref.refresh(
                               surahProvider((_chapter, widget.editionId)),
@@ -629,7 +688,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
                   } else {
-                    Navigator.pushReplacementNamed(context, AppRoutes.gamificationHome);
+                    Navigator.pushReplacementNamed(
+                      context,
+                      AppRoutes.gamificationHome,
+                    );
                   }
                 },
                 onPrev: _chapter > 1 ? _goPrev : null,
@@ -658,7 +720,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                   MyAudioHandler.isSpeechModeActive = _voiceReciteMode;
 
                   if (_voiceReciteMode) {
-                    _ayahPreviewPlayer.stop(); // 🛑 Stop any background audio immediately
+                    _ayahPreviewPlayer
+                        .stop(); // 🛑 Stop any background audio immediately
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text(
@@ -736,11 +799,16 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                 stream: _ayahPreviewPlayer.playerStateStream,
                 builder: (context, snapshot) {
                   final state = snapshot.data;
-                  final isPlaying = (state?.playing ?? false) && (state?.processingState != ProcessingState.completed);
+                  final isPlaying =
+                      (state?.playing ?? false) &&
+                      (state?.processingState != ProcessingState.completed);
                   final hasSource = _ayahPreviewPlayer.audioSource != null;
-                  
+
                   // Only show global bar if playing AND individual Ayah panel is hidden
-                  final showGlobalBar = isPlaying && hasSource && (_lastAyahNumber == null || !_uiVisible);
+                  final showGlobalBar =
+                      isPlaying &&
+                      hasSource &&
+                      (_lastAyahNumber == null || !_uiVisible);
 
                   return MushafAudioBar(
                     visible: showGlobalBar,
@@ -900,7 +968,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
     } catch (e) {
       debugPrint('Failed to pause playerController: $e');
     }
-    
+
     if (!_speechEnabled) {
       await _initSpeech();
       if (!_speechEnabled) {

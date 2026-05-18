@@ -74,12 +74,6 @@ class NotificationService {
   Future<void> requestPermissionsIfNeededFromUI(BuildContext context) async {
     if (!_isSupported || !context.mounted) return;
 
-    final hasUiView =
-        WidgetsBinding.instance.platformDispatcher.implicitView != null;
-    final isResumed =
-        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
-    if (!hasUiView || !isResumed) return;
-
     try {
       if (Platform.isAndroid) {
         final android = _plugin
