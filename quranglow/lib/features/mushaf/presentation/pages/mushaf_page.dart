@@ -12,6 +12,7 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:quranglow/core/di/providers.dart';
+import 'package:quranglow/core/service/audio/audio_locator.dart';
 import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/core/model/aya/aya.dart';
 import 'package:quranglow/core/model/book/surah.dart';
@@ -67,7 +68,7 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   StreamSubscription? _ayahPlayerSub;
 
   final _pos = PositionStore();
-  final _ayahPreviewPlayer = AudioPlayer();
+  AudioPlayer get _ayahPreviewPlayer => audioHandler.player;
   final GlobalKey<PagedMushafState> _pagedMushafKey =
       GlobalKey<PagedMushafState>();
 
@@ -126,9 +127,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
       _trackingService.endSession();
     }
     _ayahPlayerSub?.cancel();
-    _ayahPreviewPlayer.dispose();
+    _ayahPreviewPlayer.stop();
     _speechToText.stop(); // Safely stop listening on exit
     MyAudioHandler.isSpeechActive = false;
+    MyAudioHandler.isSpeechModeActive = false;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     WakelockPlus.disable();
@@ -305,6 +307,10 @@ class _MushafPageState extends ConsumerState<MushafPage> {
   }
 
   Future<void> _playAyahAudio(List<Aya> allAyat, int startAyahNumber, {bool singleOnly = false}) async {
+    if (_voiceReciteMode) {
+      debugPrint('Blocking local playback because voice recitation mode is active.');
+      return;
+    }
     try {
       final audioEdition = _audioEditionId();
       
@@ -698,6 +704,8 @@ class _MushafPageState extends ConsumerState<MushafPage> {
                     _wordsSpoken = "";
                     _uiVisible = false; // Hide standard UI to focus on Hifz
                   });
+
+                  MyAudioHandler.isSpeechModeActive = _voiceReciteMode;
 
                   if (_voiceReciteMode) {
                     _ayahPreviewPlayer.stop(); // 🛑 Stop any background audio immediately

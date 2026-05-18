@@ -43,6 +43,7 @@ class _InteractiveMemorizeDialogState
   @override
   void initState() {
     super.initState();
+    MyAudioHandler.isSpeechModeActive = true;
 
     // Ensure immediate check for existing heart balance before startup!
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -77,6 +78,7 @@ class _InteractiveMemorizeDialogState
     _textController.dispose();
     _speechToText.stop();
     MyAudioHandler.isSpeechActive = false;
+    MyAudioHandler.isSpeechModeActive = false;
     super.dispose();
   }
 

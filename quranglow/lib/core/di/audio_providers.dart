@@ -9,6 +9,7 @@ import 'package:quranglow/core/di/service_providers.dart';
 import 'package:quranglow/core/model/book/Play_list_State.dart';
 import 'package:quranglow/core/model/book/surah.dart';
 import 'package:quranglow/core/service/audio/audio_locator.dart';
+import 'package:quranglow/core/service/audio/my_audio_handler.dart';
 import 'package:quranglow/features/player/presentation/widgets/CombinedPositionData.dart';
 
 final audioEditionsProvider = FutureProvider<List<dynamic>>((ref) async {
@@ -489,6 +490,10 @@ class PlayerController extends StateNotifier<AsyncValue<PlayerUiState>> {
   }
 
   Future<void> play() async {
+    if (MyAudioHandler.isSpeechActive) {
+      debugPrint('Blocking global player play() because speech/microphone is active');
+      return;
+    }
     try {
       await _ensureSurahLoaded();
       await _player.play();

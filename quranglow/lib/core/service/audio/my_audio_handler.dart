@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 class MyAudioHandler extends BaseAudioHandler with SeekHandler {
   static bool isSpeechActive = false;
+  static bool isSpeechModeActive = false;
   final AudioPlayer _player = AudioPlayer();
   AudioPlayer get player => _player;
   String? _activeUrl;
@@ -22,6 +23,8 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
 
+    bool playOnInterruptionEnd = false;
+
     // Handle audio focus and interruptions (e.g., phone call, other music app)
     session.interruptionEventStream.listen((event) {
       if (event.begin) {
@@ -31,6 +34,7 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
             break;
           case AudioInterruptionType.pause:
           case AudioInterruptionType.unknown:
+            playOnInterruptionEnd = _player.playing;
             pause();
             break;
         }
@@ -40,9 +44,10 @@ class MyAudioHandler extends BaseAudioHandler with SeekHandler {
             _player.setVolume(1.0);
             break;
           case AudioInterruptionType.pause:
-            if (!isSpeechActive) {
+            if (playOnInterruptionEnd && !isSpeechActive && !isSpeechModeActive) {
               play();
             }
+            playOnInterruptionEnd = false;
             break;
           case AudioInterruptionType.unknown:
             break;

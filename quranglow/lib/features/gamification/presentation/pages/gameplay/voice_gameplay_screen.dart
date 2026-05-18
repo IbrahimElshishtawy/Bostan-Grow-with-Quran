@@ -39,6 +39,7 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
   @override
   void initState() {
     super.initState();
+    MyAudioHandler.isSpeechModeActive = true;
     _initSpeech();
     _loadLevelData();
   }
@@ -47,6 +48,7 @@ class _VoiceGameplayScreenState extends ConsumerState<VoiceGameplayScreen> {
   void dispose() {
     _speechToText.stop();
     MyAudioHandler.isSpeechActive = false;
+    MyAudioHandler.isSpeechModeActive = false;
     super.dispose();
   }
 
