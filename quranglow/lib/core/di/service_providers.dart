@@ -11,6 +11,7 @@ import 'package:quranglow/core/service/setting/download_service.dart';
 import 'package:quranglow/core/service/quran/stats_service.dart';
 import 'package:quranglow/core/service/quran/stats_service_impl.dart';
 import 'package:quranglow/core/service/setting/goals_service.dart';
+export 'package:quranglow/core/service/update_service.dart';
 
 final quranServiceProvider = Provider<QuranService>((ref) {
   return QuranService(

@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quranglow/core/di/providers.dart';
 import 'package:quranglow/features/azkar/presentation/pages/azkar_tasbih_page.dart';
 import 'package:quranglow/features/gamification/presentation/pages/modern_home_screen.dart';
 import 'package:quranglow/features/home/presentation/widgets/app_drawer.dart';
@@ -9,14 +11,23 @@ import 'package:quranglow/features/player/presentation/pages/player_page.dart';
 import 'package:quranglow/features/prayer/presentation/pages/prayer_qibla_screen.dart';
 import 'package:quranglow/features/surah/presentation/pages/surah_list_page.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // التحقق من وجود تحديثات تلقائياً عند فتح التطبيق بعد انتهاء رندر الصفحة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appUpdateServiceProvider).checkForUpdate(context);
+    });
+  }
+
   int _tab = 0;
   bool _isNavVisible = true;
 

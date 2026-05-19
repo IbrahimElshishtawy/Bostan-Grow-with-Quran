@@ -14,7 +14,7 @@ class AyahSpanBuilder {
   final double fontScale;
 
   final Map<int, List<InlineSpan>> _cache = {};
-  static final _selectedAyahColor = Colors.green.withValues(alpha: 0.16);
+  static const _selectedAyahColor = Color(0x1AD4AF37);
 
   TextStyle get _base => TextStyle(
     fontSize: 22 * fontScale,
@@ -31,6 +31,7 @@ class AyahSpanBuilder {
     bool isHifzMode = false,
     Map<int, Set<int>> revealedWords = const {},
     Map<int, Set<int>> mistakenWords = const {},
+    Color? selectionColor,
   }) {
     // Compute stable content hash for the Map cache keys
     int revealedContentHash = 0;
@@ -51,6 +52,7 @@ class AyahSpanBuilder {
       revealedContentHash,
       mistakenWords.length,
       mistakenContentHash,
+      selectionColor,
     );
     if (_cache.containsKey(cacheKey)) {
       return _cache[cacheKey]!;
@@ -61,6 +63,8 @@ class AyahSpanBuilder {
       r.dispose();
     }
     recognizersBucket.clear();
+
+    final Color selColor = selectionColor ?? _selectedAyahColor;
 
     for (var i = 0; i < ayat.length; i++) {
       final a = ayat[i];
@@ -76,7 +80,11 @@ class AyahSpanBuilder {
       
       TextStyle baseStyle = selected
           ? _base.copyWith(
-              backgroundColor: isHifzMode && !isAnyWordRevealed ? Colors.transparent : _selectedAyahColor,
+              background: (isHifzMode && !isAnyWordRevealed)
+                  ? null
+                  : (Paint()
+                      ..color = selColor
+                      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5)),
             )
           : _base;
 
@@ -93,7 +101,10 @@ class AyahSpanBuilder {
             fontWeight: FontWeight.bold,
           );
         } else if (isWordHidden) {
-          s = s.copyWith(color: Colors.transparent, backgroundColor: Colors.transparent);
+          s = s.copyWith(
+            color: Colors.transparent, 
+            background: Paint()..color = Colors.transparent,
+          );
         }
         out.add(TextSpan(text: '${words[wIdx]} ', style: s, recognizer: r));
       }
@@ -142,9 +153,11 @@ class AyahSpanBuilder {
                   width: 26,
                   height: 26,
                   decoration: BoxDecoration(
-                    color: selected ? Colors.green.shade100 : Colors.transparent,
+                    color: selected
+                        ? const Color(0xFFD4AF37).withOpacity(0.25)
+                        : Colors.transparent,
                     border: Border.all(
-                      color: ayahNumberColor ?? const Color(0xFFD4AF37),
+                      color: const Color(0xFFD4AF37),
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(3),
@@ -156,9 +169,11 @@ class AyahSpanBuilder {
                 width: 26,
                 height: 26,
                 decoration: BoxDecoration(
-                  color: selected ? Colors.green.shade100 : Colors.transparent,
+                  color: selected
+                      ? const Color(0xFFD4AF37).withOpacity(0.25)
+                      : Colors.transparent,
                   border: Border.all(
-                    color: ayahNumberColor ?? const Color(0xFFD4AF37),
+                    color: const Color(0xFFD4AF37),
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(3),
@@ -170,12 +185,12 @@ class AyahSpanBuilder {
                 child: Text(
                   txt,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
                     fontFamily: 'KFGQPC Uthmanic Script',
                     height: 1.0,
-                    color: ayahNumberColor ?? const Color(0xFF5D4037),
+                    color: Color(0xFFD4AF37),
                   ),
                 ),
               ),
