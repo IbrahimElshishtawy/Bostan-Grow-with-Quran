@@ -118,7 +118,7 @@ class ProAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: const EdgeInsetsDirectional.only(end: 8),
             child: Row(mainAxisSize: MainAxisSize.min, children: actions!),
           ),
-        if (backButton != null) backButton,
+        ?backButton,
       ],
     );
   }

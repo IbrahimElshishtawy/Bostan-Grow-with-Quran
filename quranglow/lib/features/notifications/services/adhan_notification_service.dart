@@ -33,7 +33,7 @@ class AdhanNotificationService {
       iOS: iosSettings,
     );
 
-    await _notificationsPlugin.initialize(initSettings);
+    await _notificationsPlugin.initialize(settings: initSettings);
 
     // Create notification channels
     await _createNotificationChannels();
@@ -82,11 +82,11 @@ class AdhanNotificationService {
 
     try {
       await _notificationsPlugin.zonedSchedule(
-        notificationId,
-        'Time for ${prayer.type.englishName}',
-        'It\'s time to pray ${prayer.type.englishName}',
-        tz.TZDateTime.from(prayer.time, tz.local),
-        NotificationDetails(
+        id: notificationId,
+        title: 'Time for ${prayer.type.englishName}',
+        body: 'It\'s time to pray ${prayer.type.englishName}',
+        scheduledDate: tz.TZDateTime.from(prayer.time, tz.local),
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             'adhan_channel',
             'Adhan Notifications',
@@ -121,11 +121,11 @@ class AdhanNotificationService {
 
     try {
       await _notificationsPlugin.zonedSchedule(
-        notificationId,
-        '${prayer.type.englishName} in $minutesBefore minutes',
-        'Prepare for ${prayer.type.englishName} prayer',
-        tz.TZDateTime.from(reminderTime, tz.local),
-        NotificationDetails(
+        id: notificationId,
+        title: '${prayer.type.englishName} in $minutesBefore minutes',
+        body: 'Prepare for ${prayer.type.englishName} prayer',
+        scheduledDate: tz.TZDateTime.from(reminderTime, tz.local),
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             'reminder_channel',
             'Prayer Reminders',
@@ -150,7 +150,7 @@ class AdhanNotificationService {
   /// Cancel notification
   Future<void> cancelNotification(String prayerType) async {
     final notificationId = _getNotificationId(prayerType);
-    await _notificationsPlugin.cancel(notificationId);
+    await _notificationsPlugin.cancel(id: notificationId);
   }
 
   /// Cancel all notifications

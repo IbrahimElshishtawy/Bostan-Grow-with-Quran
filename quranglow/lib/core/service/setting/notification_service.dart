@@ -58,7 +58,7 @@ class NotificationService {
       macOS: darwinInit,
     );
 
-    await _plugin.initialize(settings);
+    await _plugin.initialize(settings: settings);
 
     if (Platform.isAndroid) {
       final android = _plugin
@@ -178,7 +178,7 @@ class NotificationService {
     final channelId = _prayerChannelId(adhanSound.id);
 
     try {
-      await android.deleteNotificationChannel(channelId);
+      await android.deleteNotificationChannel(channelId: channelId);
     } catch (_) {}
 
     await android.createNotificationChannel(
@@ -210,7 +210,7 @@ class NotificationService {
     const channelId = _salawatChannelId;
 
     try {
-      await android.deleteNotificationChannel(channelId);
+      await android.deleteNotificationChannel(channelId: channelId);
     } catch (_) {}
 
     await android.createNotificationChannel(
@@ -252,7 +252,7 @@ class NotificationService {
     DailyReminderKind kind = DailyReminderKind.quran,
   }) async {
     if (!_isSupported) return;
-    await _plugin.cancel(_dailyId);
+    await _plugin.cancel(id: _dailyId);
     if (!enabled) return;
 
     final settings = await SettingsService().load();
@@ -290,11 +290,11 @@ class NotificationService {
     };
 
     await _plugin.zonedSchedule(
-      _dailyId,
-      title,
-      body,
-      _nextInstanceOf(time),
-      NotificationDetails(android: android, iOS: ios, macOS: mac, windows: win),
+      id: _dailyId,
+      title: title,
+      body: body,
+      scheduledDate: _nextInstanceOf(time),
+      notificationDetails: NotificationDetails(android: android, iOS: ios, macOS: mac, windows: win),
       androidScheduleMode: mode,
       matchDateTimeComponents: DateTimeComponents.time,
     );
@@ -306,7 +306,7 @@ class NotificationService {
   }) async {
     if (!_isSupported) return;
     for (var i = 0; i < _salawatBatchSize; i++) {
-      await _plugin.cancel(_salawatId + i);
+      await _plugin.cancel(id: _salawatId + i);
     }
     if (!enabled) return;
 
@@ -338,11 +338,11 @@ class NotificationService {
     for (var i = 0; i < _salawatBatchSize; i++) {
       final scheduled = now.add(Duration(minutes: intervalMinutes * (i + 1)));
       await _plugin.zonedSchedule(
-        _salawatId + i,
-        'الصلاة على النبي ﷺ',
-        'اللهم صل وسلم على نبينا محمد ﷺ',
-        scheduled,
-        NotificationDetails(
+        id: _salawatId + i,
+        title: 'الصلاة على النبي ﷺ',
+        body: 'اللهم صل وسلم على نبينا محمد ﷺ',
+        scheduledDate: scheduled,
+        notificationDetails: NotificationDetails(
           android: android,
           iOS: ios,
           macOS: mac,
@@ -361,7 +361,7 @@ class NotificationService {
     required bool daily,
   }) async {
     if (!_isSupported) return;
-    await _plugin.cancel(id);
+    await _plugin.cancel(id: id);
 
     final mode = await _androidScheduleMode();
 
@@ -405,11 +405,11 @@ class NotificationService {
     }
 
     await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduled,
-      NotificationDetails(android: android, iOS: ios, macOS: mac, windows: win),
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduled,
+      notificationDetails: NotificationDetails(android: android, iOS: ios, macOS: mac, windows: win),
       androidScheduleMode: mode,
       matchDateTimeComponents: daily ? DateTimeComponents.time : null,
     );
@@ -438,10 +438,10 @@ class NotificationService {
     const win = WindowsNotificationDetails();
 
     await _plugin.show(
-      id,
-      title,
-      body,
-      const NotificationDetails(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
         android: android,
         iOS: ios,
         macOS: mac,
@@ -456,7 +456,7 @@ class NotificationService {
   }) async {
     if (!_isSupported) return;
     for (var i = 0; i < 7; i++) {
-      await _plugin.cancel(_smartLearningIdBase + i);
+      await _plugin.cancel(id: _smartLearningIdBase + i);
     }
     if (!enabled) return;
 
@@ -523,11 +523,11 @@ class NotificationService {
     for (var i = 0; i < reminders.length; i++) {
       final r = reminders[i];
       await _plugin.zonedSchedule(
-        _smartLearningIdBase + i,
-        r.title,
-        r.body,
-        now.add(Duration(hours: r.delay)),
-        const NotificationDetails(
+        id: _smartLearningIdBase + i,
+        title: r.title,
+        body: r.body,
+        scheduledDate: now.add(Duration(hours: r.delay)),
+        notificationDetails: const NotificationDetails(
           android: android,
           iOS: DarwinNotificationDetails(),
         ),
@@ -547,8 +547,8 @@ class NotificationService {
     final enabled = settings.smartLearningEnabled;
     
     // Cancel any existing first stage prompts
-    await _plugin.cancel(_firstStagePromptIdBase);
-    await _plugin.cancel(_firstStagePromptIdBase + 1);
+    await _plugin.cancel(id: _firstStagePromptIdBase);
+    await _plugin.cancel(id: _firstStagePromptIdBase + 1);
 
     if (!enabled || hasStartedFirstStage) return;
 
@@ -572,21 +572,21 @@ class NotificationService {
 
     // 1. Encouraging/enthusiastic notification after 24 hours (1 day)
     await _plugin.zonedSchedule(
-      _firstStagePromptIdBase,
-      'رحلتك في بستان النور تنتظرك! ✨',
-      'ابدأ خطوتك الأولى في فهم آيات القرآن وتدبرها الآن. نحن بانتظارك لتنال أول نجمة! 🌟',
-      now.add(const Duration(days: 1)),
-      const NotificationDetails(android: android, iOS: ios, macOS: mac),
+      id: _firstStagePromptIdBase,
+      title: 'رحلتك في بستان النور تنتظرك! ✨',
+      body: 'ابدأ خطوتك الأولى في فهم آيات القرآن وتدبرها الآن. نحن بانتظارك لتنال أول نجمة! 🌟',
+      scheduledDate: now.add(const Duration(days: 1)),
+      notificationDetails: const NotificationDetails(android: android, iOS: ios, macOS: mac),
       androidScheduleMode: mode,
     );
 
     // 2. Sad/reflective notification after 3 days (72 hours) if still not started
     await _plugin.zonedSchedule(
-      _firstStagePromptIdBase + 1,
-      'محزونون لغيابك عن بستان القرآن.. 😔',
-      'مضت ثلاثة أيام ولم تبدأ خطوتك الأولى بعد. لا تحرم قلبك من ربيع آيات الله، ابدأ الآن ولو بآية واحدة.',
-      now.add(const Duration(days: 3)),
-      const NotificationDetails(android: android, iOS: ios, macOS: mac),
+      id: _firstStagePromptIdBase + 1,
+      title: 'محزونون لغيابك عن بستان القرآن.. 😔',
+      body: 'مضت ثلاثة أيام ولم تبدأ خطوتك الأولى بعد. لا تحرم قلبك من ربيع آيات الله، ابدأ الآن ولو بآية واحدة.',
+      scheduledDate: now.add(const Duration(days: 3)),
+      notificationDetails: const NotificationDetails(android: android, iOS: ios, macOS: mac),
       androidScheduleMode: mode,
     );
   }
@@ -637,10 +637,10 @@ class NotificationService {
     );
 
     await _plugin.show(
-      991002,
-      title,
-      body,
-      NotificationDetails(
+      id: 991002,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
         android: android,
         iOS: const DarwinNotificationDetails(),
         macOS: const DarwinNotificationDetails(),
@@ -709,11 +709,11 @@ class NotificationService {
 
         // 1. Schedule the main Adhan notification
         await _plugin.zonedSchedule(
-          _prayerNotificationId(dayIndex, prayerIndex),
-          'حان الآن موعد صلاة ${_arabicPrayerName(key)}',
-          'حيّ على الصلاة، الآن أذان ${_arabicPrayerName(key)}.',
-          scheduled,
-          NotificationDetails(
+          id: _prayerNotificationId(dayIndex, prayerIndex),
+          title: 'حان الآن موعد صلاة ${_arabicPrayerName(key)}',
+          body: 'حيّ على الصلاة، الآن أذان ${_arabicPrayerName(key)}.',
+          scheduledDate: scheduled,
+          notificationDetails: NotificationDetails(
             android: android,
             iOS: ios,
             macOS: mac,
@@ -726,11 +726,11 @@ class NotificationService {
         final followUpTime = scheduled.add(const Duration(minutes: 5));
         final religiousMsg = _getReligiousReminderTitleAndBody(key);
         await _plugin.zonedSchedule(
-          _prayerFollowUpId(dayIndex, prayerIndex),
-          religiousMsg['title']!,
-          religiousMsg['body']!,
-          followUpTime,
-          NotificationDetails(
+          id: _prayerFollowUpId(dayIndex, prayerIndex),
+          title: religiousMsg['title']!,
+          body: religiousMsg['body']!,
+          scheduledDate: followUpTime,
+          notificationDetails: NotificationDetails(
             android: AndroidNotificationDetails(
               _prayerChannelId(adhanSound.id),
               'أذان الصلوات',
@@ -803,15 +803,15 @@ class NotificationService {
     if (!_isSupported) return;
     for (var dayIndex = 0; dayIndex < _prayerScheduleWindowDays; dayIndex++) {
       for (var prayerIndex = 0; prayerIndex < _prayerCount; prayerIndex++) {
-        await _plugin.cancel(_prayerNotificationId(dayIndex, prayerIndex));
-        await _plugin.cancel(_prayerFollowUpId(dayIndex, prayerIndex));
+        await _plugin.cancel(id: _prayerNotificationId(dayIndex, prayerIndex));
+        await _plugin.cancel(id: _prayerFollowUpId(dayIndex, prayerIndex));
       }
     }
   }
 
   Future<void> scheduleMorningAzkarReminder({required bool enabled}) async {
     if (!_isSupported) return;
-    await _plugin.cancel(_azkarMorningId);
+    await _plugin.cancel(id: _azkarMorningId);
     if (!enabled) return;
     await scheduleReminder(
       id: _azkarMorningId,
@@ -824,7 +824,7 @@ class NotificationService {
 
   Future<void> scheduleEveningAzkarReminder({required bool enabled}) async {
     if (!_isSupported) return;
-    await _plugin.cancel(_azkarEveningId);
+    await _plugin.cancel(id: _azkarEveningId);
     if (!enabled) return;
     await scheduleReminder(
       id: _azkarEveningId,
@@ -873,11 +873,11 @@ class NotificationService {
       );
 
       await _plugin.zonedSchedule(
-        _azkarPrayerBaseId + i,
-        'أذكار بعد الصلاة',
-        'حان وقت أذكار ما بعد صلاة ${_arabicPrayerName(key)}.',
-        scheduled,
-        const NotificationDetails(
+        id: _azkarPrayerBaseId + i,
+        title: 'أذكار بعد الصلاة',
+        body: 'حان وقت أذكار ما بعد صلاة ${_arabicPrayerName(key)}.',
+        scheduledDate: scheduled,
+        notificationDetails: const NotificationDetails(
           android: android,
           iOS: ios,
           macOS: mac,
@@ -892,13 +892,13 @@ class NotificationService {
   Future<void> cancelAfterPrayerAzkarReminders() async {
     if (!_isSupported) return;
     for (var i = 0; i < 5; i++) {
-      await _plugin.cancel(_azkarPrayerBaseId + i);
+      await _plugin.cancel(id: _azkarPrayerBaseId + i);
     }
   }
 
   Future<void> cancel(int id) async {
     if (!_isSupported) return;
-    await _plugin.cancel(id);
+    await _plugin.cancel(id: id);
   }
 
   Future<void> cancelAll() async {
