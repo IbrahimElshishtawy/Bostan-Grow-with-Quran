@@ -73,6 +73,7 @@ flutter:
     - assets/iosn/icongrowquran.jpg
     - assets/images/
     - assets/voice/
+    - shorebird.yaml
 
 flutter_launcher_icons:
   android: true
