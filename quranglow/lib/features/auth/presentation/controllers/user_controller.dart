@@ -1,17 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/services/firebase_service.dart';
-import '../../../../core/services/local_storage_service.dart';
+import '../../../../core/providers/core_providers.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../domain/models/user_profile.dart';
-
-// Service & Repository Providers
-final firebaseServiceProvider = Provider<FirebaseService>((ref) {
-  return FirebaseService();
-});
-
-final localStorageServiceProvider = Provider<LocalStorageService>((ref) {
-  throw UnimplementedError('localStorageService must be initialized and overridden in main');
-});
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
