@@ -3,11 +3,20 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hijri/hijri_calendar.dart';
+import 'package:quran/quran.dart' as quran;
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/arabic_numbers.dart';
+import '../../../audio/presentation/screens/audio_player_screen.dart';
 import '../../../auth/presentation/controllers/user_controller.dart';
+import '../../../bookmarks/presentation/screens/bookmarks_screen.dart';
+import '../../../khatmah/presentation/providers/khatmah_providers.dart';
+import '../../../khatmah/presentation/screens/khatmah_screen.dart';
+import '../../../memorization/presentation/screens/memorization_screen.dart';
+import '../../../quran/presentation/providers/quran_providers.dart';
+import '../../../quran/presentation/screens/mushaf_screen.dart';
+import '../../../search/presentation/screens/quran_search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +30,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedTabIndex == 1) {
+      return const MushafScreen();
+    } else if (_selectedTabIndex == 2) {
+      return const AudioPlayerScreen();
+    } else if (_selectedTabIndex == 3) {
+      return const MemorizationScreen();
+    } else if (_selectedTabIndex == 4) {
+      return const KhatmahScreen();
+    }
+
     final userState = ref.watch(userControllerProvider);
     final userName = userState.user?.name ?? 'ضيف الرحمن';
     final theme = Theme.of(context);
@@ -29,6 +48,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hijriNow = HijriCalendar.now();
     final hijriDateString =
         '${hijriNow.hDay.toArabic()} ${hijriNow.longMonthName} ${hijriNow.hYear.toArabic()} هـ';
+
+    final mushafState = ref.watch(mushafControllerProvider);
+    final activeKhatmah = ref.watch(activeKhatmahProvider);
+
+    final lastPage = mushafState.currentPage;
+    final lastPageData = quran.getPageData(lastPage);
+    final currentSurahNum = lastPageData.isNotEmpty ? (lastPageData.first['surah'] as int) : 1;
+    final currentSurahName = quran.getSurahNameArabic(currentSurahNum);
 
     return Scaffold(
       appBar: AppBar(
@@ -42,24 +69,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
+            icon: const Icon(Icons.bookmark_outline_rounded),
+            tooltip: 'الإشارات المرجعية',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('التنبيهات قيد التجهيز', style: GoogleFonts.tajawal()),
-                  duration: const Duration(seconds: 1),
-                ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BookmarksScreen()),
               );
             },
           ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
+            tooltip: 'البحث في القرآن',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('البحث في القرآن قيد التجهيز', style: GoogleFonts.tajawal()),
-                  duration: const Duration(seconds: 1),
-                ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const QuranSearchScreen()),
               );
             },
           ),
@@ -168,63 +193,144 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             const SizedBox(height: 20),
 
-            // 2. Daily Quran Card (وردك اليومي)
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
+            // 2. Continue Reading Banner (متابعة القراءة)
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MushafScreen(initialPage: lastPage)),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.gold.withOpacity(0.4),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.bookmark_rounded, color: AppColors.primary, size: 28),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.calendar_today_rounded, color: AppColors.gold, size: 20),
-                          const SizedBox(width: 8),
                           Text(
-                            'وردك اليومي',
+                            'متابعة القراءة',
                             style: GoogleFonts.tajawal(
-                              fontSize: 16,
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'سورة $currentSurahName — صفحة ${lastPage.toArabic()}',
+                            style: GoogleFonts.amiri(
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                              color: isDark ? AppColors.goldLight : AppColors.primary,
                             ),
                           ),
                         ],
                       ),
-                      Text(
-                        '١٢ / ٢٠ صفحة',
-                        style: GoogleFonts.tajawal(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: 0.6,
-                      minHeight: 10,
-                      backgroundColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariantLight,
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
                     ),
-                  ),
-                ],
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+                  ],
+                ),
               ),
             ).animate().fadeIn(delay: 150.ms),
 
             const SizedBox(height: 20),
 
-            // 3. Main Action Grid (Reading, Audio, Memorization, Khatma)
+            // 3. Active Khatmah Progress Card
+            if (activeKhatmah != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.mosque_rounded, color: AppColors.gold, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              activeKhatmah.title,
+                              style: GoogleFonts.tajawal(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '${activeKhatmah.currentPage.toArabic()} / ٦٠٤ صفحة',
+                          style: GoogleFonts.tajawal(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: activeKhatmah.progressPercentage,
+                        minHeight: 10,
+                        backgroundColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariantLight,
+                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'الورد اليومي: ${activeKhatmah.requiredDailyPages.toArabic()} صفحات',
+                          style: GoogleFonts.tajawal(fontSize: 12, color: Colors.grey),
+                        ),
+                        Text(
+                          'متبقي ${activeKhatmah.remainingDays.toArabic()} يوم',
+                          style: GoogleFonts.tajawal(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 200.ms),
+
+            // 4. Main Action Grid (Reading, Audio, Memorization, Khatma)
             Text(
               'الأنظمة الرئيسية',
               style: GoogleFonts.tajawal(
@@ -247,33 +353,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   icon: Icons.menu_book_rounded,
                   iconColor: AppColors.primaryLight,
                   title: 'المصحف الشريف',
-                  subtitle: 'سورة البقرة - ص ٤٥',
+                  subtitle: 'سورة $currentSurahName - ص ${lastPage.toArabic()}',
                   isDark: isDark,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MushafScreen(initialPage: lastPage)),
+                    );
+                  },
                 ),
                 _buildActionCard(
                   icon: Icons.headphones_rounded,
                   iconColor: AppColors.gold,
                   title: 'القرآن الصوتي',
-                  subtitle: 'مشاري العفاسي',
+                  subtitle: 'تلاوات مشاهير القراء',
                   isDark: isDark,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AudioPlayerScreen()),
+                    );
+                  },
                 ),
                 _buildActionCard(
                   icon: Icons.psychology_rounded,
                   iconColor: const Color(0xFF6C5CE7),
                   title: 'حفظ ومراجعة',
-                  subtitle: 'سورة الملك - ٨ آيات',
+                  subtitle: 'خطط الحفظ الذكية',
                   isDark: isDark,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MemorizationScreen()),
+                    );
+                  },
                 ),
                 _buildActionCard(
                   icon: Icons.mosque_rounded,
                   iconColor: const Color(0xFF00B894),
                   title: 'ختمة القرآن',
-                  subtitle: 'متبقي ٢٣ يوم',
+                  subtitle: 'متابعة الورد والختمات',
                   isDark: isDark,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const KhatmahScreen()),
+                    );
+                  },
                 ),
               ],
             ).animate().fadeIn(delay: 250.ms),
@@ -311,9 +437,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             label: 'الحفظ',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'حسابي',
+            icon: Icon(Icons.mosque_outlined),
+            selectedIcon: Icon(Icons.mosque_rounded),
+            label: 'الختمة',
           ),
         ],
       ),

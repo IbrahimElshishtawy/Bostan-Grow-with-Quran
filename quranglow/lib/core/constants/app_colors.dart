@@ -30,6 +30,7 @@ class AppColors {
   static const Color borderDark = Color(0xFF263833);
 
   // Accent & Functional
+  static const Color accent = Color(0xFF2EB872);
   static const Color accentGreen = Color(0xFF2EB872);
   static const Color error = Color(0xFFD32F2F);
   static const Color success = Color(0xFF388E3C);
@@ -38,6 +39,12 @@ class AppColors {
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFF0F4C3A), Color(0xFF1B6A53)],
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+  );
+
+  static const LinearGradient darkEmeraldGradient = LinearGradient(
+    colors: [Color(0xFF082D22), Color(0xFF0F4C3A)],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
@@ -54,3 +61,4 @@ class AppColors {
     end: Alignment.bottomCenter,
   );
 }
+
