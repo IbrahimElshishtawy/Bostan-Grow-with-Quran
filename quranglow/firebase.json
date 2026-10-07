@@ -1,1 +1,61 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"quran-glow","appId":"1:382659412362:android:95775f621567a215804873","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"quran-glow","configurations":{"android":"1:382659412362:android:95775f621567a215804873","ios":"1:382659412362:ios:5fe904b618102223804873","macos":"1:382659412362:ios:5fe904b618102223804873","web":"1:382659412362:web:e884140da2092469804873","windows":"1:382659412362:web:aaafb3d4917a630e804873"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "quran-glow",
+          "appId": "1:382659412362:android:95775f621567a215804873",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "quran-glow",
+          "configurations": {
+            "android": "1:382659412362:android:95775f621567a215804873",
+            "ios": "1:382659412362:ios:5fe904b618102223804873",
+            "macos": "1:382659412362:ios:5fe904b618102223804873",
+            "web": "1:382659412362:web:e884140da2092469804873",
+            "windows": "1:382659412362:web:aaafb3d4917a630e804873"
+          }
+        }
+      }
+    }
+  }
+}

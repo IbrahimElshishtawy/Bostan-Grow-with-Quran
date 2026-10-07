@@ -37,6 +37,7 @@ class ErrorInterceptor extends Interceptor {
         throw const ServerException('شهادة أمان الخادم غير صالحة');
 
       case DioExceptionType.unknown:
+      default:
         throw NetworkException(err.message ?? 'حدث خطأ في الشبكة غير معروف');
     }
 

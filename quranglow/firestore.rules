@@ -1,0 +1,167 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidTimestamp(val) {
+      return val is timestamp;
+    }
+
+    function isString(val) {
+      return val is string;
+    }
+
+    function isNumber(val) {
+      return val is int || val is float;
+    }
+
+    // Top-level public/system collections (read-only for authenticated users)
+    match /achievements/{achievementId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Server Admin SDK only
+    }
+
+    match /system/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Server Admin SDK only
+    }
+
+    match /notificationTemplates/{templateId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Server Admin SDK only
+    }
+
+    // User collection and subcollections
+    match /users/{userId} {
+      // User document
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.keys().hasOnly([
+                      'uid', 'displayName', 'email', 'photoUrl', 'accountType',
+                      'isAnonymous', 'createdAt', 'updatedAt', 'lastActiveAt',
+                      'lastSyncAt', 'schemaVersion', 'name'
+                    ]);
+      allow update: if isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['accountType', 'createdAt']));
+      allow delete: if isOwner(userId);
+
+      // Preferences subcollection
+      match /preferences/{prefType} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Devices subcollection
+      match /devices/{deviceId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Reading progress
+      match /reading/progress {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Reading sessions
+      match /readingSessions/{sessionId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Listening progress & sessions
+      match /listening/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /listeningSessions/{sessionId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Bookmarks
+      match /bookmarks/{bookmarkId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Notes (private only to the owner)
+      match /notes/{noteId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Memorization plans and items
+      match /memorization/plans/{planId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /memorization/items/{itemId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Revision sessions
+      match /revisionSessions/{sessionId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Khatmah plans
+      match /khatmah/{khatmahId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Daily goals
+      match /goals/{goalId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Daily activity (read by owner, writable by owner or server aggregate)
+      match /dailyActivity/{date} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Streak & Statistics - SERVER PROTECTED
+      // Clients may read their streak, but writes must come from Cloud Functions (Admin SDK)
+      match /statistics/{statDoc} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Cloud Functions / Admin SDK only
+      }
+
+      // Achievements - SERVER PROTECTED
+      // Clients may read unlocked achievements, but unlocking is done by Cloud Functions
+      match /achievements/{achievementId} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Cloud Functions / Admin SDK only
+      }
+
+      // User events (Append-only by client, processed & cleaned by server)
+      match /events/{eventId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && request.resource.data.type is string
+                      && request.resource.data.type.size() > 0;
+        allow update, delete: if false; // Immutable events
+      }
+
+      // Notification history
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        // User can only update readAt / openedAt status
+        allow update: if isOwner(userId)
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt', 'openedAt', 'status']);
+        allow create, delete: if false; // Generated by server
+      }
+
+      // Audio downloads metadata
+      match /downloads/audio/{downloadId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../../firebase_options.dart';
+import '../firebase/firebase_gateway.dart';
 
 class FirebaseService {
   static final FirebaseService _instance = FirebaseService._internal();
@@ -25,6 +26,13 @@ class FirebaseService {
       );
 
       dev.log('Firebase and Firestore offline persistence initialized successfully', name: 'FirebaseService');
+
+      // Initialize App Check (Section 48)
+      try {
+        await FirebaseGateway.initializeAppCheck();
+      } catch (appCheckError) {
+        dev.log('AppCheck init ignored/skipped: $appCheckError', name: 'FirebaseService');
+      }
     } catch (e, stack) {
       dev.log('Firebase initialization error: $e', name: 'FirebaseService', error: e, stackTrace: stack);
     }
