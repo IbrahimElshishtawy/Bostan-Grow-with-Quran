@@ -9,6 +9,7 @@ import 'core/router/app_router.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/local_storage_service.dart';
 import 'core/storage/cache_manager.dart';
+import 'core/storage/local_database.dart';
 import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
@@ -17,7 +18,10 @@ Future<void> main() async {
   // 1. Initialize Firebase & Firestore offline persistence
   await FirebaseService.initialize();
 
-  // 2. Initialize SharedPreferences & Storage Services
+  // 2. Initialize Hive local database
+  await LocalDatabase.instance.init();
+
+  // 3. Initialize SharedPreferences & Storage Services
   final prefs = await SharedPreferences.getInstance();
   final localStorageService = LocalStorageService(prefs);
   final cacheManager = CacheManager(prefs);

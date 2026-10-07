@@ -5,6 +5,7 @@ import '../services/firebase_service.dart';
 import '../services/local_storage_service.dart';
 import '../storage/cache_manager.dart';
 import '../storage/firestore_cache_service.dart';
+import '../storage/local_database.dart';
 
 // 1. Firebase Service Provider
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -42,3 +43,9 @@ final isConnectedProvider = StreamProvider<bool>((ref) {
 final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService();
 });
+
+// 8. Local Database Provider
+final localDatabaseProvider = Provider<LocalDatabase>((ref) {
+  return LocalDatabase.instance;
+});
+
