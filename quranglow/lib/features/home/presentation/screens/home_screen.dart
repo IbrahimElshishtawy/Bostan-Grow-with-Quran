@@ -7,6 +7,8 @@ import 'package:quran/quran.dart' as quran;
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/responsive/breakpoints.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 import '../../../audio/presentation/screens/audio_player_screen.dart';
 import '../../../auth/presentation/controllers/user_controller.dart';
@@ -28,18 +30,138 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedTabIndex = 0;
 
+  void _onSelectTab(int index) {
+    if (_selectedTabIndex != index) {
+      setState(() {
+        _selectedTabIndex = index;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_selectedTabIndex == 1) {
-      return const MushafScreen();
-    } else if (_selectedTabIndex == 2) {
-      return const AudioPlayerScreen();
-    } else if (_selectedTabIndex == 3) {
-      return const MemorizationScreen();
-    } else if (_selectedTabIndex == 4) {
-      return const KhatmahScreen();
-    }
+    final widthClass = AppBreakpoints.getWidthClass(context);
+    final isCompact = widthClass.isCompact;
 
+    final pages = [
+      _HomeDashboardView(
+        onNavigateToTab: _onSelectTab,
+      ),
+      const MushafScreen(),
+      const AudioPlayerScreen(),
+      const MemorizationScreen(),
+      const KhatmahScreen(),
+    ];
+
+    if (isCompact) {
+      return Scaffold(
+        body: IndexedStack(
+          index: _selectedTabIndex,
+          children: pages,
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _selectedTabIndex,
+          onDestinationSelected: _onSelectTab,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'الرئيسية',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(Icons.menu_book_rounded),
+              label: 'المصحف',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.headphones_outlined),
+              selectedIcon: Icon(Icons.headphones_rounded),
+              label: 'الصوتيات',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.psychology_outlined),
+              selectedIcon: Icon(Icons.psychology_rounded),
+              label: 'الحفظ',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.mosque_outlined),
+              selectedIcon: Icon(Icons.mosque_rounded),
+              label: 'الختمة',
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Tablet / Desktop Adaptive Navigation Rail
+      return Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              selectedIndex: _selectedTabIndex,
+              onDestinationSelected: _onSelectTab,
+              labelType: NavigationRailLabelType.all,
+              leading: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  AppConstants.appName,
+                  style: GoogleFonts.amiri(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              destinations: const [
+                NavigationRailDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_rounded),
+                  label: Text('الرئيسية'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.menu_book_outlined),
+                  selectedIcon: Icon(Icons.menu_book_rounded),
+                  label: Text('المصحف'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.headphones_outlined),
+                  selectedIcon: Icon(Icons.headphones_rounded),
+                  label: Text('الصوتيات'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.psychology_outlined),
+                  selectedIcon: Icon(Icons.psychology_rounded),
+                  label: Text('الحفظ'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.mosque_outlined),
+                  selectedIcon: Icon(Icons.mosque_rounded),
+                  label: Text('الختمة'),
+                ),
+              ],
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedTabIndex,
+                children: pages,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
+
+class _HomeDashboardView extends ConsumerWidget {
+  final void Function(int tabIndex) onNavigateToTab;
+
+  const _HomeDashboardView({
+    required this.onNavigateToTab,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userControllerProvider);
     final userName = userState.user?.name ?? 'ضيف الرحمن';
     final theme = Theme.of(context);
@@ -51,11 +173,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final mushafState = ref.watch(mushafControllerProvider);
     final activeKhatmah = ref.watch(activeKhatmahProvider);
+    final syncMetadata = ref.watch(syncMetadataProvider);
 
     final lastPage = mushafState.currentPage;
     final lastPageData = quran.getPageData(lastPage);
     final currentSurahNum = lastPageData.isNotEmpty ? (lastPageData.first['surah'] as int) : 1;
     final currentSurahName = quran.getSurahNameArabic(currentSurahNum);
+
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = width >= 600;
 
     return Scaffold(
       appBar: AppBar(
@@ -68,6 +194,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         actions: [
+          // Cloud Sync Status Action
+          IconButton(
+            icon: syncMetadata.isSyncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    syncMetadata.pendingOperationsCount > 0
+                        ? Icons.cloud_queue_rounded
+                        : Icons.cloud_done_outlined,
+                    color: syncMetadata.pendingOperationsCount > 0
+                        ? AppColors.gold
+                        : AppColors.primaryLight,
+                  ),
+            tooltip: syncMetadata.pendingOperationsCount > 0
+                ? 'مزامنة معلقة (${syncMetadata.pendingOperationsCount.toArabic()})'
+                : 'البيانات متزامنة',
+            onPressed: () {
+              ref.read(syncManagerProvider).processQueue();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    syncMetadata.pendingOperationsCount > 0
+                        ? 'جاري مزامنة التغييرات السحابية...'
+                        : 'جميع بياناتك محفوظة ومتزامنة محلياً وسحابياً',
+                    style: GoogleFonts.tajawal(),
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.bookmark_outline_rounded),
             tooltip: 'الإشارات المرجعية',
@@ -196,12 +356,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // 2. Continue Reading Banner (متابعة القراءة)
             InkWell(
               borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => MushafScreen(initialPage: lastPage)),
-                );
-              },
+              onTap: () => onNavigateToTab(1),
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -344,10 +499,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
+              crossAxisCount: isWide ? 4 : 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.25,
+              childAspectRatio: isWide ? 1.4 : 1.25,
               children: [
                 _buildActionCard(
                   icon: Icons.menu_book_rounded,
@@ -355,12 +510,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   title: 'المصحف الشريف',
                   subtitle: 'سورة $currentSurahName - ص ${lastPage.toArabic()}',
                   isDark: isDark,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MushafScreen(initialPage: lastPage)),
-                    );
-                  },
+                  onTap: () => onNavigateToTab(1),
                 ),
                 _buildActionCard(
                   icon: Icons.headphones_rounded,
@@ -368,12 +518,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   title: 'القرآن الصوتي',
                   subtitle: 'تلاوات مشاهير القراء',
                   isDark: isDark,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AudioPlayerScreen()),
-                    );
-                  },
+                  onTap: () => onNavigateToTab(2),
                 ),
                 _buildActionCard(
                   icon: Icons.psychology_rounded,
@@ -381,12 +526,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   title: 'حفظ ومراجعة',
                   subtitle: 'خطط الحفظ الذكية',
                   isDark: isDark,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const MemorizationScreen()),
-                    );
-                  },
+                  onTap: () => onNavigateToTab(3),
                 ),
                 _buildActionCard(
                   icon: Icons.mosque_rounded,
@@ -394,12 +534,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   title: 'ختمة القرآن',
                   subtitle: 'متابعة الورد والختمات',
                   isDark: isDark,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const KhatmahScreen()),
-                    );
-                  },
+                  onTap: () => onNavigateToTab(4),
                 ),
               ],
             ).animate().fadeIn(delay: 250.ms),
@@ -407,41 +542,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 24),
           ],
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedTabIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedTabIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'الرئيسية',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book_rounded),
-            label: 'المصحف',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.headphones_outlined),
-            selectedIcon: Icon(Icons.headphones_rounded),
-            label: 'الصوتيات',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.psychology_outlined),
-            selectedIcon: Icon(Icons.psychology_rounded),
-            label: 'الحفظ',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.mosque_outlined),
-            selectedIcon: Icon(Icons.mosque_rounded),
-            label: 'الختمة',
-          ),
-        ],
       ),
     );
   }

@@ -6,7 +6,6 @@ import 'package:quran/quran.dart' as quran;
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 import '../../../../core/widgets/app_empty.dart';
-import '../../domain/entities/memorization_plan.dart';
 import '../providers/memorization_providers.dart';
 import 'memorization_test_screen.dart';
 

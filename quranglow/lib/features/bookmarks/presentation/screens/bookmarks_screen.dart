@@ -7,7 +7,7 @@ import '../../../../core/providers/core_providers.dart';
 import '../../../../core/theme/quran_typography.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 import '../../../../core/widgets/app_empty.dart';
-import '../../quran/presentation/screens/mushaf_screen.dart';
+import '../../../quran/presentation/screens/mushaf_screen.dart';
 
 final bookmarksListProvider = StateNotifierProvider<BookmarksNotifier, List<Map<String, dynamic>>>((ref) {
   final localDb = ref.watch(localDatabaseProvider);

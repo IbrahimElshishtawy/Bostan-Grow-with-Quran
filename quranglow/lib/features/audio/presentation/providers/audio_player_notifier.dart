@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:quran/quran.dart' as quran;
-import '../domain/entities/reciter.dart';
+import '../../domain/entities/reciter.dart';
 
 class QuranAudioState {
   final Reciter selectedReciter;

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/quran_typography.dart';
 import '../../../../core/utils/arabic_numbers.dart';
+import '../../../../core/widgets/app_empty.dart';
 import '../../../quran/presentation/screens/mushaf_screen.dart';
 import '../../domain/services/quran_search_engine.dart';
 
@@ -17,27 +18,21 @@ class QuranSearchScreen extends StatefulWidget {
 class _QuranSearchScreenState extends State<QuranSearchScreen> {
   final TextEditingController _controller = TextEditingController();
   List<SearchAyahResult> _results = [];
-  bool _isSearching = false;
 
   void _onSearch(String query) {
     if (query.trim().isEmpty) {
       setState(() {
         _results = [];
-        _isSearching = false;
       });
       return;
     }
 
-    setState(() {
-      _isSearching = true;
-    });
-
     final res = QuranSearchEngine.search(query);
     setState(() {
       _results = res;
-      _isSearching = false;
     });
   }
+
 
   @override
   void dispose() {

@@ -6,8 +6,8 @@ import 'package:quran/quran.dart' as quran;
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/quran_typography.dart';
 import '../../../../core/utils/arabic_numbers.dart';
-import '../domain/entities/reciter.dart';
-import '../presentation/providers/audio_player_notifier.dart';
+import '../../domain/entities/reciter.dart';
+import '../providers/audio_player_notifier.dart';
 
 class AudioPlayerScreen extends ConsumerWidget {
   const AudioPlayerScreen({super.key});
